@@ -1,0 +1,114 @@
+@model GestionEquipeSportive.ViewModels.JoueurViewModel
+@{
+    ViewData["Title"] = "Modifier le joueur";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@Model.EquipeId">@Model.NomEquipe</a></li>
+            <li class="breadcrumb-item active">Modifier le joueur</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le joueur</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Informations du joueur</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="EquipeId" type="hidden" />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Prenom" class="form-label fw-semibold"></label>
+                            <input asp-for="Prenom" class="form-control" />
+                            <span asp-validation-for="Prenom" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Nom" class="form-label fw-semibold"></label>
+                            <input asp-for="Nom" class="form-control" />
+                            <span asp-validation-for="Nom" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Numero" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">#</span>
+                                <input asp-for="Numero" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Numero" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-8">
+                            <label asp-for="Position" class="form-label fw-semibold"></label>
+                            <input asp-for="Position" class="form-control" />
+                            <span asp-validation-for="Position" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            @if (!string.IsNullOrEmpty(Model.PhotoPathActuelle))
+                            {
+                                <label class="form-label fw-semibold">Photo actuelle</label>
+                                <div class="mb-2">
+                                    <img src="@Model.PhotoPathActuelle" alt="Photo actuelle" class="player-photo-preview" />
+                                </div>
+                            }
+                            <label asp-for="PhotoFile" class="form-label fw-semibold">
+                                @(string.IsNullOrEmpty(Model.PhotoPathActuelle) ? "Photo" : "Nouvelle photo (optionnel)")
+                            </label>
+                            <input asp-for="PhotoFile" type="file" class="form-control" accept="image/*"
+                                   onchange="previewPhoto(this)" />
+                            <div class="form-text">Laisser vide pour conserver la photo actuelle</div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center justify-content-center">
+                            <div id="photoPreviewContainer" class="text-center" style="display:none;">
+                                <img id="photoPreview" src="#" alt="Aperçu" class="player-photo-preview" />
+                                <p class="small text-muted mt-1">Nouvelle photo</p>
+                            </div>
+                            @if (string.IsNullOrEmpty(Model.PhotoPathActuelle))
+                            {
+                                <div id="photoPlaceholder" class="text-center text-muted">
+                                    <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                        </button>
+                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('photoPreview').src = e.target.result;
+                    document.getElementById('photoPreviewContainer').style.display = 'block';
+                    const ph = document.getElementById('photoPlaceholder');
+                    if (ph) ph.style.display = 'none';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

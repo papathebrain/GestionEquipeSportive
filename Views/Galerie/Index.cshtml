@@ -1,0 +1,137 @@
+@model List<GestionEquipeSportive.Models.GaleriePhoto>
+@{
+    ViewData["Title"] = "Galerie photos";
+    var equipe = ViewBag.Equipe as GestionEquipeSportive.Models.Equipe;
+    var ecole = equipe?.Ecole;
+}
+
+@section BannerContent {
+    <div class="d-flex align-items-center justify-content-between text-white">
+        <div>
+            <small class="opacity-75">@ecole?.Nom — @equipe?.AnneeScolaire</small>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-images me-2"></i>Galerie — @equipe?.Nom</h2>
+        </div>
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole?.Id">@ecole?.Nom</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@equipe?.Id">@equipe?.Nom</a></li>
+                <li class="breadcrumb-item active">Galerie</li>
+            </ol>
+        </nav>
+        <h1 class="h3 mb-0">
+            <i class="bi bi-images me-2 text-primary"></i>Galerie de photos
+            <span class="badge bg-secondary">@Model.Count</span>
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@equipe?.Id"
+           class="btn btn-outline-primary">
+            <i class="bi bi-people me-1"></i>Joueurs
+        </a>
+        <a asp-action="Upload" asp-route-equipeId="@equipe?.Id" class="btn btn-success">
+            <i class="bi bi-cloud-upload me-2"></i>Ajouter des photos
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-images text-muted" style="font-size: 4rem;"></i>
+        <h3 class="mt-3 text-muted">Aucune photo dans la galerie</h3>
+        <a asp-action="Upload" asp-route-equipeId="@equipe?.Id" class="btn btn-success mt-3">
+            <i class="bi bi-cloud-upload me-2"></i>Ajouter des photos
+        </a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+        @foreach (var photo in Model.OrderByDescending(p => p.DateAjout))
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm gallery-card">
+                    <div class="gallery-img-container" onclick="openLightbox('@photo.CheminPhoto', '@(photo.Description ?? "")')">
+                        <img src="@photo.CheminPhoto" alt="@photo.Description" class="gallery-img" />
+                        <div class="gallery-overlay">
+                            <i class="bi bi-zoom-in text-white fs-2"></i>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(photo.Description))
+                    {
+                        <div class="card-body py-2 px-3">
+                            <p class="card-text small text-truncate mb-0" title="@photo.Description">@photo.Description</p>
+                        </div>
+                    }
+                    <div class="card-footer bg-transparent py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">@photo.DateAjout.ToString("dd MMM yyyy")</small>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="confirmDelete(@photo.Id, @equipe!.Id)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Lightbox -->
+<div class="modal fade" id="lightboxModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <p id="lightboxDesc" class="text-white mb-0"></p>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img id="lightboxImg" src="" alt="" class="img-fluid" style="max-height: 80vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Supprimer cette photo de la galerie ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteEquipeId" name="equipeId" value="" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openLightbox(src, desc) {
+            document.getElementById('lightboxImg').src = src;
+            document.getElementById('lightboxDesc').textContent = desc || '';
+            new bootstrap.Modal(document.getElementById('lightboxModal')).show();
+        }
+
+        function confirmDelete(id, equipeId) {
+            document.getElementById('deleteEquipeId').value = equipeId;
+            document.getElementById('deleteForm').action = '/Galerie/Delete/' + id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}

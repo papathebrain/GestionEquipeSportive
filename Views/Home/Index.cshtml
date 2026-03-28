@@ -1,0 +1,100 @@
+@model List<GestionEquipeSportive.Models.Ecole>
+@{
+    ViewData["Title"] = "Accueil";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="hero-section text-white rounded-3 p-5 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold mb-2">
+                        <i class="bi bi-trophy-fill me-3"></i>Gestion des Équipes Sportives
+                    </h1>
+                    <p class="lead mb-0">Centre de service scolaire — Gérez vos écoles, équipes et joueurs</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <i class="bi bi-shield-fill" style="font-size: 6rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h2 class="h4 fw-semibold">
+            <i class="bi bi-building me-2 text-primary"></i>Écoles
+            <span class="badge bg-secondary ms-2">@Model.Count</span>
+        </h2>
+    </div>
+    <div class="col-auto">
+        <a asp-controller="Ecole" asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Ajouter une école
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-building text-muted" style="font-size: 4rem;"></i>
+        <h3 class="mt-3 text-muted">Aucune école enregistrée</h3>
+        <p class="text-muted">Commencez par ajouter votre première école.</p>
+        <a asp-controller="Ecole" asp-action="Create" class="btn btn-primary btn-lg mt-2">
+            <i class="bi bi-plus-circle me-2"></i>Ajouter une école
+        </a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var ecole in Model)
+        {
+            <div class="col">
+                <div class="card h-100 school-card shadow-sm" style="border-top: 4px solid @ecole.CouleurPrimaire;">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, @ecole.CouleurPrimaire 0%, @ecole.CouleurSecondaire 100%);">
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(ecole.LogoPath))
+                            {
+                                <img src="@ecole.LogoPath" alt="Logo @ecole.Nom" class="school-logo me-3" />
+                            }
+                            else
+                            {
+                                <div class="school-logo-placeholder me-3">
+                                    <i class="bi bi-building-fill"></i>
+                                </div>
+                            }
+                            <div>
+                                <h5 class="card-title mb-0 fw-bold">@ecole.Nom</h5>
+                                <small class="opacity-75">@ecole.CodeEcole</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <div class="color-swatch" style="background-color: @ecole.CouleurPrimaire;" title="Couleur primaire: @ecole.CouleurPrimaire"></div>
+                            <div class="color-swatch" style="background-color: @ecole.CouleurSecondaire;" title="Couleur secondaire: @ecole.CouleurSecondaire"></div>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-palette me-1"></i>
+                            @ecole.CouleurPrimaire / @ecole.CouleurSecondaire
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole.Id"
+                               class="btn btn-sm btn-primary flex-fill">
+                                <i class="bi bi-people me-1"></i>Équipes
+                            </a>
+                            <a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole.Id"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

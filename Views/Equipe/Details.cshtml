@@ -1,0 +1,111 @@
+@model GestionEquipeSportive.Models.Equipe
+@{
+    ViewData["Title"] = Model.Nom;
+    var ecole = Model.Ecole;
+}
+
+@section BannerContent {
+    <div class="d-flex align-items-center gap-3 text-white">
+        <div>
+            <small class="opacity-75">@ecole?.Nom — @GetSportDisplayName(Model.TypeSport)</small>
+            <h2 class="mb-0 fw-bold">@Model.Nom</h2>
+            <div class="d-flex gap-2 mt-1">
+                <span class="badge bg-white text-dark">@GetNiveauDisplayName(Model.Niveau)</span>
+                <span class="badge bg-white text-dark">@Model.AnneeScolaire</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole?.Id">@ecole?.Nom</a></li>
+            <li class="breadcrumb-item active">@Model.Nom</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-3">
+                <i class="bi bi-person-lines-fill text-primary" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0">Joueurs</h5>
+            </div>
+            <div class="card-footer">
+                <a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-arrow-right me-1"></i>Voir
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-3">
+                <i class="bi bi-images text-success" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0">Galerie</h5>
+            </div>
+            <div class="card-footer">
+                <a asp-controller="Galerie" asp-action="Index" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-success w-100">
+                    <i class="bi bi-arrow-right me-1"></i>Voir
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-3">
+                <i class="bi bi-pencil-square text-warning" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0">Modifier</h5>
+            </div>
+            <div class="card-footer">
+                <a asp-action="Edit" asp-route-id="@Model.Id"
+                   class="btn btn-sm btn-warning w-100">
+                    <i class="bi bi-arrow-right me-1"></i>Éditer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Détails de l'équipe</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Nom</dt>
+            <dd class="col-sm-9">@Model.Nom</dd>
+            <dt class="col-sm-3">École</dt>
+            <dd class="col-sm-9">@ecole?.Nom (@ecole?.CodeEcole)</dd>
+            <dt class="col-sm-3">Sport</dt>
+            <dd class="col-sm-9">@GetSportDisplayName(Model.TypeSport)</dd>
+            <dt class="col-sm-3">Niveau</dt>
+            <dd class="col-sm-9">@GetNiveauDisplayName(Model.Niveau)</dd>
+            <dt class="col-sm-3">Année scolaire</dt>
+            <dd class="col-sm-9">@Model.AnneeScolaire</dd>
+        </dl>
+    </div>
+</div>
+
+@functions {
+    string GetSportDisplayName(GestionEquipeSportive.Models.TypeSport sport) => sport switch
+    {
+        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football américain",
+        GestionEquipeSportive.Models.TypeSport.Soccer => "Soccer",
+        GestionEquipeSportive.Models.TypeSport.Hockey => "Hockey",
+        _ => sport.ToString()
+    };
+
+    string GetNiveauDisplayName(GestionEquipeSportive.Models.NiveauEquipe niveau) => niveau switch
+    {
+        GestionEquipeSportive.Models.NiveauEquipe.Juvenil => "Juvénile",
+        GestionEquipeSportive.Models.NiveauEquipe.PeeWee => "Pee-Wee",
+        _ => niveau.ToString()
+    };
+}
