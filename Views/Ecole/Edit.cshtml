@@ -1,0 +1,173 @@
+@model GestionEquipeSportive.ViewModels.EcoleViewModel
+@{
+    ViewData["Title"] = "Modifier l'école";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Écoles</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier l'école</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>Informations de l'école</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label asp-for="Nom" class="form-label fw-semibold"></label>
+                            <input asp-for="Nom" class="form-control" />
+                            <span asp-validation-for="Nom" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="CodeEcole" class="form-label fw-semibold"></label>
+                            <input asp-for="CodeEcole" class="form-control" />
+                            <span asp-validation-for="CodeEcole" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label asp-for="CouleurPrimaire" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input type="color" asp-for="CouleurPrimaire" class="form-control form-control-color"
+                                       id="colorPrimaire" oninput="updatePreview()" />
+                                <input type="text" class="form-control" id="colorPrimaireText"
+                                       value="@Model.CouleurPrimaire" oninput="syncColor('colorPrimaire', this.value)" />
+                            </div>
+                            <span asp-validation-for="CouleurPrimaire" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CouleurSecondaire" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input type="color" asp-for="CouleurSecondaire" class="form-control form-control-color"
+                                       id="colorSecondaire" oninput="updatePreview()" />
+                                <input type="text" class="form-control" id="colorSecondaireText"
+                                       value="@Model.CouleurSecondaire" oninput="syncColor('colorSecondaire', this.value)" />
+                            </div>
+                            <span asp-validation-for="CouleurSecondaire" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        @if (!string.IsNullOrEmpty(Model.LogoPathActuel))
+                        {
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">Logo actuel</label>
+                                <div>
+                                    <img src="@Model.LogoPathActuel" alt="Logo actuel" class="school-logo-lg" />
+                                </div>
+                            </div>
+                        }
+                        <label asp-for="LogoFile" class="form-label fw-semibold">
+                            @(string.IsNullOrEmpty(Model.LogoPathActuel) ? "Logo" : "Nouveau logo (optionnel)")
+                        </label>
+                        <input asp-for="LogoFile" type="file" class="form-control" accept="image/*"
+                               onchange="previewLogo(this)" />
+                        <div class="form-text">Laisser vide pour conserver le logo actuel</div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-eye me-2"></i>Aperçu du thème</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="themePreview" class="p-3 text-white rounded-top"
+                     style="background: linear-gradient(135deg, @Model.CouleurPrimaire 0%, @Model.CouleurSecondaire 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div id="logoPreviewContainer" style="@(string.IsNullOrEmpty(Model.LogoPathActuel) ? "display:none;" : "")">
+                            <img id="logoPreview" src="@(Model.LogoPathActuel ?? "#")" alt="Logo" class="school-logo" />
+                        </div>
+                        <div id="logoPlaceholder" @(string.IsNullOrEmpty(Model.LogoPathActuel) ? "" : "style='display:none;'") class="school-logo-placeholder">
+                            <i class="bi bi-building-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" id="previewNom">@Model.Nom</div>
+                            <small class="opacity-75" id="previewCode">@Model.CodeEcole</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <div class="d-flex gap-2 mb-2">
+                        <div id="swatchPrimaire" class="color-swatch" style="background-color: @Model.CouleurPrimaire;"></div>
+                        <div id="swatchSecondaire" class="color-swatch" style="background-color: @Model.CouleurSecondaire;"></div>
+                    </div>
+                    <button id="btnPreviewAction" class="btn btn-sm w-100"
+                            style="background-color: @Model.CouleurPrimaire; color: white;">
+                        <i class="bi bi-people me-1"></i>Voir les équipes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const nomInput = document.querySelector('[name="Nom"]');
+        const codeInput = document.querySelector('[name="CodeEcole"]');
+        if (nomInput) nomInput.addEventListener('input', updatePreview);
+        if (codeInput) codeInput.addEventListener('input', updatePreview);
+
+        function updatePreview() {
+            const p = document.getElementById('colorPrimaire').value;
+            const s = document.getElementById('colorSecondaire').value;
+            document.getElementById('themePreview').style.background =
+                `linear-gradient(135deg, ${p} 0%, ${s} 100%)`;
+            document.getElementById('swatchPrimaire').style.backgroundColor = p;
+            document.getElementById('swatchSecondaire').style.backgroundColor = s;
+            document.getElementById('btnPreviewAction').style.backgroundColor = p;
+            document.getElementById('colorPrimaireText').value = p;
+            document.getElementById('colorSecondaireText').value = s;
+            const nom = document.querySelector('[name="Nom"]')?.value || 'Nom de l\'école';
+            const code = document.querySelector('[name="CodeEcole"]')?.value || 'CODE';
+            document.getElementById('previewNom').textContent = nom;
+            document.getElementById('previewCode').textContent = code;
+        }
+
+        function syncColor(inputId, value) {
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                document.getElementById(inputId).value = value;
+                updatePreview();
+            }
+        }
+
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('logoPreview').src = e.target.result;
+                    document.getElementById('logoPreviewContainer').style.display = 'block';
+                    document.getElementById('logoPlaceholder').style.display = 'none';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}
