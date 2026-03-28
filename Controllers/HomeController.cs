@@ -1,9 +1,11 @@
 using GestionEquipeSportive.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace GestionEquipeSportive.Controllers;
 
+[Authorize]
 public class HomeController : Controller
 {
     private readonly IEcoleService _ecoleService;

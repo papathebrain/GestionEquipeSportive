@@ -1,10 +1,12 @@
 using GestionEquipeSportive.Models;
 using GestionEquipeSportive.Services;
 using GestionEquipeSportive.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionEquipeSportive.Controllers;
 
+[Authorize]
 public class EcoleController : Controller
 {
     private readonly IEcoleService _ecoleService;

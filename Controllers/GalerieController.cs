@@ -1,9 +1,11 @@
 using GestionEquipeSportive.Models;
 using GestionEquipeSportive.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionEquipeSportive.Controllers;
 
+[Authorize]
 public class GalerieController : Controller
 {
     private readonly IGalerieService _galerieService;
