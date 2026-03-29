@@ -42,12 +42,8 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Niveau" class="form-label fw-semibold"></label>
-                            <select asp-for="Niveau" class="form-select" id="niveauSelect">
+                            <select asp-for="Niveau" asp-items="Model.NiveauxList" class="form-select" id="niveauSelect">
                                 <option value="">-- Sélectionner un niveau --</option>
-                                @foreach (var item in Model.NiveauxList)
-                                {
-                                    <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option>
-                                }
                             </select>
                             <span asp-validation-for="Niveau" class="text-danger small"></span>
                         </div>
