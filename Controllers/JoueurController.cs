@@ -35,7 +35,7 @@ public class JoueurController : Controller
 
         equipe.Ecole = ecole;
         ViewBag.Equipe = equipe;
-        ViewBag.PeutModifier = _access.PeutModifier(User, equipe.EcoleId);
+        ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
         var joueurs = _joueurService.GetJoueursByEquipe(equipeId);
         return View(joueurs);
     }
@@ -51,7 +51,7 @@ public class JoueurController : Controller
 
         joueur.Equipe = equipe;
         if (equipe != null) equipe.Ecole = ecole;
-        ViewBag.PeutModifier = _access.PeutModifier(User, equipe?.EcoleId ?? 0);
+        ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0);
         return View(joueur);
     }
 
@@ -60,7 +60,7 @@ public class JoueurController : Controller
         var equipe = _equipeService.GetEquipeById(equipeId);
         if (equipe == null) return NotFound();
 
-        if (!_access.PeutModifier(User, equipe.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
             return Forbid();
 
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
@@ -82,7 +82,7 @@ public class JoueurController : Controller
         var equipe = _equipeService.GetEquipeById(vm.EquipeId);
         if (equipe == null) return NotFound();
 
-        if (!_access.PeutModifier(User, equipe.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -106,7 +106,7 @@ public class JoueurController : Controller
         var equipe = _equipeService.GetEquipeById(joueur.EquipeId);
         var ecole = equipe != null ? _ecoleService.GetEcoleById(equipe.EcoleId) : null;
 
-        if (!_access.PeutModifier(User, equipe?.EcoleId ?? 0))
+        if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0))
             return Forbid();
 
         if (ecole != null) SetTheme(ecole);
@@ -124,7 +124,7 @@ public class JoueurController : Controller
         if (id != vm.Id) return BadRequest();
 
         var equipe = _equipeService.GetEquipeById(vm.EquipeId);
-        if (!_access.PeutModifier(User, equipe?.EcoleId ?? vm.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? vm.EcoleId))
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -145,7 +145,7 @@ public class JoueurController : Controller
     public IActionResult Delete(int id, int equipeId)
     {
         var equipe = _equipeService.GetEquipeById(equipeId);
-        if (!_access.PeutModifier(User, equipe?.EcoleId ?? 0))
+        if (!_access.PeutModifierEquipe(User, equipeId, equipe?.EcoleId ?? 0))
             return Forbid();
 
         _joueurService.DeleteJoueur(id, _env.WebRootPath);

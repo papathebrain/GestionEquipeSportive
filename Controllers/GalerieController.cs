@@ -34,7 +34,7 @@ public class GalerieController : Controller
 
         equipe.Ecole = ecole;
         ViewBag.Equipe = equipe;
-        ViewBag.PeutModifier = _access.PeutModifier(User, equipe.EcoleId);
+        ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
         var photos = _galerieService.GetPhotosByEquipe(equipeId);
         return View(photos);
     }
@@ -44,7 +44,7 @@ public class GalerieController : Controller
         var equipe = _equipeService.GetEquipeById(equipeId);
         if (equipe == null) return NotFound();
 
-        if (!_access.PeutModifier(User, equipe.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
             return Forbid();
 
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
@@ -62,7 +62,7 @@ public class GalerieController : Controller
         var equipe = _equipeService.GetEquipeById(equipeId);
         if (equipe == null) return NotFound();
 
-        if (!_access.PeutModifier(User, equipe.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
             return Forbid();
 
         if (photoFile == null || photoFile.Length == 0)
@@ -85,7 +85,7 @@ public class GalerieController : Controller
     public IActionResult Delete(int id, int equipeId)
     {
         var equipe = _equipeService.GetEquipeById(equipeId);
-        if (!_access.PeutModifier(User, equipe?.EcoleId ?? 0))
+        if (!_access.PeutModifierEquipe(User, equipeId, equipe?.EcoleId ?? 0))
             return Forbid();
 
         _galerieService.DeletePhoto(id, _env.WebRootPath);

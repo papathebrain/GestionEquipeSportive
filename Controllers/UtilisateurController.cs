@@ -11,28 +11,21 @@ public class UtilisateurController : Controller
 {
     private readonly IUserService _userService;
     private readonly IEcoleService _ecoleService;
+    private readonly IEquipeService _equipeService;
 
-    public UtilisateurController(IUserService userService, IEcoleService ecoleService)
+    public UtilisateurController(IUserService userService, IEcoleService ecoleService, IEquipeService equipeService)
     {
         _userService = userService;
         _ecoleService = ecoleService;
+        _equipeService = equipeService;
     }
 
     public IActionResult Index()
-    {
-        var users = _userService.GetAllUsers();
-        return View(users);
-    }
+        => View(_userService.GetAllUsers());
 
     [HttpGet]
     public IActionResult Create()
-    {
-        var vm = new UtilisateurCreateViewModel
-        {
-            Ecoles = BuildEcoleCheckboxes([])
-        };
-        return View(vm);
-    }
+        => View(new UtilisateurCreateViewModel { Ecoles = BuildEcoleAcces([], []) });
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -43,13 +36,13 @@ public class UtilisateurController : Controller
 
         if (!ModelState.IsValid)
         {
-            model.Ecoles = BuildEcoleCheckboxes(model.Ecoles
-                .Where(e => e.Selectionne).Select(e => e.Id).ToList());
+            model.Ecoles = BuildEcoleAcces(
+                model.Ecoles.Where(e => e.AccesComplet).Select(e => e.Id).ToList(),
+                model.Ecoles.SelectMany(e => e.Equipes.Where(eq => eq.Selectionne).Select(eq => eq.Id)).ToList());
             return View(model);
         }
 
-        var ecolesSelectionnees = model.Ecoles
-            .Where(e => e.Selectionne).Select(e => e.Id).ToList();
+        var (ecolesIds, equipesIds) = ExtraireAcces(model.Ecoles, model.Role);
 
         var user = new ApplicationUser
         {
@@ -58,7 +51,8 @@ public class UtilisateurController : Controller
             Role = model.Role,
             EstActif = true,
             ChangerMotDePasse = model.ChangerMotDePasse,
-            EcolesIds = model.Role == Roles.Admin ? [] : ecolesSelectionnees
+            EcolesIds = ecolesIds,
+            EquipesIds = equipesIds
         };
 
         _userService.Ajouter(user, model.MotDePasse);
@@ -80,7 +74,7 @@ public class UtilisateurController : Controller
             Role = user.Role,
             EstActif = user.EstActif,
             ChangerMotDePasse = user.ChangerMotDePasse,
-            Ecoles = BuildEcoleCheckboxes(user.EcolesIds)
+            Ecoles = BuildEcoleAcces(user.EcolesIds, user.EquipesIds)
         };
         return View(vm);
     }
@@ -100,24 +94,24 @@ public class UtilisateurController : Controller
 
         if (!ModelState.IsValid)
         {
-            model.Ecoles = BuildEcoleCheckboxes(model.Ecoles
-                .Where(e => e.Selectionne).Select(e => e.Id).ToList());
+            model.Ecoles = BuildEcoleAcces(
+                model.Ecoles.Where(e => e.AccesComplet).Select(e => e.Id).ToList(),
+                model.Ecoles.SelectMany(e => e.Equipes.Where(eq => eq.Selectionne).Select(eq => eq.Id)).ToList());
             return View(model);
         }
 
         var user = _userService.GetById(model.Id);
         if (user == null) return NotFound();
 
-        var ecolesSelectionnees = model.Ecoles
-            .Where(e => e.Selectionne).Select(e => e.Id).ToList();
+        var (ecolesIds, equipesIds) = ExtraireAcces(model.Ecoles, model.Role);
 
         user.NomUtilisateur = model.NomUtilisateur.Trim();
         user.NomComplet = model.NomComplet.Trim();
         user.Role = model.Role;
         user.EstActif = model.EstActif;
         user.ChangerMotDePasse = model.ChangerMotDePasse;
-        // Les admins n'ont pas besoin d'association d'écoles
-        user.EcolesIds = model.Role == Roles.Admin ? [] : ecolesSelectionnees;
+        user.EcolesIds = ecolesIds;
+        user.EquipesIds = equipesIds;
 
         _userService.Modifier(user);
 
@@ -147,11 +141,38 @@ public class UtilisateurController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private List<EcoleCheckboxItem> BuildEcoleCheckboxes(List<int> selectedIds)
-        => _ecoleService.GetAllEcoles().Select(e => new EcoleCheckboxItem
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private List<EcoleAccesViewModel> BuildEcoleAcces(List<int> ecolesIds, List<int> equipesIds)
+    {
+        return _ecoleService.GetAllEcoles().Select(ecole => new EcoleAccesViewModel
         {
-            Id = e.Id,
-            Nom = e.Nom,
-            Selectionne = selectedIds.Contains(e.Id)
+            Id = ecole.Id,
+            Nom = ecole.Nom,
+            AccesComplet = ecolesIds.Contains(ecole.Id),
+            Equipes = _equipeService.GetEquipesByEcole(ecole.Id).Select(eq => new EquipeAccesItem
+            {
+                Id = eq.Id,
+                Nom = eq.Nom,
+                Selectionne = equipesIds.Contains(eq.Id)
+            }).ToList()
         }).ToList();
+    }
+
+    private static (List<int> ecolesIds, List<int> equipesIds) ExtraireAcces(
+        List<EcoleAccesViewModel> ecoles, string role)
+    {
+        if (role == Roles.Admin)
+            return ([], []);
+
+        var ecolesIds = ecoles.Where(e => e.AccesComplet).Select(e => e.Id).ToList();
+
+        // N'inclure les équipes spécifiques que pour les écoles sans accès complet
+        var equipesIds = ecoles
+            .Where(e => !e.AccesComplet)
+            .SelectMany(e => e.Equipes.Where(eq => eq.Selectionne).Select(eq => eq.Id))
+            .ToList();
+
+        return (ecolesIds, equipesIds);
+    }
 }

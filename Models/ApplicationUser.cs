@@ -11,7 +11,10 @@ public class ApplicationUser
     public DateTime DateCreation { get; set; } = DateTime.UtcNow;
     public DateTime? DerniereConnexion { get; set; }
     public bool ChangerMotDePasse { get; set; } = false;
+    /// <summary>Écoles avec accès complet (toutes les équipes).</summary>
     public List<int> EcolesIds { get; set; } = [];
+    /// <summary>Équipes spécifiques (si vide pour une école, accès à toutes les équipes de cette école).</summary>
+    public List<int> EquipesIds { get; set; } = [];
 }
 
 public static class Roles

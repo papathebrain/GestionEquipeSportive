@@ -5,7 +5,7 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-7">
+    <div class="col-md-8">
         <div class="d-flex align-items-center mb-3">
             <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-3">
                 <i class="bi bi-arrow-left"></i>
@@ -32,7 +32,7 @@
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Role" class="form-label fw-semibold"></label>
-                            <select asp-for="Role" class="form-select">
+                            <select asp-for="Role" class="form-select" id="roleSelect">
                                 <option value="@Roles.Utilisateur">Utilisateur</option>
                                 <option value="@Roles.Admin">Administrateur</option>
                             </select>
@@ -51,35 +51,76 @@
                         </div>
                     </div>
 
-                    <hr class="my-4" />
-                    <div id="ecolesSection" style="@(Model.Role == Roles.Admin ? "display:none" : "")">
-                        <h6 class="text-muted mb-2"><i class="bi bi-building me-1"></i>Écoles accessibles</h6>
-                        <div class="card border mb-3">
-                            <div class="card-body py-2">
-                                @if (!Model.Ecoles.Any())
-                                {
-                                    <p class="text-muted small mb-0">Aucune école disponible.</p>
-                                }
-                                else
-                                {
-                                    @for (int i = 0; i < Model.Ecoles.Count; i++)
-                                    {
-                                        <div class="form-check">
-                                            <input type="hidden" name="Ecoles[@i].Id" value="@Model.Ecoles[i].Id" />
-                                            <input type="hidden" name="Ecoles[@i].Nom" value="@Model.Ecoles[i].Nom" />
-                                            <input type="checkbox" class="form-check-input"
-                                                   name="Ecoles[@i].Selectionne" value="true"
+                    <div id="ecolesSection" class="mt-3" style="@(Model.Role == Roles.Admin ? "display:none" : "")">
+                        <hr />
+                        <h6 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2"></i>Accès aux écoles et équipes</h6>
+
+                        @if (!Model.Ecoles.Any())
+                        {
+                            <p class="text-muted small">Aucune école disponible.</p>
+                        }
+                        else
+                        {
+                            <div class="alert alert-secondary small py-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Cochez <strong>l'école</strong> pour accès complet à toutes ses équipes, ou cochez des <strong>équipes spécifiques</strong> pour limiter l'accès.
+                            </div>
+
+                            @for (int i = 0; i < Model.Ecoles.Count; i++)
+                            {
+                                <input type="hidden" name="Ecoles[@i].Id" value="@Model.Ecoles[i].Id" />
+                                <input type="hidden" name="Ecoles[@i].Nom" value="@Model.Ecoles[i].Nom" />
+
+                                <div class="card mb-2 border-secondary">
+                                    <div class="card-header py-2 bg-light">
+                                        <div class="form-check mb-0">
+                                            <input type="checkbox" class="form-check-input ecole-check"
+                                                   name="Ecoles[@i].AccesComplet" value="true"
                                                    id="ecole_@Model.Ecoles[i].Id"
-                                                   @(Model.Ecoles[i].Selectionne ? "checked" : "") />
-                                            <label class="form-check-label" for="ecole_@Model.Ecoles[i].Id">
-                                                @Model.Ecoles[i].Nom
+                                                   data-equipes="equipes_@Model.Ecoles[i].Id"
+                                                   @(Model.Ecoles[i].AccesComplet ? "checked" : "") />
+                                            <label class="form-check-label fw-semibold" for="ecole_@Model.Ecoles[i].Id">
+                                                <i class="bi bi-building me-1"></i>@Model.Ecoles[i].Nom
+                                                <span class="badge bg-primary ms-1">Accès complet</span>
                                             </label>
                                         </div>
+                                    </div>
+
+                                    @if (Model.Ecoles[i].Equipes.Any())
+                                    {
+                                        <div class="card-body py-2 ps-4" id="equipes_@Model.Ecoles[i].Id"
+                                             style="@(Model.Ecoles[i].AccesComplet ? "display:none" : "")">
+                                            <small class="text-muted d-block mb-1">Équipes spécifiques :</small>
+                                            <div class="row">
+                                                @for (int j = 0; j < Model.Ecoles[i].Equipes.Count; j++)
+                                                {
+                                                    <div class="col-md-6">
+                                                        <input type="hidden" name="Ecoles[@i].Equipes[@j].Id" value="@Model.Ecoles[i].Equipes[j].Id" />
+                                                        <input type="hidden" name="Ecoles[@i].Equipes[@j].Nom" value="@Model.Ecoles[i].Equipes[j].Nom" />
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input"
+                                                                   name="Ecoles[@i].Equipes[@j].Selectionne" value="true"
+                                                                   id="equipe_@Model.Ecoles[i].Equipes[j].Id"
+                                                                   @(Model.Ecoles[i].Equipes[j].Selectionne ? "checked" : "") />
+                                                            <label class="form-check-label small" for="equipe_@Model.Ecoles[i].Equipes[j].Id">
+                                                                <i class="bi bi-people me-1 text-muted"></i>@Model.Ecoles[i].Equipes[j].Nom
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
                                     }
-                                }
-                            </div>
-                        </div>
-                        <small class="text-muted d-block mb-3">Les administrateurs ont accès à toutes les écoles automatiquement.</small>
+                                    else
+                                    {
+                                        <div class="card-body py-2 ps-4" id="equipes_@Model.Ecoles[i].Id"
+                                             style="@(Model.Ecoles[i].AccesComplet ? "display:none" : "")">
+                                            <small class="text-muted">Aucune équipe dans cette école.</small>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
                     </div>
 
                     <hr class="my-4" />
@@ -114,9 +155,23 @@
 
 @section Scripts {
 <script>
-document.querySelector('[name="Role"]').addEventListener('change', function() {
+document.getElementById('roleSelect').addEventListener('change', function() {
     document.getElementById('ecolesSection').style.display =
         this.value === '@Roles.Admin' ? 'none' : '';
+});
+
+document.querySelectorAll('.ecole-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        var equipesDiv = document.getElementById(this.dataset.equipes);
+        if (equipesDiv) {
+            equipesDiv.style.display = this.checked ? 'none' : '';
+            if (this.checked) {
+                equipesDiv.querySelectorAll('input[type="checkbox"]').forEach(function(eq) {
+                    eq.checked = false;
+                });
+            }
+        }
+    });
 });
 </script>
 }

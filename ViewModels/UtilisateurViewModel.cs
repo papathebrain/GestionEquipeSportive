@@ -3,11 +3,20 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GestionEquipeSportive.ViewModels;
 
-public class EcoleCheckboxItem
+public class EquipeAccesItem
 {
     public int Id { get; set; }
     public string Nom { get; set; } = "";
     public bool Selectionne { get; set; }
+}
+
+public class EcoleAccesViewModel
+{
+    public int Id { get; set; }
+    public string Nom { get; set; } = "";
+    /// <summary>Accès complet à toutes les équipes de cette école.</summary>
+    public bool AccesComplet { get; set; }
+    public List<EquipeAccesItem> Equipes { get; set; } = [];
 }
 
 public class UtilisateurCreateViewModel
@@ -44,8 +53,7 @@ public class UtilisateurCreateViewModel
     [Display(Name = "Forcer changement au prochain login")]
     public bool ChangerMotDePasse { get; set; } = true;
 
-    [Display(Name = "Écoles accessibles")]
-    public List<EcoleCheckboxItem> Ecoles { get; set; } = [];
+    public List<EcoleAccesViewModel> Ecoles { get; set; } = [];
 }
 
 public class UtilisateurEditViewModel
@@ -85,6 +93,5 @@ public class UtilisateurEditViewModel
     [Display(Name = "Confirmer le mot de passe")]
     public string? ConfirmerMotDePasse { get; set; }
 
-    [Display(Name = "Écoles accessibles")]
-    public List<EcoleCheckboxItem> Ecoles { get; set; } = [];
+    public List<EcoleAccesViewModel> Ecoles { get; set; } = [];
 }

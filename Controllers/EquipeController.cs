@@ -30,6 +30,7 @@ public class EquipeController : Controller
         ViewBag.Ecole = ecole;
         ViewBag.PeutModifier = _access.PeutModifier(User, ecoleId);
         var equipes = _equipeService.GetEquipesByEcole(ecoleId);
+        equipes = _access.FiltrerEquipes(User, equipes, ecoleId).ToList();
         return View(equipes);
     }
 
@@ -42,7 +43,7 @@ public class EquipeController : Controller
         if (ecole != null) SetTheme(ecole);
 
         equipe.Ecole = ecole;
-        ViewBag.PeutModifier = _access.PeutModifier(User, equipe.EcoleId);
+        ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
         return View(equipe);
     }
 
@@ -85,7 +86,7 @@ public class EquipeController : Controller
         var equipe = _equipeService.GetEquipeById(id);
         if (equipe == null) return NotFound();
 
-        if (!_access.PeutModifier(User, equipe.EcoleId))
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
             return Forbid();
 
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
@@ -103,7 +104,7 @@ public class EquipeController : Controller
     {
         if (id != vm.Id) return BadRequest();
 
-        if (!_access.PeutModifier(User, vm.EcoleId))
+        if (!_access.PeutModifierEquipe(User, vm.Id, vm.EcoleId))
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -123,7 +124,7 @@ public class EquipeController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id, int ecoleId)
     {
-        if (!_access.PeutModifier(User, ecoleId))
+        if (!_access.PeutModifierEquipe(User, id, ecoleId))
             return Forbid();
 
         _equipeService.DeleteEquipe(id);
