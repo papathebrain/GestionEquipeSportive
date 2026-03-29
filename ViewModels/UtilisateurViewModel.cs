@@ -57,6 +57,7 @@ public class UtilisateurCreateViewModel
     public bool ChangerMotDePasse { get; set; } = true;
 
     public List<EcoleAccesViewModel> Ecoles { get; set; } = [];
+    public List<(string Value, string Text)> RolesDisponibles { get; set; } = [];
 }
 
 public class UtilisateurEditViewModel
@@ -84,6 +85,9 @@ public class UtilisateurEditViewModel
     [Display(Name = "Forcer changement de mot de passe")]
     public bool ChangerMotDePasse { get; set; }
 
+    public List<EcoleAccesViewModel> Ecoles { get; set; } = [];
+    public List<(string Value, string Text)> RolesDisponibles { get; set; } = [];
+
     [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractères.")]
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%!&*]).{8,}$",
         ErrorMessage = "Le mot de passe doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial.")]
@@ -95,6 +99,4 @@ public class UtilisateurEditViewModel
     [Compare(nameof(NouveauMotDePasse), ErrorMessage = "Les mots de passe ne correspondent pas.")]
     [Display(Name = "Confirmer le mot de passe")]
     public string? ConfirmerMotDePasse { get; set; }
-
-    public List<EcoleAccesViewModel> Ecoles { get; set; } = [];
 }

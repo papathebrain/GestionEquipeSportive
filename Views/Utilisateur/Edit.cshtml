@@ -33,8 +33,10 @@
                         <div class="col-md-4">
                             <label asp-for="Role" class="form-label fw-semibold"></label>
                             <select asp-for="Role" class="form-select" id="roleSelect">
-                                <option value="@Roles.Utilisateur">Utilisateur</option>
-                                <option value="@Roles.Admin">Administrateur</option>
+                                @foreach (var role in Model.RolesDisponibles)
+                                {
+                                    <option value="@role.Value">@role.Text</option>
+                                }
                             </select>
                         </div>
                         <div class="col-md-4 d-flex align-items-end">
@@ -90,8 +92,8 @@
 @section Scripts {
 <script>
 document.getElementById('roleSelect').addEventListener('change', function() {
-    document.getElementById('ecolesSection').style.display =
-        this.value === '@Roles.Admin' ? 'none' : '';
+    var hide = this.value === '@Roles.Admin' || this.value === '@Roles.AdminEcole';
+    document.getElementById('ecolesSection').style.display = hide ? 'none' : '';
 });
 </script>
 }

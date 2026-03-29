@@ -3,22 +3,28 @@
     "Id": "f01a76a0-de3a-4cfd-be5b-ff86cbe91c22",
     "NomUtilisateur": "admin",
     "NomComplet": "Administrateur",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAEFcDzODc3aeq80u4kgS3SYFYRR8Pw95HebH\u002BFqMg7264856mRX0oqH3tmndDp9vmHw==",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAEDcC/5WWTcvHPuHYDIRl5cyj6EHDTDtEOlBLH0agaAGEPmIeZpRV2qV5yPW36Q1iWA==",
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-03-29T00:11:53.2383889Z",
-    "ChangerMotDePasse": false
+    "DerniereConnexion": "2026-03-29T00:56:39.6269995Z",
+    "ChangerMotDePasse": false,
+    "EcolesIds": [],
+    "EquipesIds": []
   },
   {
     "Id": "1166afcc-74d6-4a12-b1c3-29b1ed1ec4ee",
     "NomUtilisateur": "Benoit",
     "NomComplet": "Belise",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAEBFdR/bSrI0aK/A6myaEfruaApi0r09AVB2aL5XHetYQnERkklJchTM1ICqFb/kACw==",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAEHAohFLOfoGJMFi9efrSvKJPc742rGEn/fCvc/ferqdAiqazn6LPfmjWWKqbeEp1Ug==",
     "Role": "Utilisateur",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": null,
-    "ChangerMotDePasse": true
+    "DerniereConnexion": "2026-03-29T00:57:28.0210217Z",
+    "ChangerMotDePasse": false,
+    "EcolesIds": [],
+    "EquipesIds": [
+      1
+    ]
   }
 ]

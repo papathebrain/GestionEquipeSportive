@@ -18,8 +18,13 @@ public class EcoleAccessService : IEcoleAccessService
     public bool PeutModifier(ClaimsPrincipal user, int ecoleId)
     {
         if (user.IsInRole(Roles.Admin)) return true;
-        var appUser = GetAppUser(user);
-        return appUser != null && appUser.EcolesIds.Contains(ecoleId);
+        if (user.IsInRole(Roles.AdminEcole))
+        {
+            var appUser = GetAppUser(user);
+            return appUser != null && appUser.EcolesIds.Contains(ecoleId);
+        }
+        var u = GetAppUser(user);
+        return u != null && u.EcolesIds.Contains(ecoleId);
     }
 
     /// <summary>

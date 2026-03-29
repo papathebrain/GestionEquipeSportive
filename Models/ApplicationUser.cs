@@ -20,5 +20,8 @@ public class ApplicationUser
 public static class Roles
 {
     public const string Admin = "Admin";
+    public const string AdminEcole = "AdminEcole";
     public const string Utilisateur = "Utilisateur";
+
+    public const string AdminOuAdminEcole = Admin + "," + AdminEcole;
 }
