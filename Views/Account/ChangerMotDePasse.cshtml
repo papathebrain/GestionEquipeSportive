@@ -52,7 +52,7 @@
                             <li>Au moins 8 caractères</li>
                             <li>Une majuscule et une minuscule</li>
                             <li>Un chiffre</li>
-                            <li>Un caractère spécial : @ # $ % ! &amp; *</li>
+                            <li>Un caractère spécial : # $ % ! &amp; *</li>
                         </ul>
                     </div>
 
@@ -82,7 +82,7 @@ document.getElementById('nvMdp').addEventListener('input', function() {
     if (/[A-Z]/.test(v)) score++;
     if (/[a-z]/.test(v)) score++;
     if (/\d/.test(v)) score++;
-    if (/[@#$%!&*]/.test(v)) score++;
+    if (/[@@#$%!&*]/.test(v)) score++;
     const pct = (score / 5) * 100;
     const colors = ['danger','danger','warning','info','success'];
     const labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
