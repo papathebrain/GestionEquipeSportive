@@ -213,7 +213,7 @@ public class UserService : IUserService
         char Pick(string charset)
         {
             rng.GetBytes(bytes);
-            return charset[BitConverter.ToUInt32(bytes) % charset.Length];
+            return charset[(int)(BitConverter.ToUInt32(bytes) % (uint)charset.Length)];
         }
 
         var chars = new List<char>
