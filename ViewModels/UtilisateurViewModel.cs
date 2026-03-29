@@ -7,6 +7,9 @@ public class EquipeAccesItem
 {
     public int Id { get; set; }
     public string Nom { get; set; } = "";
+    public string AnneeScolaire { get; set; } = "";
+    public string Sport { get; set; } = "";
+    public string Niveau { get; set; } = "";
     public bool Selectionne { get; set; }
 }
 

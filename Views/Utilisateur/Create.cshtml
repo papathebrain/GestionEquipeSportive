@@ -61,73 +61,7 @@
                     <div id="ecolesSection" style="@(Model.Role == Roles.Admin ? "display:none" : "")">
                         <hr />
                         <h6 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2"></i>Accès aux écoles et équipes</h6>
-
-                        @if (!Model.Ecoles.Any())
-                        {
-                            <p class="text-muted small">Aucune école disponible. Créez d'abord des écoles.</p>
-                        }
-                        else
-                        {
-                            <div class="alert alert-secondary small py-2">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Cochez <strong>l'école</strong> pour accès complet à toutes ses équipes, ou cochez des <strong>équipes spécifiques</strong> si vous voulez limiter l'accès.
-                            </div>
-
-                            @for (int i = 0; i < Model.Ecoles.Count; i++)
-                            {
-                                <input type="hidden" name="Ecoles[@i].Id" value="@Model.Ecoles[i].Id" />
-                                <input type="hidden" name="Ecoles[@i].Nom" value="@Model.Ecoles[i].Nom" />
-
-                                <div class="card mb-2 border-secondary">
-                                    <div class="card-header py-2 bg-light">
-                                        <div class="form-check mb-0">
-                                            <input type="checkbox" class="form-check-input ecole-check"
-                                                   name="Ecoles[@i].AccesComplet" value="true"
-                                                   id="ecole_@Model.Ecoles[i].Id"
-                                                   data-equipes="equipes_@Model.Ecoles[i].Id"
-                                                   @(Model.Ecoles[i].AccesComplet ? "checked" : "") />
-                                            <label class="form-check-label fw-semibold" for="ecole_@Model.Ecoles[i].Id">
-                                                <i class="bi bi-building me-1"></i>@Model.Ecoles[i].Nom
-                                                <span class="badge bg-primary ms-1">Accès complet</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    @if (Model.Ecoles[i].Equipes.Any())
-                                    {
-                                        <div class="card-body py-2 ps-4" id="equipes_@Model.Ecoles[i].Id"
-                                             style="@(Model.Ecoles[i].AccesComplet ? "display:none" : "")">
-                                            <small class="text-muted d-block mb-1">Équipes spécifiques :</small>
-                                            <div class="row">
-                                                @for (int j = 0; j < Model.Ecoles[i].Equipes.Count; j++)
-                                                {
-                                                    <div class="col-md-6">
-                                                        <input type="hidden" name="Ecoles[@i].Equipes[@j].Id" value="@Model.Ecoles[i].Equipes[j].Id" />
-                                                        <input type="hidden" name="Ecoles[@i].Equipes[@j].Nom" value="@Model.Ecoles[i].Equipes[j].Nom" />
-                                                        <div class="form-check">
-                                                            <input type="checkbox" class="form-check-input"
-                                                                   name="Ecoles[@i].Equipes[@j].Selectionne" value="true"
-                                                                   id="equipe_@Model.Ecoles[i].Equipes[j].Id"
-                                                                   @(Model.Ecoles[i].Equipes[j].Selectionne ? "checked" : "") />
-                                                            <label class="form-check-label small" for="equipe_@Model.Ecoles[i].Equipes[j].Id">
-                                                                <i class="bi bi-people me-1 text-muted"></i>@Model.Ecoles[i].Equipes[j].Nom
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="card-body py-2 ps-4" id="equipes_@Model.Ecoles[i].Id"
-                                             style="@(Model.Ecoles[i].AccesComplet ? "display:none" : "")">
-                                            <small class="text-muted">Aucune équipe dans cette école.</small>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        }
+                        @await Html.PartialAsync("_AccesEcoles", Model.Ecoles)
                     </div>
 
                     <div class="d-flex gap-2 mt-4">
@@ -144,26 +78,9 @@
 
 @section Scripts {
 <script>
-// Rôle Admin → cacher la section écoles
 document.getElementById('roleSelect').addEventListener('change', function() {
     document.getElementById('ecolesSection').style.display =
         this.value === '@Roles.Admin' ? 'none' : '';
-});
-
-// Accès complet école → cacher les équipes spécifiques
-document.querySelectorAll('.ecole-check').forEach(function(cb) {
-    cb.addEventListener('change', function() {
-        var equipesDiv = document.getElementById(this.dataset.equipes);
-        if (equipesDiv) {
-            equipesDiv.style.display = this.checked ? 'none' : '';
-            // Décocher les équipes si accès complet activé
-            if (this.checked) {
-                equipesDiv.querySelectorAll('input[type="checkbox"]').forEach(function(eq) {
-                    eq.checked = false;
-                });
-            }
-        }
-    });
 });
 </script>
 }

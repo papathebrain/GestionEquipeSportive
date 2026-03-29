@@ -150,14 +150,36 @@ public class UtilisateurController : Controller
             Id = ecole.Id,
             Nom = ecole.Nom,
             AccesComplet = ecolesIds.Contains(ecole.Id),
-            Equipes = _equipeService.GetEquipesByEcole(ecole.Id).Select(eq => new EquipeAccesItem
-            {
-                Id = eq.Id,
-                Nom = eq.Nom,
-                Selectionne = equipesIds.Contains(eq.Id)
-            }).ToList()
+            Equipes = _equipeService.GetEquipesByEcole(ecole.Id)
+                .OrderBy(eq => eq.AnneeScolaire)
+                .ThenBy(eq => eq.TypeSport.ToString())
+                .ThenBy(eq => eq.Niveau.ToString())
+                .Select(eq => new EquipeAccesItem
+                {
+                    Id = eq.Id,
+                    Nom = eq.Nom,
+                    AnneeScolaire = eq.AnneeScolaire,
+                    Sport = GetSportDisplay(eq.TypeSport),
+                    Niveau = GetNiveauDisplay(eq.Niveau),
+                    Selectionne = equipesIds.Contains(eq.Id)
+                }).ToList()
         }).ToList();
     }
+
+    private static string GetSportDisplay(TypeSport sport) => sport switch
+    {
+        TypeSport.FootballAmericain => "Football américain",
+        TypeSport.Soccer => "Soccer",
+        TypeSport.Hockey => "Hockey",
+        _ => sport.ToString()
+    };
+
+    private static string GetNiveauDisplay(NiveauEquipe niveau) => niveau switch
+    {
+        NiveauEquipe.Juvenil => "Juvénile",
+        NiveauEquipe.PeeWee => "Pee-Wee",
+        _ => niveau.ToString()
+    };
 
     private static (List<int> ecolesIds, List<int> equipesIds) ExtraireAcces(
         List<EcoleAccesViewModel> ecoles, string role)
