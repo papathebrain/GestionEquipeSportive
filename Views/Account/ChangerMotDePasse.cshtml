@@ -82,7 +82,7 @@ document.getElementById('nvMdp').addEventListener('input', function() {
     if (/[A-Z]/.test(v)) score++;
     if (/[a-z]/.test(v)) score++;
     if (/\d/.test(v)) score++;
-    if (/[@@#$%!&*]/.test(v)) score++;
+    if (/[\x40#$%!&*]/.test(v)) score++;
     const pct = (score / 5) * 100;
     const colors = ['danger','danger','warning','info','success'];
     const labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
