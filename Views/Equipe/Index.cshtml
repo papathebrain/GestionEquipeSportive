@@ -80,10 +80,7 @@ else
     </div>
 
     <!-- Équipes groupées par sport, toutes années incluses (filtrées par JS) -->
-    @{
-        var tousLesSports = Model.Select(e => e.TypeSport).Distinct().OrderBy(s => s.ToString());
-    }
-    @foreach (var sport in tousLesSports)
+    @foreach (var sport in Model.Select(e => e.TypeSport).Distinct().OrderBy(s => s.ToString()))
     {
         var equipesSport = Model.Where(e => e.TypeSport == sport).OrderBy(e => e.Niveau.ToString()).ToList();
         <div class="sport-section mb-4" data-sport="@sport">
