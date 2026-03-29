@@ -68,11 +68,8 @@ else
                 <label class="form-label mb-0 fw-semibold text-nowrap">
                     <i class="bi bi-calendar2-range me-1"></i>Année scolaire :
                 </label>
-                <select id="filtreAnnee" class="form-select form-select-sm w-auto">
-                    @foreach (var annee in annees)
-                    {
-                        <option value="@annee" @(annee == anneeActive ? "selected" : "")>@annee</option>
-                    }
+                <select id="filtreAnnee" class="form-select form-select-sm w-auto"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(annees.Select(a => new { V = a, T = a }), "V", "T", anneeActive))">
                 </select>
                 <span class="text-muted small" id="compteEquipes"></span>
             </div>
