@@ -12,11 +12,13 @@ public class EquipeController : Controller
 {
     private readonly IEquipeService _equipeService;
     private readonly IEcoleService _ecoleService;
+    private readonly IEcoleAccessService _access;
 
-    public EquipeController(IEquipeService equipeService, IEcoleService ecoleService)
+    public EquipeController(IEquipeService equipeService, IEcoleService ecoleService, IEcoleAccessService access)
     {
         _equipeService = equipeService;
         _ecoleService = ecoleService;
+        _access = access;
     }
 
     public IActionResult Index(int ecoleId)
@@ -26,6 +28,7 @@ public class EquipeController : Controller
 
         SetTheme(ecole);
         ViewBag.Ecole = ecole;
+        ViewBag.PeutModifier = _access.PeutModifier(User, ecoleId);
         var equipes = _equipeService.GetEquipesByEcole(ecoleId);
         return View(equipes);
     }
@@ -39,11 +42,15 @@ public class EquipeController : Controller
         if (ecole != null) SetTheme(ecole);
 
         equipe.Ecole = ecole;
+        ViewBag.PeutModifier = _access.PeutModifier(User, equipe.EcoleId);
         return View(equipe);
     }
 
     public IActionResult Create(int ecoleId)
     {
+        if (!_access.PeutModifier(User, ecoleId))
+            return Forbid();
+
         var ecole = _ecoleService.GetEcoleById(ecoleId);
         if (ecole == null) return NotFound();
 
@@ -57,6 +64,9 @@ public class EquipeController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Create(EquipeViewModel vm)
     {
+        if (!_access.PeutModifier(User, vm.EcoleId))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             var ecole = _ecoleService.GetEcoleById(vm.EcoleId);
@@ -75,6 +85,9 @@ public class EquipeController : Controller
         var equipe = _equipeService.GetEquipeById(id);
         if (equipe == null) return NotFound();
 
+        if (!_access.PeutModifier(User, equipe.EcoleId))
+            return Forbid();
+
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
         if (ecole != null) SetTheme(ecole);
 
@@ -89,6 +102,9 @@ public class EquipeController : Controller
     public IActionResult Edit(int id, EquipeViewModel vm)
     {
         if (id != vm.Id) return BadRequest();
+
+        if (!_access.PeutModifier(User, vm.EcoleId))
+            return Forbid();
 
         if (!ModelState.IsValid)
         {
@@ -107,6 +123,9 @@ public class EquipeController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id, int ecoleId)
     {
+        if (!_access.PeutModifier(User, ecoleId))
+            return Forbid();
+
         _equipeService.DeleteEquipe(id);
         TempData["Success"] = "Équipe supprimée avec succès.";
         return RedirectToAction(nameof(Index), new { ecoleId });

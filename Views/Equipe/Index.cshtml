@@ -48,10 +48,9 @@
 }
 else
 {
-    @{
-        var groupedBySport = Model.GroupBy(e => e.TypeSport).OrderBy(g => g.Key.ToString());
-    }
-    @foreach (var sportGroup in groupedBySport)
+    var groupedBySport = Model.GroupBy(e => e.TypeSport).OrderBy(g => g.Key.ToString());
+    
+    foreach (var sportGroup in groupedBySport)
     {
         <div class="mb-4">
             <h4 class="d-flex align-items-center gap-2 mb-3">

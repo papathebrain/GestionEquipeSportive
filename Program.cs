@@ -23,6 +23,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // ─── Services ─────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IExcelRepository, ExcelRepository>();
 builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddScoped<IEcoleAccessService, EcoleAccessService>();
 builder.Services.AddScoped<IEcoleService, EcoleService>();
 builder.Services.AddScoped<IEquipeService, EquipeService>();
 builder.Services.AddScoped<IJoueurService, JoueurService>();

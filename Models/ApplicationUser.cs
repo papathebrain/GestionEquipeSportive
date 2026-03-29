@@ -11,6 +11,7 @@ public class ApplicationUser
     public DateTime DateCreation { get; set; } = DateTime.UtcNow;
     public DateTime? DerniereConnexion { get; set; }
     public bool ChangerMotDePasse { get; set; } = false;
+    public List<int> EcolesIds { get; set; } = [];
 }
 
 public static class Roles

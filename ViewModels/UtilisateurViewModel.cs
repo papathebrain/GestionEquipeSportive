@@ -3,6 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GestionEquipeSportive.ViewModels;
 
+public class EcoleCheckboxItem
+{
+    public int Id { get; set; }
+    public string Nom { get; set; } = "";
+    public bool Selectionne { get; set; }
+}
+
 public class UtilisateurCreateViewModel
 {
     [Required(ErrorMessage = "Le nom d'utilisateur est requis.")]
@@ -36,6 +43,9 @@ public class UtilisateurCreateViewModel
 
     [Display(Name = "Forcer changement au prochain login")]
     public bool ChangerMotDePasse { get; set; } = true;
+
+    [Display(Name = "Écoles accessibles")]
+    public List<EcoleCheckboxItem> Ecoles { get; set; } = [];
 }
 
 public class UtilisateurEditViewModel
@@ -63,7 +73,6 @@ public class UtilisateurEditViewModel
     [Display(Name = "Forcer changement de mot de passe")]
     public bool ChangerMotDePasse { get; set; }
 
-    // Optionnel — laisser vide pour ne pas changer
     [MinLength(8, ErrorMessage = "Le mot de passe doit contenir au moins 8 caractères.")]
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%!&*]).{8,}$",
         ErrorMessage = "Le mot de passe doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial.")]
@@ -75,4 +84,7 @@ public class UtilisateurEditViewModel
     [Compare(nameof(NouveauMotDePasse), ErrorMessage = "Les mots de passe ne correspondent pas.")]
     [Display(Name = "Confirmer le mot de passe")]
     public string? ConfirmerMotDePasse { get; set; }
+
+    [Display(Name = "Écoles accessibles")]
+    public List<EcoleCheckboxItem> Ecoles { get; set; } = [];
 }

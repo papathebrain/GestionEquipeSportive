@@ -38,13 +38,15 @@ public class EcoleController : Controller
         return View(ecole);
     }
 
+    // ─── Actions réservées aux admins ─────────────────────────────────────────
+
+    [Authorize(Roles = Roles.Admin)]
     public IActionResult Create()
-    {
-        return View(new EcoleViewModel());
-    }
+        => View(new EcoleViewModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
     public IActionResult Create(EcoleViewModel vm)
     {
         if (!ModelState.IsValid) return View(vm);
@@ -54,6 +56,7 @@ public class EcoleController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = Roles.Admin)]
     public IActionResult Edit(int id)
     {
         var ecole = _ecoleService.GetEcoleById(id);
@@ -63,6 +66,7 @@ public class EcoleController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
     public IActionResult Edit(int id, EcoleViewModel vm)
     {
         if (id != vm.Id) return BadRequest();
@@ -75,6 +79,7 @@ public class EcoleController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
     public IActionResult Delete(int id)
     {
         _ecoleService.DeleteEcole(id);

@@ -52,6 +52,37 @@
                     </div>
 
                     <hr class="my-4" />
+                    <div id="ecolesSection" style="@(Model.Role == Roles.Admin ? "display:none" : "")">
+                        <h6 class="text-muted mb-2"><i class="bi bi-building me-1"></i>Écoles accessibles</h6>
+                        <div class="card border mb-3">
+                            <div class="card-body py-2">
+                                @if (!Model.Ecoles.Any())
+                                {
+                                    <p class="text-muted small mb-0">Aucune école disponible.</p>
+                                }
+                                else
+                                {
+                                    @for (int i = 0; i < Model.Ecoles.Count; i++)
+                                    {
+                                        <div class="form-check">
+                                            <input type="hidden" name="Ecoles[@i].Id" value="@Model.Ecoles[i].Id" />
+                                            <input type="hidden" name="Ecoles[@i].Nom" value="@Model.Ecoles[i].Nom" />
+                                            <input type="checkbox" class="form-check-input"
+                                                   name="Ecoles[@i].Selectionne" value="true"
+                                                   id="ecole_@Model.Ecoles[i].Id"
+                                                   @(Model.Ecoles[i].Selectionne ? "checked" : "") />
+                                            <label class="form-check-label" for="ecole_@Model.Ecoles[i].Id">
+                                                @Model.Ecoles[i].Nom
+                                            </label>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mb-3">Les administrateurs ont accès à toutes les écoles automatiquement.</small>
+                    </div>
+
+                    <hr class="my-4" />
                     <h6 class="text-muted mb-3"><i class="bi bi-key me-1"></i>Changer le mot de passe (optionnel)</h6>
 
                     <div class="row g-3">
@@ -80,3 +111,12 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+document.querySelector('[name="Role"]').addEventListener('change', function() {
+    document.getElementById('ecolesSection').style.display =
+        this.value === '@Roles.Admin' ? 'none' : '';
+});
+</script>
+}

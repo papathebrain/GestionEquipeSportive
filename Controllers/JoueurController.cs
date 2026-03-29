@@ -12,14 +12,16 @@ public class JoueurController : Controller
     private readonly IJoueurService _joueurService;
     private readonly IEquipeService _equipeService;
     private readonly IEcoleService _ecoleService;
+    private readonly IEcoleAccessService _access;
     private readonly IWebHostEnvironment _env;
 
     public JoueurController(IJoueurService joueurService, IEquipeService equipeService,
-        IEcoleService ecoleService, IWebHostEnvironment env)
+        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env)
     {
         _joueurService = joueurService;
         _equipeService = equipeService;
         _ecoleService = ecoleService;
+        _access = access;
         _env = env;
     }
 
@@ -33,6 +35,7 @@ public class JoueurController : Controller
 
         equipe.Ecole = ecole;
         ViewBag.Equipe = equipe;
+        ViewBag.PeutModifier = _access.PeutModifier(User, equipe.EcoleId);
         var joueurs = _joueurService.GetJoueursByEquipe(equipeId);
         return View(joueurs);
     }
@@ -48,6 +51,7 @@ public class JoueurController : Controller
 
         joueur.Equipe = equipe;
         if (equipe != null) equipe.Ecole = ecole;
+        ViewBag.PeutModifier = _access.PeutModifier(User, equipe?.EcoleId ?? 0);
         return View(joueur);
     }
 
@@ -55,6 +59,9 @@ public class JoueurController : Controller
     {
         var equipe = _equipeService.GetEquipeById(equipeId);
         if (equipe == null) return NotFound();
+
+        if (!_access.PeutModifier(User, equipe.EcoleId))
+            return Forbid();
 
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
         if (ecole != null) SetTheme(ecole);
@@ -72,12 +79,17 @@ public class JoueurController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Create(JoueurViewModel vm)
     {
+        var equipe = _equipeService.GetEquipeById(vm.EquipeId);
+        if (equipe == null) return NotFound();
+
+        if (!_access.PeutModifier(User, equipe.EcoleId))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
-            var equipe2 = _equipeService.GetEquipeById(vm.EquipeId);
-            var ecole2 = equipe2 != null ? _ecoleService.GetEcoleById(equipe2.EcoleId) : null;
+            var ecole2 = _ecoleService.GetEcoleById(equipe.EcoleId);
             if (ecole2 != null) SetTheme(ecole2);
-            vm.NomEquipe = equipe2?.Nom;
+            vm.NomEquipe = equipe.Nom;
             return View(vm);
         }
 
@@ -93,6 +105,10 @@ public class JoueurController : Controller
 
         var equipe = _equipeService.GetEquipeById(joueur.EquipeId);
         var ecole = equipe != null ? _ecoleService.GetEcoleById(equipe.EcoleId) : null;
+
+        if (!_access.PeutModifier(User, equipe?.EcoleId ?? 0))
+            return Forbid();
+
         if (ecole != null) SetTheme(ecole);
 
         var vm = _joueurService.ToViewModel(joueur);
@@ -107,12 +123,15 @@ public class JoueurController : Controller
     {
         if (id != vm.Id) return BadRequest();
 
+        var equipe = _equipeService.GetEquipeById(vm.EquipeId);
+        if (!_access.PeutModifier(User, equipe?.EcoleId ?? vm.EcoleId))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
-            var equipe2 = _equipeService.GetEquipeById(vm.EquipeId);
-            var ecole2 = equipe2 != null ? _ecoleService.GetEcoleById(equipe2.EcoleId) : null;
+            var ecole2 = equipe != null ? _ecoleService.GetEcoleById(equipe.EcoleId) : null;
             if (ecole2 != null) SetTheme(ecole2);
-            vm.NomEquipe = equipe2?.Nom;
+            vm.NomEquipe = equipe?.Nom;
             return View(vm);
         }
 
@@ -125,6 +144,10 @@ public class JoueurController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id, int equipeId)
     {
+        var equipe = _equipeService.GetEquipeById(equipeId);
+        if (!_access.PeutModifier(User, equipe?.EcoleId ?? 0))
+            return Forbid();
+
         _joueurService.DeleteJoueur(id, _env.WebRootPath);
         TempData["Success"] = "Joueur supprimé avec succès.";
         return RedirectToAction(nameof(Index), new { equipeId });
