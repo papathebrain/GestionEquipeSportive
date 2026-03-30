@@ -38,3 +38,11 @@ public class MatchMedia
     public string? Description { get; set; }
     public DateTime DateAjout { get; set; } = DateTime.UtcNow;
 }
+
+public class AbsenceMatch
+{
+    public int Id { get; set; }
+    public int MatchId { get; set; }
+    public int JoueurId { get; set; }
+    public string? Raison { get; set; }
+}

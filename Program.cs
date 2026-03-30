@@ -30,6 +30,7 @@ builder.Services.AddScoped<IJoueurService, JoueurService>();
 builder.Services.AddScoped<IGalerieService, GalerieService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IEvenementService, EvenementService>();
 
 var app = builder.Build();
 

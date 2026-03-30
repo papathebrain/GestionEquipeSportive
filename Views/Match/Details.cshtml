@@ -5,6 +5,9 @@
     bool peutModifier = ViewBag.PeutModifier == true;
     var photos = medias.Where(m => m.TypeMedia == GestionEquipeSportive.Models.TypeMedia.Photo).ToList();
     var videos = medias.Where(m => m.TypeMedia == GestionEquipeSportive.Models.TypeMedia.Video).ToList();
+    var joueurs = ViewBag.Joueurs as List<GestionEquipeSportive.Models.Joueur> ?? new();
+    var absences = ViewBag.Absences as List<GestionEquipeSportive.Models.AbsenceMatch> ?? new();
+    var absentsIds = absences.Select(a => a.JoueurId).ToHashSet();
     ViewData["Title"] = $"Match vs {Model.Adversaire}";
 }
 
@@ -130,6 +133,74 @@
         </div>
     }
 </div>
+
+@* Absences *@
+@if (joueurs.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-person-x me-2"></i>Présences
+                @if (absentsIds.Any())
+                {
+                    <span class="badge bg-danger ms-1">@absentsIds.Count absent@(absentsIds.Count > 1 ? "s" : "")</span>
+                }
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (!peutModifier && !absentsIds.Any())
+            {
+                <p class="text-muted small mb-0">Aucune absence enregistrée.</p>
+            }
+            else
+            {
+                <div class="row g-2">
+                    @foreach (var j in joueurs.OrderBy(j => j.Position).ThenBy(j => j.Nom))
+                    {
+                        var estAbsent = absentsIds.Contains(j.Id);
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded border @(estAbsent ? "border-danger bg-danger bg-opacity-10" : "border-light")">
+                                @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                {
+                                    <img src="@j.PhotoPath" class="rounded-circle flex-shrink-0"
+                                         style="width:36px;height:36px;object-fit:cover;" alt="@j.Prenom @j.Nom" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                         style="width:36px;height:36px;background:var(--couleur-primaire);color:#fff;font-size:.75rem;font-weight:700;">
+                                        #@j.Numero
+                                    </div>
+                                }
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="small fw-semibold text-truncate">@j.Prenom @j.Nom</div>
+                                    <div class="small text-muted">#@j.Numero · @j.Position</div>
+                                </div>
+                                @if (peutModifier)
+                                {
+                                    <form asp-controller="Match" asp-action="ToggleAbsence" method="post" class="flex-shrink-0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="matchId" value="@Model.Id" />
+                                        <input type="hidden" name="joueurId" value="@j.Id" />
+                                        <button type="submit"
+                                                class="btn btn-sm @(estAbsent ? "btn-danger" : "btn-outline-secondary")"
+                                                title="@(estAbsent ? "Marquer présent" : "Marquer absent")">
+                                            <i class="bi @(estAbsent ? "bi-person-check" : "bi-person-dash")"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else if (estAbsent)
+                                {
+                                    <span class="badge bg-danger flex-shrink-0">Absent</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
 
 @* Galerie médias *@
 <div class="card shadow-sm mb-4">

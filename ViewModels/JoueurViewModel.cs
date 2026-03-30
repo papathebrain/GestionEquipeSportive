@@ -41,6 +41,9 @@ public class JoueurViewModel
     [Display(Name = "Photo")]
     public IFormFile? PhotoFile { get; set; }
 
+    [Display(Name = "Consentement photo")]
+    public bool ConsentementPhoto { get; set; } = true;
+
     // Infos de navigation
     public string? NomEquipe { get; set; }
     public int EcoleId { get; set; }

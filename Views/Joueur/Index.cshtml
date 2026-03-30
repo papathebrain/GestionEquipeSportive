@@ -3,6 +3,7 @@
     ViewData["Title"] = "Joueurs";
     var equipe = ViewBag.Equipe as GestionEquipeSportive.Models.Equipe;
     var ecole = equipe?.Ecole;
+    var groupes = Model.GroupBy(j => j.Position).OrderBy(g => g.Key).ToList();
 }
 
 @section BannerContent {
@@ -52,56 +53,90 @@
 }
 else
 {
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-        @foreach (var joueur in Model.OrderBy(j => j.Numero))
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm player-card">
-                    <div class="player-photo-container">
-                        @if (!string.IsNullOrEmpty(joueur.PhotoPath))
-                        {
-                            <img src="@joueur.PhotoPath" alt="@joueur.Prenom @joueur.Nom" class="player-photo" />
-                        }
-                        else
-                        {
-                            <div class="player-photo-placeholder">
-                                <i class="bi bi-person-fill"></i>
+    @foreach (var groupe in groupes)
+    {
+        <div class="mb-4">
+            <h2 class="h5 fw-bold text-uppercase mb-3 d-flex align-items-center gap-2">
+                <span class="badge rounded-pill fs-6 fw-bold px-3"
+                      style="background-color:var(--couleur-primaire, #1a3a5c);">@groupe.Key</span>
+                <span class="badge bg-secondary fw-normal text-lowercase">@groupe.Count() joueur@(groupe.Count() > 1 ? "s" : "")</span>
+            </h2>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                @foreach (var joueur in groupe.OrderBy(j => j.Numero))
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm player-card">
+                            <div class="player-photo-container">
+                                @if (!joueur.ConsentementPhoto)
+                                {
+                                    @* Consentement refusé : logo de l'équipe centré *@
+                                    <div class="player-photo-placeholder" style="background:linear-gradient(135deg,#f8f9fa,#e9ecef);">
+                                        @if (!string.IsNullOrEmpty(ecole?.LogoPath))
+                                        {
+                                            <img src="@ecole!.LogoPath" alt="@ecole.Nom"
+                                                 style="width:80px;height:80px;object-fit:contain;opacity:.55;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-shield-fill" style="color:#adb5bd;font-size:4rem;"></i>
+                                        }
+                                    </div>
+                                }
+                                else if (!string.IsNullOrEmpty(joueur.PhotoPath))
+                                {
+                                    <img src="@joueur.PhotoPath" alt="@joueur.Prenom @joueur.Nom" class="player-photo" />
+                                }
+                                else
+                                {
+                                    <div class="player-photo-placeholder">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                }
+                                <div class="player-number-badge">#@joueur.Numero</div>
+                                @if (!joueur.ConsentementPhoto)
+                                {
+                                    <span class="position-absolute bottom-0 start-0 m-1 badge bg-warning text-dark"
+                                          style="font-size:.6rem;" title="Photo non autorisée">
+                                        <i class="bi bi-camera-video-off"></i>
+                                    </span>
+                                }
                             </div>
-                        }
-                        <div class="player-number-badge">#@joueur.Numero</div>
-                    </div>
-                    <div class="card-body text-center pt-2">
-                        <h6 class="card-title mb-0 fw-bold">@joueur.Prenom @joueur.Nom</h6>
-                        <span class="badge bg-secondary mt-1">@joueur.Position</span>
-                        @if (!string.IsNullOrEmpty(joueur.PositionSpecifique))
-                        {
-                            <span class="badge bg-primary mt-1 ms-1">@joueur.PositionSpecifique</span>
-                        }
-                        @if (!string.IsNullOrEmpty(joueur.NoFiche))
-                        {
-                            <div class="small text-muted mt-1">Fiche : @joueur.NoFiche</div>
-                        }
-                    </div>
-                    <div class="card-footer bg-transparent py-2">
-                        <div class="d-flex gap-1 justify-content-center">
-                            <a asp-action="Details" asp-route-id="@joueur.Id"
-                               class="btn btn-sm btn-outline-info" title="Détails">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a asp-action="Edit" asp-route-id="@joueur.Id"
-                               class="btn btn-sm btn-outline-warning" title="Modifier">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
-                                    onclick="confirmDelete(@joueur.Id, '@joueur.Prenom @joueur.Nom', @equipe!.Id)">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="card-body text-center pt-2">
+                                <h6 class="card-title mb-0 fw-bold">@joueur.Prenom @joueur.Nom</h6>
+                                <span class="badge bg-secondary mt-1">@joueur.Position</span>
+                                @if (!string.IsNullOrEmpty(joueur.PositionSpecifique))
+                                {
+                                    <span class="badge bg-primary mt-1 ms-1">@joueur.PositionSpecifique</span>
+                                }
+                                @if (!string.IsNullOrEmpty(joueur.NoFiche))
+                                {
+                                    <div class="small text-muted mt-1">Fiche : @joueur.NoFiche</div>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent py-2">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a asp-action="Details" asp-route-id="@joueur.Id"
+                                       class="btn btn-sm btn-outline-info" title="Détails">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@joueur.Id"
+                                       class="btn btn-sm btn-outline-warning" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                            data-joueur-id="@joueur.Id"
+                                            data-joueur-nom="@joueur.Prenom @joueur.Nom"
+                                            data-equipe-id="@equipe!.Id">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
-        }
-    </div>
+        </div>
+    }
 }
 
 <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -126,11 +161,16 @@ else
 
 @section Scripts {
     <script>
-        function confirmDelete(id, nom, equipeId) {
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-joueur-id]');
+            if (!btn) return;
+            var id = btn.dataset.joueurId;
+            var nom = btn.dataset.joueurNom;
+            var equipeId = btn.dataset.equipeId;
             document.getElementById('deleteJoueurName').textContent = nom;
             document.getElementById('deleteEquipeId').value = equipeId;
             document.getElementById('deleteForm').action = '/Joueur/Delete/' + id;
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
-        }
+        });
     </script>
 }

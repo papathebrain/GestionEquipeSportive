@@ -71,23 +71,44 @@
     <div style="background-color:@Model.Ecole.CouleurPrimaire;opacity:.9;">
         <div class="container">
             <div class="row g-0 text-white text-center">
-                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                <div class="col-4 py-2 border-end border-white border-opacity-25">
                     <div class="fw-bold fs-4">@Model.Stats.Victoires</div>
-                    <div class="small opacity-75">V</div>
+                    <div class="small opacity-75">Victoires</div>
                 </div>
-                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                <div class="col-4 py-2 border-end border-white border-opacity-25">
                     <div class="fw-bold fs-4">@Model.Stats.Defaites</div>
-                    <div class="small opacity-75">D</div>
+                    <div class="small opacity-75">Défaites</div>
                 </div>
-                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                <div class="col-4 py-2">
                     <div class="fw-bold fs-4">@Model.Stats.Nuls</div>
-                    <div class="small opacity-75">N</div>
-                </div>
-                <div class="col-3 py-2">
-                    <div class="fw-bold fs-4">@Model.Stats.ButsPour–@Model.Stats.ButsContre</div>
-                    <div class="small opacity-75">Buts</div>
+                    <div class="small opacity-75">Nuls</div>
                 </div>
             </div>
+        </div>
+    </div>
+}
+
+@* ── Liens sociaux ────────────────────────────────────────────────────────── *@
+@if (Model.Ecole.LiensSociaux.Any())
+{
+    <div style="background-color:@Model.Ecole.CouleurPrimaire;" class="border-top border-white border-opacity-10">
+        <div class="container py-2 d-flex gap-3 flex-wrap justify-content-center">
+            @foreach (var lien in Model.Ecole.LiensSociaux)
+            {
+                var lienIcon = lien.Type switch {
+                    "Facebook"    => "bi-facebook",
+                    "Instagram"   => "bi-instagram",
+                    "X / Twitter" => "bi-twitter-x",
+                    "YouTube"     => "bi-youtube",
+                    "TikTok"      => "bi-tiktok",
+                    _             => "bi-globe"
+                };
+                <a href="@lien.Url" target="_blank" rel="noopener noreferrer"
+                   class="lien-social-pub d-flex align-items-center gap-1 small text-decoration-none text-white">
+                    <i class="bi @lienIcon"></i>
+                    @(string.IsNullOrEmpty(lien.Label) ? lien.Type : lien.Label)
+                </a>
+            }
         </div>
     </div>
 }
@@ -102,11 +123,17 @@
                     <span class="badge bg-secondary ms-1">@Model.Matchs.Count</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-calendrier">
+                    <i class="bi bi-calendar-event me-1"></i>Calendrier
+                    <span class="badge bg-secondary ms-1">@(Model.Matchs.Count + Model.Evenements.Count)</span>
+                </a>
+            </li>
             @if (Model.Staff.Any())
             {
                 <li class="nav-item">
                     <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-coachs">
-                        <i class="bi bi-person-badge me-1"></i>Équipe de l'école
+                        <i class="bi bi-person-badge me-1"></i>Entraineurs
                         <span class="badge bg-secondary ms-1">@Model.Staff.Count</span>
                     </a>
                 </li>
@@ -186,12 +213,17 @@
                                 <th>Adversaire</th>
                                 <th class="d-none d-md-table-cell">Lieu</th>
                                 <th class="text-center">Résultat</th>
+                                <th class="text-center"><i class="bi bi-images"></i></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var m in matchsPassés)
                             {
-                                <tr>
+                                var hasPhotos = Model.MatchesMedias.TryGetValue(m.Id, out var photos) && photos.Any();
+                                <tr class="@(hasPhotos ? "match-row-galerie" : "")"
+                                    data-match-id="@m.Id"
+                                    style="@(hasPhotos ? "cursor:pointer;" : "")"
+                                    title="@(hasPhotos ? "Voir la galerie" : "")">
                                     <td class="text-nowrap small">@m.DateMatch.ToString("d MMM yyyy", frCA)</td>
                                     <td>
                                         <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
@@ -209,10 +241,33 @@
                                         else
                                         { <span class="text-muted small">—</span> }
                                     </td>
+                                    <td class="text-center">
+                                        @if (hasPhotos)
+                                        {
+                                            <span class="badge rounded-pill" style="background-color:var(--couleur-secondaire);">
+                                                <i class="bi bi-camera me-1"></i>@photos!.Count
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
+                </div>
+
+                @* Galerie dynamique *@
+                <div id="galerieSection" class="mt-3" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="h6 section-title mb-0" id="galerieTitre"></h3>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="fermerGalerie()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="row g-2" id="galeriePhotos"></div>
                 </div>
             }
 
@@ -221,57 +276,156 @@
                 <p class="text-muted text-center py-4">Aucun match au calendrier.</p>
             }
 
-            @* Galerie photos du dernier match *@
-            @if (Model.DernierMatchMedias.Any(m => m.TypeMedia == TypeMedia.Photo))
-            {
-                <h2 class="h5 section-title mt-4 mb-3">
-                    <i class="bi bi-images me-2"></i>Photos — @Model.DernierMatchAvecResultat!.DateMatch.ToString("d MMMM yyyy", frCA)
-                </h2>
-                <div class="row g-2">
-                    @foreach (var photo in Model.DernierMatchMedias.Where(m => m.TypeMedia == TypeMedia.Photo))
-                    {
-                        <div class="col-6 col-md-3">
-                            <a href="@photo.CheminFichier" target="_blank">
-                                <img src="@photo.CheminFichier" alt="@photo.Description"
-                                     class="img-fluid rounded shadow-sm"
-                                     style="width:100%;height:160px;object-fit:cover;" />
-                            </a>
-                        </div>
-                    }
-                </div>
-            }
         </div>
 
-        @* ── Onglet Équipe de l'école ────────────────────────────────────────── *@
+        @* ── Onglet Calendrier ───────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="tab-calendrier">
+            @{
+                var pubCalItems = new List<(DateTime Date, DateTime? DateFin, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, string Heure)>();
+                foreach (var m in Model.Matchs)
+                {
+                    var resultColor = m.AResultat ? (m.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" }) : "#6c757d";
+                    var adversaire = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire;
+                    var sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : "Match";
+                    var heure = m.HeureDebutMatch ?? "";
+                    pubCalItems.Add((m.DateMatch, null, adversaire, sous, m.Lieu ?? "", "bi-flag-fill", resultColor, heure));
+                }
+                foreach (var ev in Model.Evenements)
+                {
+                    var (icon, color) = ev.Type switch
+                    {
+                        TypeEvenement.Pratique => ("bi-stopwatch-fill", "#0d6efd"),
+                        TypeEvenement.ReunionParents => ("bi-people-fill", "#6f42c1"),
+                        TypeEvenement.Tournoi => ("bi-trophy-fill", "#ffc107"),
+                        TypeEvenement.Jamboree => ("bi-flag-fill", "#20c997"),
+                        TypeEvenement.Evaluation => ("bi-clipboard-check-fill", "#fd7e14"),
+                        TypeEvenement.ActiviteEquipe => ("bi-star-fill", "#198754"),
+                        _ => ("bi-calendar-event", "#6c757d")
+                    };
+                    var typeLabel = ev.Type switch
+                    {
+                        TypeEvenement.Pratique => "Pratique",
+                        TypeEvenement.ReunionParents => "Réunion de parents",
+                        TypeEvenement.Tournoi => "Tournoi",
+                        TypeEvenement.Jamboree => "Jamborée",
+                        TypeEvenement.Evaluation => "Évaluation / Tryout",
+                        TypeEvenement.ActiviteEquipe => "Activité d'équipe",
+                        _ => "Autre"
+                    };
+                    var heure = ev.DateDebut.ToString("HH:mm");
+                    pubCalItems.Add((ev.DateDebut, ev.DateFin, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, heure));
+                }
+                var pubGrouped = pubCalItems.OrderBy(x => x.Date).GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1)).ToList();
+            }
+
+            @* Toggle liste / grille *@
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 section-title mb-0"><i class="bi bi-calendar3 me-2"></i>Calendrier</h2>
+                <div class="btn-group btn-group-sm" role="group" id="calViewToggle">
+                    <button type="button" class="btn btn-outline-secondary active" id="btnListe">
+                        <i class="bi bi-list-ul me-1"></i>Liste
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnGrille">
+                        <i class="bi bi-grid-3x3-gap me-1"></i>Calendrier
+                    </button>
+                </div>
+            </div>
+
+            @* ── Vue Liste ──────────────────────────────────────────────── *@
+            <div id="calVueListe">
+                @if (!pubCalItems.Any())
+                {
+                    <p class="text-muted text-center py-4"><i class="bi bi-calendar-x me-2"></i>Aucun événement au calendrier.</p>
+                }
+                else
+                {
+                    @foreach (var grp in pubGrouped)
+                    {
+                        <div class="mb-4">
+                            <h3 class="h6 text-uppercase fw-bold text-muted mb-2">@grp.Key.ToString("MMMM yyyy", frCA)</h3>
+                            <div class="list-group shadow-sm">
+                                @foreach (var item in grp)
+                                {
+                                    <div class="list-group-item border-0 py-3">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="text-center flex-shrink-0" style="min-width:42px;">
+                                                <div class="fw-bold fs-4 lh-1" style="color:var(--couleur-primaire);">@item.Date.Day</div>
+                                                <div class="text-muted" style="font-size:.68rem;text-transform:uppercase;">@item.Date.ToString("ddd", frCA)</div>
+                                            </div>
+                                            <div style="width:3px;border-radius:2px;background:@item.IconColor;align-self:stretch;flex-shrink:0;"></div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center gap-2 fw-semibold small">
+                                                    <i class="bi @item.IconClass" style="color:@item.IconColor;"></i>
+                                                    @item.Titre
+                                                </div>
+                                                <div class="small text-muted">@item.SousTexte</div>
+                                                @if (!string.IsNullOrEmpty(item.Heure))
+                                                {
+                                                    <div class="small text-muted"><i class="bi bi-clock me-1"></i>@item.Heure@(item.DateFin.HasValue ? " – " + item.DateFin.Value.ToString("HH:mm") : "")</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.Lieu))
+                                                {
+                                                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>@item.Lieu</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            @* ── Vue Grille ─────────────────────────────────────────────── *@
+            <div id="calVueGrille" style="display:none;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <button type="button" id="calPrevMois" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <span id="calMoisTitre" class="fw-bold fs-5"></span>
+                    <button type="button" id="calNextMois" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <div id="calGrille"></div>
+            </div>
+        </div>
+
+        @* ── Onglet Entraineurs ───────────────────────────────────────────────── *@
         @if (Model.Staff.Any())
         {
             <div class="tab-pane fade" id="tab-coachs">
-                <div class="row g-3">
+                <div class="row g-2">
                     @foreach (var s in Model.Staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
                     {
-                        <div class="col-6 col-md-4 col-lg-3">
-                            <div class="card border-0 shadow-sm text-center h-100">
-                                <div class="card-body py-3">
-                                    @if (!string.IsNullOrEmpty(s.PhotoPath))
-                                    {
-                                        <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom"
-                                             class="rounded-circle mb-2"
-                                             style="width:80px;height:80px;object-fit:cover;" />
-                                    }
-                                    else
-                                    {
-                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                                             style="width:80px;height:80px;background-color:var(--couleur-primaire);color:#fff;font-size:2rem;">
-                                            <i class="bi bi-person-fill"></i>
-                                        </div>
-                                    }
-                                    <div class="fw-bold">@s.Prenom @s.Nom</div>
-                                    <div class="badge mt-1" style="background-color:var(--couleur-secondaire);">@s.Titre</div>
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 staff-card"
+                             data-fullnom="@s.Prenom @s.Nom"
+                             data-photo="@s.PhotoPath"
+                             data-titre="@s.Titre"
+                             data-responsable="@s.ResponsableDe"
+                             style="cursor:pointer;">
+                            <div class="mini-trading-card">
+                                @if (!string.IsNullOrEmpty(s.PhotoPath))
+                                {
+                                    <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" class="mini-photo" />
+                                }
+                                else
+                                {
+                                    <div class="mini-no-photo"><i class="bi bi-person-fill" style="font-size:2.5rem;color:rgba(255,255,255,.3);"></i></div>
+                                }
+                                <div class="mini-gradient"></div>
+                                <div class="mini-badge">
+                                    <span class="badge" style="font-size:.55rem;background-color:var(--couleur-secondaire);">@s.Titre</span>
+                                </div>
+                                <div class="mini-info">
+                                    <div class="mini-nom">@s.Prenom @s.Nom</div>
                                     @if (!string.IsNullOrEmpty(s.ResponsableDe))
                                     {
-                                        <div class="small text-muted mt-1 fst-italic">@s.ResponsableDe</div>
+                                        <div class="mini-pos">@s.ResponsableDe</div>
                                     }
                                 </div>
+                                <div class="mini-bande"></div>
                             </div>
                         </div>
                     }
@@ -314,29 +468,38 @@
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 joueur-card"
                                      data-nom="@j.Nom.ToLower()"
                                      data-prenom="@j.Prenom.ToLower()"
-                                     data-numero="@j.Numero.ToLower()">
-                                    <div class="card border-0 shadow-sm text-center h-100">
-                                        <div class="card-body py-2 px-1">
-                                            @if (!string.IsNullOrEmpty(j.PhotoPath))
-                                            {
-                                                <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom"
-                                                     class="rounded-circle mb-1"
-                                                     style="width:56px;height:56px;object-fit:cover;" />
-                                            }
-                                            else
-                                            {
-                                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1"
-                                                     style="width:56px;height:56px;background-color:var(--couleur-primaire);color:#fff;font-size:.85rem;font-weight:700;">
-                                                    #@j.Numero
-                                                </div>
-                                            }
-                                            <div class="fw-semibold small">@j.Prenom @j.Nom</div>
-                                            <div class="small text-muted">#@j.Numero</div>
-                                            @if (!string.IsNullOrEmpty(j.PositionSpecifique))
-                                            {
-                                                <span class="badge small mt-1" style="background-color:var(--couleur-secondaire);">@j.PositionSpecifique</span>
-                                            }
+                                     data-numero="@j.Numero.ToLower()"
+                                     data-fullnom="@j.Prenom @j.Nom"
+                                     data-photo="@j.PhotoPath"
+                                     data-position="@j.Position"
+                                     data-position-specifique="@j.PositionSpecifique"
+                                     data-description="@j.Description"
+                                     data-joueur-id="@j.Id"
+                                     data-nofiche="@j.NoFiche"
+                                     data-consentement="@j.ConsentementPhoto.ToString().ToLower()"
+                                     style="cursor:pointer;">
+                                    <div class="mini-trading-card">
+                                        @if (!string.IsNullOrEmpty(j.PhotoPath) && j.ConsentementPhoto)
+                                        {
+                                            <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom" class="mini-photo" />
+                                        }
+                                        else
+                                        {
+                                            <div class="mini-no-photo">#@j.Numero</div>
+                                        }
+                                        <div class="mini-gradient"></div>
+                                        <div class="mini-numero">#@j.Numero</div>
+                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                        {
+                                            <div class="mini-badge">
+                                                <span class="badge" style="font-size:.55rem;background-color:var(--couleur-secondaire);">@j.PositionSpecifique</span>
+                                            </div>
+                                        }
+                                        <div class="mini-info">
+                                            <div class="mini-nom">@j.Prenom @j.Nom</div>
+                                            <div class="mini-pos">@j.Position</div>
                                         </div>
+                                        <div class="mini-bande"></div>
                                     </div>
                                 </div>
                             }
@@ -353,27 +516,650 @@
     </div>
 </div>
 
+@* ── Données JSON pour galeries ───────────────────────────────────────────── *@
+@{
+    var galeriesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.MatchesMedias.ToDictionary(
+            kvp => kvp.Key.ToString(),
+            kvp => kvp.Value.Select(p => new { chemin = p.CheminFichier, description = p.Description ?? "" }).ToList()
+        )
+    );
+    var titresJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Matchs
+            .Where(m => m.AResultat)
+            .ToDictionary(
+                m => m.Id.ToString(),
+                m => (m.EstDomicile ? "vs" : "\u0040") + " " + m.Adversaire + " \u2014 " + m.DateMatch.ToString("d MMM yyyy", frCA)
+            )
+    );
+}
+<script id="galeries-json" type="application/json">@Html.Raw(galeriesJson)</script>
+<script id="titres-json" type="application/json">@Html.Raw(titresJson)</script>
+@{
+    var joueurPhotosJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.JoueurMedias.ToDictionary(
+            kvp => kvp.Key.ToString(),
+            kvp => kvp.Value.Select(p => new { chemin = p.CheminFichier, description = p.Description ?? "" }).ToList()
+        )
+    );
+}
+<script id="joueur-photos-json" type="application/json">@Html.Raw(joueurPhotosJson)</script>
+@{
+    var statsJoueursJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.StatsJoueurs.ToDictionary(
+            kvp => kvp.Key.ToString(),
+            kvp => new { matchsJoues = kvp.Value.MatchsJoues, absences = kvp.Value.Absences }
+        )
+    );
+}
+<script id="stats-joueurs-json" type="application/json">@Html.Raw(statsJoueursJson)</script>
+<script id="dernier-match-photos-id" type="application/json">@Html.Raw(Model.DernierMatchAvecPhotosId.HasValue ? Model.DernierMatchAvecPhotosId.Value.ToString() : "null")</script>
+@{
+    // Sérialiser les événements du calendrier pour la vue grille JS
+    var calEventsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Matchs.Select(m => new {
+            date = m.DateMatch.ToString("yyyy-MM-dd"),
+            titre = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire,
+            sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : "Match",
+            lieu = m.Lieu ?? "",
+            heure = m.HeureDebutMatch ?? "",
+            heureFin = "",
+            icon = "bi-flag-fill",
+            color = m.AResultat ? (m.Resultat == "V" ? "#198754" : m.Resultat == "D" ? "#dc3545" : "#6c757d") : "#6c757d"
+        }).Concat(Model.Evenements.Select(ev => new {
+            date = ev.DateDebut.ToString("yyyy-MM-dd"),
+            titre = ev.Titre,
+            sous = ev.Type switch {
+                TypeEvenement.Pratique => "Pratique",
+                TypeEvenement.ReunionParents => "Réunion de parents",
+                TypeEvenement.Tournoi => "Tournoi",
+                TypeEvenement.Jamboree => "Jamborée",
+                TypeEvenement.Evaluation => "Évaluation / Tryout",
+                TypeEvenement.ActiviteEquipe => "Activité d'équipe",
+                _ => "Autre"
+            },
+            lieu = ev.Lieu ?? "",
+            heure = ev.DateDebut.ToString("HH:mm"),
+            heureFin = ev.DateFin.HasValue ? ev.DateFin.Value.ToString("HH:mm") : "",
+            icon = ev.Type switch {
+                TypeEvenement.Pratique => "bi-stopwatch-fill",
+                TypeEvenement.ReunionParents => "bi-people-fill",
+                TypeEvenement.Tournoi => "bi-trophy-fill",
+                TypeEvenement.Jamboree => "bi-flag-fill",
+                TypeEvenement.Evaluation => "bi-clipboard-check-fill",
+                TypeEvenement.ActiviteEquipe => "bi-star-fill",
+                _ => "bi-calendar-event"
+            },
+            color = ev.Type switch {
+                TypeEvenement.Pratique => "#0d6efd",
+                TypeEvenement.ReunionParents => "#6f42c1",
+                TypeEvenement.Tournoi => "#ffc107",
+                TypeEvenement.Jamboree => "#20c997",
+                TypeEvenement.Evaluation => "#fd7e14",
+                TypeEvenement.ActiviteEquipe => "#198754",
+                _ => "#6c757d"
+            }
+        }))
+    );
+}
+<script id="cal-events-json" type="application/json">@Html.Raw(calEventsJson)</script>
+
+@* ── Styles carte de trading ──────────────────────────────────────────────── *@
+<style>
+    .trading-card-wrapper { perspective: 1200px; width: 300px; height: 440px; }
+    .trading-card {
+        width: 100%; height: 100%; position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.65s cubic-bezier(.4,.2,.2,1);
+    }
+    .trading-card.flipped { transform: rotateY(180deg); }
+    .card-face {
+        position: absolute; width: 100%; height: 100%;
+        backface-visibility: hidden; -webkit-backface-visibility: hidden;
+        border-radius: 18px; overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0,0,0,.55);
+    }
+    .card-back {
+        transform: rotateY(180deg);
+        background: #fff;
+        display: flex; flex-direction: column;
+    }
+    .card-flip-btn {
+        position: absolute; bottom: 12px; right: 12px;
+        width: 38px; height: 38px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.55);
+        background: rgba(0,0,0,.35); color: #fff;
+        font-size: 1rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background .2s; z-index: 5;
+    }
+    .card-flip-btn:hover { background: rgba(0,0,0,.65); }
+    .card-flip-btn-back { border-color: rgba(0,0,0,.15); background: rgba(0,0,0,.08); color: #444; }
+    .card-flip-btn-back:hover { background: rgba(0,0,0,.18); }
+    .carousel-nav-btn {
+        position: absolute; top: 42%; transform: translateY(-50%);
+        width: 34px; height: 34px; border-radius: 50%;
+        border: none; background: rgba(0,0,0,.45); color: #fff;
+        font-size: 1.4rem; line-height: 1; cursor: pointer; z-index: 4;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .carousel-nav-btn:hover { background: rgba(0,0,0,.7); }
+    .card-photo-img { transition: opacity 0.35s ease; }
+    #modalJoueur .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
+    #modalJoueur .modal-dialog { max-width: 340px; }
+    .card-back-scroll { flex: 1; overflow-y: auto; padding: 14px 18px; }
+    /* Empêche la face cachée d'intercepter les clics */
+    .trading-card:not(.flipped) .card-back { pointer-events: none; }
+    .trading-card.flipped .card-front { pointer-events: none; }
+    /* Mini cartes de collection */
+    .mini-trading-card {
+        border-radius: 10px; overflow: hidden; cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+        box-shadow: 0 4px 12px rgba(0,0,0,.2);
+        position: relative; aspect-ratio: 2/3;
+    }
+    .mini-trading-card:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+    .mini-trading-card .mini-photo { width:100%; height:100%; object-fit:cover; display:block; }
+    .mini-trading-card .mini-no-photo {
+        width:100%; height:100%; background:var(--couleur-primaire);
+        display:flex; align-items:center; justify-content:center;
+        font-size:2rem; font-weight:900; color:rgba(255,255,255,.25);
+        font-family:Impact,Arial Black,sans-serif;
+    }
+    .mini-trading-card .mini-gradient {
+        position:absolute; bottom:0; left:0; right:0; height:55%;
+        background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.3) 60%,transparent 100%);
+    }
+    .mini-trading-card .mini-numero {
+        position:absolute; top:6px; left:8px;
+        font-size:1.1rem; font-weight:900; color:#fff;
+        text-shadow:0 1px 4px rgba(0,0,0,.8);
+        font-family:Impact,Arial Black,sans-serif;
+    }
+    .mini-trading-card .mini-badge {
+        position:absolute; top:6px; right:6px;
+    }
+    .mini-trading-card .mini-info {
+        position:absolute; bottom:0; left:0; right:0;
+        padding:4px 7px 6px; text-align:center;
+    }
+    .mini-trading-card .mini-nom {
+        font-size:.72rem; font-weight:800; color:#fff;
+        text-shadow:0 1px 3px rgba(0,0,0,.9); line-height:1.2;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .mini-trading-card .mini-pos {
+        font-size:.6rem; color:rgba(255,255,255,.65); margin-top:1px;
+    }
+    .mini-trading-card .mini-bande {
+        position:absolute; bottom:0; left:0; right:0; height:4px;
+        background:var(--couleur-secondaire);
+    }
+    .lien-social-pub { opacity:.75; transition:opacity .15s; }
+    .lien-social-pub:hover { opacity:1; }
+</style>
+
+@* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@
+<div class="modal fade" id="modalJoueur" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body p-0 d-flex flex-column align-items-center">
+                <!-- Bouton fermer au-dessus -->
+                <div class="d-flex justify-content-end w-100 mb-2 px-2">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"
+                            style="background-color:rgba(0,0,0,.45);border-radius:50%;padding:8px;opacity:1;"></button>
+                </div>
+                <!-- Carte -->
+                <div class="trading-card-wrapper">
+                    <div class="trading-card" id="tradingCard">
+
+                        <!-- ── Face avant ── -->
+                        <div class="card-face card-front">
+                            <!-- Photo / Carousel -->
+                            <div id="cardPhotoTrack" style="position:absolute;inset:0;"></div>
+                            <button id="carouselPrev" class="carousel-nav-btn" style="left:8px;display:none;">&#8249;</button>
+                            <button id="carouselNext" class="carousel-nav-btn" style="right:8px;display:none;">&#8250;</button>
+                            <div id="carouselDots" style="position:absolute;bottom:95px;width:100%;text-align:center;z-index:3;"></div>
+                            <!-- Gradient bas -->
+                            <div style="position:absolute;bottom:0;left:0;right:0;height:58%;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.45) 55%,transparent 100%);z-index:2;border-radius:0 0 16px 16px;"></div>
+                            <!-- Numéro top-left -->
+                            <div id="cardFrontNumero" style="position:absolute;top:14px;left:16px;font-size:2.2rem;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);font-family:Impact,Arial Black,sans-serif;z-index:3;"></div>
+                            <!-- Badge position top-right -->
+                            <div id="cardFrontBadge" style="position:absolute;top:14px;right:14px;z-index:3;"></div>
+                            <!-- Bande couleur secondaire en bas -->
+                            <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background-color:var(--couleur-secondaire);z-index:3;"></div>
+                            <!-- Nom + position -->
+                            <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;padding:0 14px;z-index:3;">
+                                <div id="cardFrontNom" style="font-size:1.15rem;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.9);letter-spacing:.03em;line-height:1.2;"></div>
+                                <div id="cardFrontPosition" style="font-size:.8rem;color:rgba(255,255,255,.7);margin-top:3px;"></div>
+                            </div>
+                            <!-- Flip btn -->
+                            <button id="btnFlip" class="card-flip-btn" title="Voir les infos" style="bottom:16px;right:14px;z-index:5;">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+
+                        <!-- ── Face arrière ── -->
+                        <div class="card-face card-back">
+                            <!-- En-tête couleur primaire -->
+                            <div id="cardBackHeader" style="padding:22px 18px 14px;text-align:center;background-color:var(--couleur-primaire);position:relative;flex-shrink:0;">
+                                <div id="cardBackNumeroWm" style="position:absolute;top:8px;right:14px;font-size:4.5rem;font-weight:900;color:rgba(255,255,255,.12);font-family:Impact,Arial Black,sans-serif;line-height:1;pointer-events:none;"></div>
+                                <div id="cardBackAvatar" class="mb-2"></div>
+                                <div id="cardBackNom" style="font-size:1rem;font-weight:800;color:#fff;line-height:1.2;"></div>
+                                <div id="cardBackBadges" class="mt-2 d-flex gap-1 flex-wrap justify-content-center"></div>
+                            </div>
+                            <!-- Corps infos + description -->
+                            <div class="card-back-scroll">
+                                <table class="table table-sm table-borderless mb-0" id="cardBackStats"></table>
+                                <div id="cardBackDescription" style="display:none;">
+                                    <hr class="my-2">
+                                    <p id="cardBackDescriptionText" class="small text-muted mb-0" style="line-height:1.6;"></p>
+                                </div>
+                            </div>
+                            <!-- Bande couleur secondaire en bas -->
+                            <div style="height:6px;background-color:var(--couleur-secondaire);flex-shrink:0;"></div>
+                            <!-- Flip btn -->
+                            <button id="btnFlipBack" class="card-flip-btn card-flip-btn-back" title="Voir la photo" style="bottom:16px;right:14px;">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal entraineur ─────────────────────────────────────────────────────── *@
+<div class="modal fade" id="modalStaff" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body p-0 d-flex flex-column align-items-center">
+                <div class="d-flex justify-content-end w-100 mb-2 px-2">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"
+                            style="background-color:rgba(0,0,0,.45);border-radius:50%;padding:8px;opacity:1;"></button>
+                </div>
+                <div class="trading-card-wrapper">
+                    <div class="card-face card-front" style="border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.55);position:relative;width:100%;height:100%;">
+                        <div id="staffPhotoTrack" style="position:absolute;inset:0;"></div>
+                        <div style="position:absolute;bottom:0;left:0;right:0;height:58%;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.45) 55%,transparent 100%);z-index:2;border-radius:0 0 16px 16px;"></div>
+                        <div id="staffFrontBadge" style="position:absolute;top:14px;right:14px;z-index:3;"></div>
+                        <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background-color:var(--couleur-secondaire);z-index:3;"></div>
+                        <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;padding:0 14px;z-index:3;">
+                            <div id="staffFrontNom" style="font-size:1.15rem;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.9);letter-spacing:.03em;line-height:1.2;"></div>
+                            <div id="staffFrontTitre" style="font-size:.8rem;color:rgba(255,255,255,.7);margin-top:3px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Lightbox galerie ─────────────────────────────────────────────────────── *@
+<div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;touch-action:pan-y;">
+    <button id="lbClose" style="position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:2;">&#x2715;</button>
+    <button id="lbPrev" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2.5rem;width:48px;height:64px;border-radius:8px;cursor:pointer;">&#8249;</button>
+    <button id="lbNext" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2.5rem;width:48px;height:64px;border-radius:8px;cursor:pointer;">&#8250;</button>
+    <img id="lbImg" src="" alt="" style="max-width:92vw;max-height:88vh;border-radius:6px;object-fit:contain;user-select:none;display:block;" />
+    <div id="lbCounter" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.65);font-size:.9rem;"></div>
+</div>
+
 @section Scripts {
 <script>
-    // Recherche joueurs
-    document.getElementById('rechercheJoueur')?.addEventListener('input', function () {
-        const q = this.value.toLowerCase().trim();
-        let total = 0;
+    // ── Données JSON ──────────────────────────────────────────────────────────
+    var galeriesData     = JSON.parse(document.getElementById('galeries-json').textContent);
+    var matchTitres      = JSON.parse(document.getElementById('titres-json').textContent);
+    var joueurPhotos     = JSON.parse(document.getElementById('joueur-photos-json').textContent);
+    var statsJoueursData = JSON.parse(document.getElementById('stats-joueurs-json').textContent);
+    var dernierMatchPhotosId = JSON.parse(document.getElementById('dernier-match-photos-id').textContent);
 
-        document.querySelectorAll('.position-group').forEach(groupe => {
-            let visibles = 0;
-            groupe.querySelectorAll('.joueur-card').forEach(card => {
-                const match = !q
-                    || card.dataset.nom.includes(q)
-                    || card.dataset.prenom.includes(q)
-                    || card.dataset.numero.includes(q);
-                card.style.display = match ? '' : 'none';
-                if (match) visibles++;
-            });
-            groupe.style.display = visibles > 0 ? '' : 'none';
-            total += visibles;
+    // ── Galerie matchs ────────────────────────────────────────────────────────
+    var matchActif = null;
+    var galeriePhotosActuelles = [];
+
+    function afficherGalerie(matchId, row) {
+        var photos = galeriesData[matchId];
+        if (!photos || photos.length === 0) return;
+        document.querySelectorAll('.match-row-galerie').forEach(function(r) { r.classList.remove('table-active'); });
+        if (row) row.classList.add('table-active');
+        document.getElementById('galerieTitre').innerHTML = '<i class="bi bi-images me-2"></i>' + (matchTitres[matchId] || '');
+        galeriePhotosActuelles = photos;
+        var container = document.getElementById('galeriePhotos');
+        container.innerHTML = photos.map(function(p, i) {
+            return '<div class="col-6 col-md-3">'
+                 + '<img src="' + p.chemin + '" alt="' + p.description + '" class="img-fluid rounded shadow-sm galerie-photo"'
+                 + ' data-index="' + i + '"'
+                 + ' style="width:100%;height:160px;object-fit:cover;cursor:pointer;" />'
+                 + '</div>';
+        }).join('');
+        var section = document.getElementById('galerieSection');
+        section.style.display = '';
+        if (matchActif !== matchId) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        matchActif = matchId;
+    }
+
+    function fermerGalerie() {
+        document.getElementById('galerieSection').style.display = 'none';
+        document.querySelectorAll('.match-row-galerie').forEach(function(r) { r.classList.remove('table-active'); });
+        matchActif = null;
+    }
+
+    // ── Lightbox ──────────────────────────────────────────────────────────────
+    var lbIndex = 0;
+    var lbPhotos = [];
+    var lb = document.getElementById('lightbox');
+    var lbImg = document.getElementById('lbImg');
+    var lbCounter = document.getElementById('lbCounter');
+
+    function ouvrirLightbox(photos, index) {
+        lbPhotos = photos;
+        lbIndex = index;
+        lbImg.src = lbPhotos[lbIndex].chemin;
+        lbCounter.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+        lb.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function fermerLightbox() {
+        lb.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    function lbNaviguer(delta) {
+        lbIndex = (lbIndex + delta + lbPhotos.length) % lbPhotos.length;
+        lbImg.src = lbPhotos[lbIndex].chemin;
+        lbCounter.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+    }
+    document.getElementById('lbClose').addEventListener('click', fermerLightbox);
+    document.getElementById('lbPrev').addEventListener('click', function() { lbNaviguer(-1); });
+    document.getElementById('lbNext').addEventListener('click', function() { lbNaviguer(1); });
+    lb.addEventListener('click', function(e) { if (e.target === lb) fermerLightbox(); });
+    document.addEventListener('keydown', function(e) {
+        if (lb.style.display === 'none') return;
+        if (e.key === 'Escape') fermerLightbox();
+        if (e.key === 'ArrowLeft') lbNaviguer(-1);
+        if (e.key === 'ArrowRight') lbNaviguer(1);
+    });
+    // Swipe tactile
+    var lbTouchStartX = 0;
+    lb.addEventListener('touchstart', function(e) { lbTouchStartX = e.changedTouches[0].clientX; }, { passive: true });
+    lb.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - lbTouchStartX;
+        if (Math.abs(dx) > 50) lbNaviguer(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    // ── Carte de trading ──────────────────────────────────────────────────────
+    var currentCardPhotos = [];
+    var currentPhotoIndex = 0;
+    var carouselAutoTimer = null;
+
+    function stopCarouselAuto() {
+        if (carouselAutoTimer) { clearInterval(carouselAutoTimer); carouselAutoTimer = null; }
+    }
+    function startCarouselAuto() {
+        stopCarouselAuto();
+        if (currentCardPhotos.length < 2) return;
+        carouselAutoTimer = setInterval(function() {
+            currentPhotoIndex = (currentPhotoIndex + 1) % currentCardPhotos.length;
+            renderCarousel(true);
+        }, 2500);
+    }
+
+    var _carouselInitialized = false;
+
+    function renderCarousel(animate) {
+        var track = document.getElementById('cardPhotoTrack');
+        var dots  = document.getElementById('carouselDots');
+        var prev  = document.getElementById('carouselPrev');
+        var next  = document.getElementById('carouselNext');
+
+        // Update dots always
+        var multiple = currentCardPhotos.length > 1;
+        prev.style.display = next.style.display = multiple ? '' : 'none';
+        dots.innerHTML = multiple ? currentCardPhotos.map(function(_, i) {
+            return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 3px;background:'
+                 + (i === currentPhotoIndex ? '#fff' : 'rgba(255,255,255,.4)') + ';transition:background .2s;"></span>';
+        }).join('') : '';
+
+        if (!currentCardPhotos.length) {
+            track.innerHTML = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
+                + '<span style="font-size:7rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
+                + document.getElementById('cardFrontNumero').textContent + '</span></div>';
+            _carouselInitialized = false;
+            return;
+        }
+
+        var existingImg = track.querySelector('img.card-photo-img');
+        var newSrc = currentCardPhotos[currentPhotoIndex];
+
+        if (!existingImg || !animate) {
+            // First render or no animation
+            track.innerHTML = '<img src="' + newSrc + '" class="card-photo-img" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">';
+            _carouselInitialized = true;
+            return;
+        }
+
+        // Fade out → swap → fade in
+        existingImg.style.opacity = '0';
+        setTimeout(function() {
+            existingImg.src = newSrc;
+            existingImg.style.opacity = '1';
+        }, 200);
+    }
+
+    function ouvrirJoueur(el) {
+        var joueurId    = el.dataset.joueurId || '';
+        var nom         = el.dataset.fullnom  || '';
+        var numero      = el.dataset.numero   || '';
+        var photo       = el.dataset.photo    || '';
+        var position    = el.dataset.position || '';
+        var posSpec     = el.dataset.positionSpecifique || '';
+        var desc        = el.dataset.description || '';
+        var consentement = el.dataset.consentement !== 'false';
+
+        var extras = joueurPhotos[joueurId] || [];
+        currentCardPhotos = [];
+        if (consentement) {
+            if (photo) currentCardPhotos.push(photo);
+            extras.forEach(function(p) { if (p.chemin) currentCardPhotos.push(p.chemin); });
+        }
+        currentPhotoIndex = 0;
+
+        // Face avant
+        document.getElementById('cardFrontNumero').textContent   = '#' + numero;
+        document.getElementById('cardFrontNom').textContent      = nom;
+        document.getElementById('cardFrontPosition').textContent = posSpec || position;
+        document.getElementById('cardFrontBadge').innerHTML = posSpec
+            ? '<span class="badge" style="background-color:var(--couleur-secondaire);font-size:.75rem;">' + posSpec + '</span>' : '';
+
+        // Face arrière — en-tête
+        document.getElementById('cardBackNumeroWm').textContent = '#' + numero;
+        document.getElementById('cardBackNom').textContent = nom;
+        document.getElementById('cardBackAvatar').innerHTML = (consentement && currentCardPhotos.length)
+            ? '<img src="' + currentCardPhotos[0] + '" class="rounded-circle" style="width:72px;height:72px;object-fit:cover;border:3px solid rgba(255,255,255,.35);" alt="">'
+            : '<div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:72px;height:72px;background:rgba(255,255,255,.15);color:#fff;font-size:1.8rem;"><i class="bi bi-person-fill"></i></div>';
+        var badges = document.getElementById('cardBackBadges');
+        badges.innerHTML = '';
+        if (position) badges.innerHTML += '<span class="badge bg-light text-dark small">' + position + '</span>';
+        if (posSpec)  badges.innerHTML += '<span class="badge small" style="background-color:var(--couleur-secondaire);">' + posSpec + '</span>';
+
+        // Face arrière — stats joueur
+        var stats = document.getElementById('cardBackStats');
+        stats.innerHTML = '';
+        if (numero)   stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Numéro</td><td class="fw-semibold small py-1">#' + numero + '</td></tr>';
+        if (position) stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Position</td><td class="fw-semibold small py-1">' + position + '</td></tr>';
+        if (posSpec)  stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Spécialité</td><td class="fw-semibold small py-1">' + posSpec + '</td></tr>';
+        var sj = statsJoueursData[joueurId];
+        if (sj) {
+            stats.innerHTML += '<tr><td colspan="2"><hr class="my-1"></td></tr>';
+            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Matchs joués</td><td class="fw-semibold small py-1">' + sj.matchsJoues + '</td></tr>';
+            var presences = sj.matchsJoues - sj.absences;
+            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Présences</td><td class="fw-semibold small py-1 text-success">' + presences + '</td></tr>';
+            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Absences</td><td class="fw-semibold small py-1 ' + (sj.absences > 0 ? 'text-danger' : '') + '">' + sj.absences + '</td></tr>';
+        }
+
+        // Description
+        var descSection = document.getElementById('cardBackDescription');
+        document.getElementById('cardBackDescriptionText').textContent = desc;
+        descSection.style.display = desc ? '' : 'none';
+
+        // Reset flip (toujours face avant à l'ouverture)
+        document.getElementById('tradingCard').classList.remove('flipped');
+        renderCarousel(false);
+        startCarouselAuto();
+        var modal = new bootstrap.Modal(document.getElementById('modalJoueur'));
+        document.getElementById('modalJoueur').addEventListener('hidden.bs.modal', stopCarouselAuto, { once: true });
+        modal.show();
+    }
+
+    // ── Carte entraineur ──────────────────────────────────────────────────────
+    function ouvrirStaff(el) {
+        var nom    = el.dataset.fullnom     || '';
+        var photo  = el.dataset.photo       || '';
+        var titre  = el.dataset.titre       || '';
+        var respo  = el.dataset.responsable || '';
+
+        var track = document.getElementById('staffPhotoTrack');
+        if (photo) {
+            track.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">';
+        } else {
+            track.innerHTML = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
+                + '<i class="bi bi-person-fill" style="font-size:6rem;color:rgba(255,255,255,.18);"></i></div>';
+        }
+        document.getElementById('staffFrontNom').textContent   = nom;
+        document.getElementById('staffFrontTitre').textContent = respo || titre;
+        document.getElementById('staffFrontBadge').innerHTML   = titre
+            ? '<span class="badge" style="background-color:var(--couleur-secondaire);font-size:.75rem;">' + titre + '</span>' : '';
+
+        new bootstrap.Modal(document.getElementById('modalStaff')).show();
+    }
+
+    // ── Event delegation ──────────────────────────────────────────────────────
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#btnFlip'))     { document.getElementById('tradingCard').classList.add('flipped');    return; }
+        if (e.target.closest('#btnFlipBack')) { document.getElementById('tradingCard').classList.remove('flipped'); return; }
+        if (e.target.closest('#carouselPrev')) {
+            stopCarouselAuto();
+            currentPhotoIndex = (currentPhotoIndex - 1 + currentCardPhotos.length) % currentCardPhotos.length;
+            renderCarousel(true); return;
+        }
+        if (e.target.closest('#carouselNext')) {
+            stopCarouselAuto();
+            currentPhotoIndex = (currentPhotoIndex + 1) % currentCardPhotos.length;
+            renderCarousel(true); return;
+        }
+        var lbTrigger = e.target.closest('.galerie-photo');
+        if (lbTrigger) { ouvrirLightbox(galeriePhotosActuelles, parseInt(lbTrigger.dataset.index, 10)); return; }
+        var joueurCard = e.target.closest('.joueur-card');
+        if (joueurCard) { ouvrirJoueur(joueurCard); return; }
+        var staffCard = e.target.closest('.staff-card');
+        if (staffCard) { ouvrirStaff(staffCard); return; }
+        var matchRow = e.target.closest('.match-row-galerie');
+        if (matchRow) afficherGalerie(matchRow.dataset.matchId, matchRow);
+    });
+
+    // ── Sélection auto galerie du dernier match avec photos ───────────────────
+    function initAutoGalerie() {
+        if (dernierMatchPhotosId !== null) {
+            var row = document.querySelector('.match-row-galerie[data-match-id="' + dernierMatchPhotosId + '"]');
+            afficherGalerie(String(dernierMatchPhotosId), row);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAutoGalerie);
+    } else {
+        initAutoGalerie();
+    }
+
+    // ── Calendrier grille ────────────────────────────────────────────────────
+    var calEvents = JSON.parse(document.getElementById('cal-events-json').textContent);
+    var calMois   = new Date(); calMois.setDate(1); calMois.setHours(0,0,0,0);
+    var moisFR    = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    var joursAbreges = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+    function renderCalGrille() {
+        var y = calMois.getFullYear(), m = calMois.getMonth();
+        document.getElementById('calMoisTitre').textContent = moisFR[m] + ' ' + y;
+
+        var premierJour = new Date(y, m, 1).getDay(); // 0=dim
+        var nbJours = new Date(y, m + 1, 0).getDate();
+        var aujourd = new Date(); aujourd.setHours(0,0,0,0);
+
+        // Events du mois indexés par jour
+        var evtDuMois = {};
+        var prefixe = y + '-' + String(m + 1).padStart(2, '0') + '-';
+        calEvents.forEach(function(ev) {
+            if (ev.date.startsWith(prefixe)) {
+                var j = parseInt(ev.date.slice(8, 10), 10);
+                if (!evtDuMois[j]) evtDuMois[j] = [];
+                evtDuMois[j].push(ev);
+            }
         });
 
+        var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+        // En-têtes jours
+        joursAbreges.forEach(function(j) {
+            html += '<div class="text-center small fw-bold py-1 text-muted">' + j + '</div>';
+        });
+        // Cases vides avant le 1er
+        for (var i = 0; i < premierJour; i++) html += '<div></div>';
+        // Jours du mois
+        for (var d = 1; d <= nbJours; d++) {
+            var dateD = new Date(y, m, d);
+            var isToday = dateD.getTime() === aujourd.getTime();
+            var evts = evtDuMois[d] || [];
+            var cellBg = isToday ? 'background:rgba(var(--bs-primary-rgb),.07);outline:2px solid var(--couleur-primaire);' : 'background:#f8f9fa;';
+            html += '<div style="min-height:80px;border-radius:6px;padding:4px;' + cellBg + '">';
+            html += '<div class="fw-bold small mb-1 ' + (isToday ? 'text-primary' : 'text-muted') + '">' + d + '</div>';
+            evts.forEach(function(ev) {
+                html += '<div style="background:' + ev.color + '18;border-left:3px solid ' + ev.color + ';border-radius:3px;padding:2px 4px;margin-bottom:2px;font-size:.65rem;line-height:1.3;cursor:default;" title="' + ev.titre + (ev.heure ? ' \u2014 ' + ev.heure : '') + (ev.lieu ? '\n' + ev.lieu : '') + '">'
+                    + '<i class="bi ' + ev.icon + '" style="color:' + ev.color + ';font-size:.6rem;"></i> '
+                    + '<span class="fw-semibold">' + ev.titre.substring(0, 18) + (ev.titre.length > 18 ? '\u2026' : '') + '</span>';
+                if (ev.heure) html += '<br><span style="color:#666;">' + ev.heure + (ev.heureFin ? '\u2013' + ev.heureFin : '') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+        document.getElementById('calGrille').innerHTML = html;
+    }
+
+    document.getElementById('btnListe').addEventListener('click', function() {
+        document.getElementById('calVueListe').style.display = '';
+        document.getElementById('calVueGrille').style.display = 'none';
+        this.classList.add('active');
+        document.getElementById('btnGrille').classList.remove('active');
+    });
+    document.getElementById('btnGrille').addEventListener('click', function() {
+        document.getElementById('calVueListe').style.display = 'none';
+        document.getElementById('calVueGrille').style.display = '';
+        this.classList.add('active');
+        document.getElementById('btnListe').classList.remove('active');
+        renderCalGrille();
+    });
+    document.getElementById('calPrevMois').addEventListener('click', function() {
+        calMois.setMonth(calMois.getMonth() - 1);
+        renderCalGrille();
+    });
+    document.getElementById('calNextMois').addEventListener('click', function() {
+        calMois.setMonth(calMois.getMonth() + 1);
+        renderCalGrille();
+    });
+
+    // ── Recherche joueurs ─────────────────────────────────────────────────────
+    var rechercheEl = document.getElementById('rechercheJoueur');
+    if (rechercheEl) rechercheEl.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim(), total = 0;
+        document.querySelectorAll('.position-group').forEach(function(grp) {
+            var vis = 0;
+            grp.querySelectorAll('.joueur-card').forEach(function(c) {
+                var show = !q || c.dataset.nom.includes(q) || c.dataset.prenom.includes(q) || c.dataset.numero.includes(q);
+                c.style.display = show ? '' : 'none';
+                if (show) vis++;
+            });
+            grp.style.display = vis > 0 ? '' : 'none';
+            total += vis;
+        });
         document.getElementById('aucunResultat').style.display = total === 0 ? '' : 'none';
     });
 </script>

@@ -142,7 +142,7 @@ body {
 
 /* ========== TEAM CARDS ========== */
 .team-card {
-    border-left: 4px solid var(--couleur-primaire);
+    border-left: 4px solid var(--couleur-secondaire);
 }
 
 .team-card-clickable {

@@ -23,7 +23,8 @@ public class EcoleService : IEcoleService
             Nom = vm.Nom,
             NomEquipe = vm.NomEquipe,
             CouleurPrimaire = vm.CouleurPrimaire,
-            CouleurSecondaire = vm.CouleurSecondaire
+            CouleurSecondaire = vm.CouleurSecondaire,
+            LiensSociaux = vm.LiensSociaux.Where(l => !string.IsNullOrWhiteSpace(l.Url)).ToList()
         };
 
         if (logoFile != null && logoFile.Length > 0)
@@ -42,6 +43,7 @@ public class EcoleService : IEcoleService
         ecole.NomEquipe = vm.NomEquipe;
         ecole.CouleurPrimaire = vm.CouleurPrimaire;
         ecole.CouleurSecondaire = vm.CouleurSecondaire;
+        ecole.LiensSociaux = vm.LiensSociaux.Where(l => !string.IsNullOrWhiteSpace(l.Url)).ToList();
 
         if (logoFile != null && logoFile.Length > 0)
         {
@@ -66,7 +68,8 @@ public class EcoleService : IEcoleService
         NomEquipe = ecole.NomEquipe,
         LogoPathActuel = ecole.LogoPath,
         CouleurPrimaire = ecole.CouleurPrimaire,
-        CouleurSecondaire = ecole.CouleurSecondaire
+        CouleurSecondaire = ecole.CouleurSecondaire,
+        LiensSociaux = ecole.LiensSociaux
     };
 
     private static string SaveFile(IFormFile file, string directory)

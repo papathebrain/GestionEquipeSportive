@@ -4,6 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace GestionEquipeSportive.Models;
 
+public class LienSocial
+{
+    public string Type { get; set; } = "Site web";  // Facebook, Instagram, X, YouTube, TikTok, Site web, Autre
+    public string Url { get; set; } = "";
+    public string? Label { get; set; }
+}
+
 public class Ecole
 {
     public int Id { get; set; }
@@ -12,6 +19,7 @@ public class Ecole
     public string? LogoPath { get; set; }
     public string CouleurPrimaire { get; set; } = "#1a3a5c";
     public string CouleurSecondaire { get; set; } = "#e8a020";
+    public List<LienSocial> LiensSociaux { get; set; } = new();
 
     public string Slug => ToSlug(Nom);
 

@@ -12,6 +12,7 @@ public class PublicController : Controller
     private readonly IStaffService _staffService;
     private readonly IJoueurService _joueurService;
     private readonly IMatchService _matchService;
+    private readonly IEvenementService _evenementService;
     private readonly IWebHostEnvironment _env;
 
     public PublicController(
@@ -20,6 +21,7 @@ public class PublicController : Controller
         IStaffService staffService,
         IJoueurService joueurService,
         IMatchService matchService,
+        IEvenementService evenementService,
         IWebHostEnvironment env)
     {
         _ecoleService = ecoleService;
@@ -27,6 +29,7 @@ public class PublicController : Controller
         _staffService = staffService;
         _joueurService = joueurService;
         _matchService = matchService;
+        _evenementService = evenementService;
         _env = env;
     }
 
@@ -100,14 +103,22 @@ public class PublicController : Controller
             .OrderByDescending(m => m.DateMatch)
             .FirstOrDefault();
 
+        // Charger toutes les photos des matchs passés avec résultat
+        var matchesMedias = matchs
+            .Where(m => m.AResultat)
+            .ToDictionary(
+                m => m.Id,
+                m => _matchService.GetMediasByMatch(m.Id)
+                    .Where(mm => mm.TypeMedia == TypeMedia.Photo)
+                    .ToList());
+
         List<MatchMedia> dernierMatchMedias = new();
         MatchMedia? photoBanniere = null;
         if (dernierMatch != null)
         {
-            dernierMatchMedias = _matchService.GetMediasByMatch(dernierMatch.Id);
-            var photos = dernierMatchMedias.Where(m => m.TypeMedia == TypeMedia.Photo).ToList();
-            if (photos.Any())
-                photoBanniere = photos[Random.Shared.Next(photos.Count)];
+            dernierMatchMedias = matchesMedias.TryGetValue(dernierMatch.Id, out var dm) ? dm : new();
+            if (dernierMatchMedias.Any())
+                photoBanniere = dernierMatchMedias[Random.Shared.Next(dernierMatchMedias.Count)];
         }
 
         // Prochain match dans les 7 jours
@@ -117,16 +128,45 @@ public class PublicController : Controller
             .OrderBy(m => m.DateMatch)
             .FirstOrDefault();
 
+        var joueurs = _joueurService.GetJoueursByEquipe(equipe.Id);
+        var joueurMedias = joueurs.ToDictionary(
+            j => j.Id,
+            j => _joueurService.GetMediasByJoueur(j.Id));
+
+        // Stats par joueur : matchs joués = total matchs avec résultat, absences = entrées dans AbsenceMatch
+        var matchsAvecResultat = matchs.Where(m => m.AResultat).ToList();
+        var toutesAbsences = matchsAvecResultat
+            .SelectMany(m => _matchService.GetAbsencesByMatch(m.Id))
+            .ToList();
+        var statsJoueurs = joueurs.ToDictionary(
+            j => j.Id,
+            j => (
+                MatchsJoues: matchsAvecResultat.Count,
+                Absences: toutesAbsences.Count(a => a.JoueurId == j.Id)
+            ));
+
+        // Dernier match avec photos pour sélection auto galerie
+        var dernierMatchAvecPhotosId = matchesMedias
+            .Where(kvp => kvp.Value.Any())
+            .OrderByDescending(kvp => matchs.FirstOrDefault(m => m.Id == kvp.Key)?.DateMatch ?? DateTime.MinValue)
+            .Select(kvp => (int?)kvp.Key)
+            .FirstOrDefault();
+
         var vm = new PublicEquipeViewModel
         {
             Equipe = equipe,
             Ecole = ecole,
             Staff = _staffService.GetStaffByEquipe(equipe.Id),
-            Joueurs = _joueurService.GetJoueursByEquipe(equipe.Id),
+            Joueurs = joueurs,
             Matchs = matchs,
+            Evenements = _evenementService.GetEvenementsByEquipe(equipe.Id),
             Stats = stats,
             DernierMatchAvecResultat = dernierMatch,
             DernierMatchMedias = dernierMatchMedias,
+            MatchesMedias = matchesMedias,
+            JoueurMedias = joueurMedias,
+            StatsJoueurs = statsJoueurs,
+            DernierMatchAvecPhotosId = dernierMatchAvecPhotosId,
             PhotoBanniere = photoBanniere,
             ProchainMatch = prochain,
             SportDisplay = typeSport switch

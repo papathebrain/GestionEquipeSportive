@@ -79,6 +79,43 @@
                         <div class="form-text">Laisser vide pour conserver le logo actuel</div>
                     </div>
 
+                    @* ── Liens sociaux ──────────────────────────────────────── *@
+                    <div class="mt-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-share me-1"></i>Liens internet / réseaux sociaux</label>
+                        <div id="liensList">
+                            @for (int i = 0; i < Model.LiensSociaux.Count; i++)
+                            {
+                                <div class="row g-2 mb-2 lien-row align-items-center">
+                                    <div class="col-md-3">
+                                        <select name="LiensSociaux[@i].Type" class="form-select form-select-sm">
+                                            @foreach (var t in new[] { "Facebook","Instagram","X / Twitter","YouTube","TikTok","Site web","Autre" })
+                                            {
+                                                //<option value="@t" @(Model.LiensSociaux[i].Type == t ? "selected" : "")>@t</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="url" name="LiensSociaux[@i].Url" class="form-control form-control-sm"
+                                               placeholder="https://..." value="@Model.LiensSociaux[i].Url" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="LiensSociaux[@i].Label" class="form-control form-control-sm"
+                                               placeholder="Étiquette (optionnel)" value="@(Model.LiensSociaux[i].Label ?? "")" />
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-supprimer-lien">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <button type="button" id="btnAjouterLien" class="btn btn-sm btn-outline-primary mt-1">
+                            <i class="bi bi-plus-circle me-1"></i>Ajouter un lien
+                        </button>
+                        <div class="form-text">Affiché sur la page publique de chaque équipe.</div>
+                    </div>
+
                     <div class="mt-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle me-2"></i>Enregistrer
@@ -169,5 +206,36 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        // ── Liens sociaux dynamiques ────────────────────────────────────────
+        const typeOptions = ['Facebook','Instagram','X / Twitter','YouTube','TikTok','Site web','Autre'];
+
+        function reindexLiens() {
+            document.querySelectorAll('#liensList .lien-row').forEach(function(row, i) {
+                row.querySelectorAll('[name]').forEach(function(el) {
+                    el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
+                });
+            });
+        }
+
+        document.getElementById('btnAjouterLien').addEventListener('click', function() {
+            const list = document.getElementById('liensList');
+            const idx = list.querySelectorAll('.lien-row').length;
+            const opts = typeOptions.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+            const html = '<div class="row g-2 mb-2 lien-row align-items-center">'
+                + '<div class="col-md-3"><select name="LiensSociaux[' + idx + '].Type" class="form-select form-select-sm">' + opts + '</select></div>'
+                + '<div class="col-md-5"><input type="url" name="LiensSociaux[' + idx + '].Url" class="form-control form-control-sm" placeholder="https://..." /></div>'
+                + '<div class="col-md-3"><input type="text" name="LiensSociaux[' + idx + '].Label" class="form-control form-control-sm" placeholder="Étiquette (optionnel)" /></div>'
+                + '<div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger btn-supprimer-lien"><i class="bi bi-trash"></i></button></div>'
+                + '</div>';
+            list.insertAdjacentHTML('beforeend', html);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-supprimer-lien')) {
+                e.target.closest('.lien-row').remove();
+                reindexLiens();
+            }
+        });
     </script>
 }

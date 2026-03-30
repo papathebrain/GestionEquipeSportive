@@ -57,4 +57,25 @@ public interface IExcelRepository
     MatchMedia? GetMatchMediaById(int id);
     MatchMedia AddMatchMedia(MatchMedia media);
     bool DeleteMatchMedia(int id);
+
+    // Médias joueur
+    List<JoueurMedia> GetAllJoueurMedias();
+    List<JoueurMedia> GetMediasByJoueur(int joueurId);
+    JoueurMedia AddJoueurMedia(JoueurMedia media);
+    bool DeleteJoueurMedia(int id);
+
+    // Absences match
+    List<AbsenceMatch> GetAllAbsences();
+    List<AbsenceMatch> GetAbsencesByMatch(int matchId);
+    AbsenceMatch AddAbsence(AbsenceMatch absence);
+    bool DeleteAbsence(int id);
+    bool DeleteAbsenceByMatchJoueur(int matchId, int joueurId);
+
+    // Événements
+    List<Evenement> GetAllEvenements();
+    List<Evenement> GetEvenementsByEquipe(int equipeId);
+    Evenement? GetEvenementById(int id);
+    Evenement AddEvenement(Evenement ev);
+    Evenement UpdateEvenement(Evenement ev);
+    bool DeleteEvenement(int id);
 }

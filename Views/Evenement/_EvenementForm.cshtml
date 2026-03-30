@@ -1,0 +1,120 @@
+@model GestionEquipeSportive.ViewModels.EvenementViewModel
+@{
+    var types = ViewBag.Types as GestionEquipeSportive.Models.TypeEvenement[]
+        ?? Array.Empty<GestionEquipeSportive.Models.TypeEvenement>();
+    bool isEdit = Model.Id > 0;
+}
+
+<div class="row g-3">
+    @* Titre + Type *@
+    <div class="col-md-8">
+        <label asp-for="Titre" class="form-label fw-semibold"></label>
+        <input asp-for="Titre" class="form-control" placeholder="Ex: Pratique du mardi, Réunion de parents..." />
+        <span asp-validation-for="Titre" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Type" class="form-label fw-semibold"></label>
+        <select asp-for="Type" class="form-select">
+            @foreach (var t in types)
+            {
+                <option value="@t">@(t switch {
+                    GestionEquipeSportive.Models.TypeEvenement.Pratique         => "🏃 Pratique",
+                    GestionEquipeSportive.Models.TypeEvenement.ReunionParents   => "👥 Réunion de parents",
+                    GestionEquipeSportive.Models.TypeEvenement.Tournoi          => "🏆 Tournoi",
+                    GestionEquipeSportive.Models.TypeEvenement.Jamboree         => "🏁 Jamborée",
+                    GestionEquipeSportive.Models.TypeEvenement.Evaluation       => "📋 Évaluation / Tryout",
+                    GestionEquipeSportive.Models.TypeEvenement.ActiviteEquipe   => "⭐ Activité d'équipe",
+                    _                                                           => "📅 Autre"
+                })</option>
+            }
+        </select>
+    </div>
+
+    @* Date *@
+    <div class="col-md-4">
+        <label asp-for="DateStr" class="form-label fw-semibold"></label>
+        <input asp-for="DateStr" type="date" class="form-control" />
+        <span asp-validation-for="DateStr" class="text-danger small"></span>
+    </div>
+
+    @* Heure début *@
+    <div class="col-md-4">
+        <label asp-for="HeureDebut" class="form-label fw-semibold"></label>
+        <input asp-for="HeureDebut" type="time" class="form-control" />
+    </div>
+
+    @* Heure fin *@
+    <div class="col-md-4">
+        <label asp-for="HeureFin" class="form-label fw-semibold">
+            Heure de fin <span class="text-muted fw-normal">(optionnel)</span>
+        </label>
+        <input asp-for="HeureFin" type="time" class="form-control" />
+    </div>
+
+    @* Lieu *@
+    <div class="col-md-6">
+        <label asp-for="Lieu" class="form-label fw-semibold">
+            Lieu <span class="text-muted fw-normal">(optionnel)</span>
+        </label>
+        <input asp-for="Lieu" class="form-control" placeholder="Ex: Terrain principal, Gymnase A..." />
+    </div>
+
+    @* Notes *@
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label fw-semibold">
+            Notes <span class="text-muted fw-normal">(optionnel)</span>
+        </label>
+        <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Informations supplémentaires..."></textarea>
+    </div>
+</div>
+
+@* ── Récurrence (uniquement à la création) ──────────────────────────────────── *@
+@if (!isEdit)
+{
+    <hr class="my-4" />
+    <div>
+        <div class="form-check form-switch mb-3">
+            <input asp-for="Recurrence" class="form-check-input" role="switch" id="switchRecurrence" />
+            <label class="form-check-label fw-semibold" for="switchRecurrence">
+                <i class="bi bi-arrow-repeat me-1"></i>Répéter cet événement
+            </label>
+        </div>
+
+        <div id="recurrenceOptions" style="display:none;">
+            <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-3">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold small">Jours de la semaine</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            @{
+                                var jours = new[] {
+                                    (1, "Lun"), (2, "Mar"), (3, "Mer"), (4, "Jeu"),
+                                    (5, "Ven"), (6, "Sam"), (7, "Dim")
+                                };
+                            }
+                            @foreach (var (num, label) in jours)
+                            {
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input jour-check" type="checkbox"
+                                           name="JoursSemaine" value="@num"
+                                           id="jour@(num)" />
+                                    <label class="form-check-label" for="jour@(num)">@label</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="RecurrenceDateFin" class="form-label fw-semibold small">Répéter jusqu'au</label>
+                        <input asp-for="RecurrenceDateFin" type="date" class="form-control form-control-sm" />
+                        <div class="form-text">La date de début est utilisée comme point de départ.</div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div id="recurrencePreview" class="alert alert-info small py-2 px-3 mb-0 w-100" style="display:none!important;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+}

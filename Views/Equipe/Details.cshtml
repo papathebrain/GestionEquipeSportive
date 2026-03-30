@@ -11,6 +11,7 @@
     var staff = ViewBag.Staff as List<Staff> ?? new();
     var matchs = ViewBag.Matchs as List<Match> ?? new();
     var stats = ViewBag.Stats as StatistiquesMatchViewModel ?? new();
+    var evenements = ViewBag.Evenements as List<Evenement> ?? new();
     var frCA = new CultureInfo("fr-CA");
     var now = DateTime.Now;
 }
@@ -117,8 +118,14 @@
     </li>
     <li class="nav-item">
         <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-staff">
-            <i class="bi bi-person-badge me-1"></i>Équipe école
+            <i class="bi bi-person-badge me-1"></i>Entraineurs
             <span class="badge bg-secondary ms-1">@staff.Count</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-calendrier">
+            <i class="bi bi-calendar3 me-1"></i>Calendrier
+            <span class="badge bg-secondary ms-1">@(matchs.Count + evenements.Count)</span>
         </a>
     </li>
 </ul>
@@ -306,6 +313,132 @@
         }
     </div>
 
+    @* ── Onglet Calendrier ─────────────────────────────────────────────────── *@
+    <div class="tab-pane fade" id="tab-calendrier">
+        @if (peutModifier)
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <a asp-controller="Evenement" asp-action="Create" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un événement
+                </a>
+            </div>
+        }
+        @{
+            // Merge matches and events into a unified calendar
+            var calItems = new List<(DateTime Date, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, int? MatchId, int? EvenementId, int EquipeId)>();
+
+            foreach (var m in matchs)
+            {
+                var resultIcon = "bi-flag-fill";
+                var resultColor = m.AResultat
+                    ? (m.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" })
+                    : "#adb5bd";
+                var adversaire = (m.EstDomicile ? "vs " : "@ ") + m.Adversaire;
+                var sous = m.AResultat ? $"{m.ScoreEquipe}–{m.ScoreAdversaire} ({m.Resultat})" : "À venir";
+                calItems.Add((m.DateMatch, adversaire, sous, m.Lieu ?? "", resultIcon, resultColor, m.Id, null, m.EquipeId));
+            }
+
+            foreach (var ev in evenements)
+            {
+                var (icon, color) = ev.Type switch
+                {
+                    TypeEvenement.Pratique => ("bi-stopwatch-fill", "#0d6efd"),
+                    TypeEvenement.ReunionParents => ("bi-people-fill", "#6f42c1"),
+                    TypeEvenement.Tournoi => ("bi-trophy-fill", "#ffc107"),
+                    TypeEvenement.Jamboree => ("bi-flag-fill", "#20c997"),
+                    TypeEvenement.Evaluation => ("bi-clipboard-check-fill", "#fd7e14"),
+                    TypeEvenement.ActiviteEquipe => ("bi-star-fill", "#198754"),
+                    _ => ("bi-calendar-event", "#6c757d")
+                };
+                var typeLabel = ev.Type switch
+                {
+                    TypeEvenement.Pratique => "Pratique",
+                    TypeEvenement.ReunionParents => "Réunion de parents",
+                    TypeEvenement.Tournoi => "Tournoi",
+                    TypeEvenement.Jamboree => "Jamborée",
+                    TypeEvenement.Evaluation => "Évaluation / Tryout",
+                    TypeEvenement.ActiviteEquipe => "Activité d'équipe",
+                    _ => "Autre"
+                };
+                calItems.Add((ev.DateDebut, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, null, ev.Id, ev.EquipeId));
+            }
+
+            var grouped = calItems
+                .OrderBy(x => x.Date)
+                .GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1))
+                .ToList();
+        }
+        @if (!calItems.Any())
+        {
+            <p class="text-muted text-center py-3 mb-0">Aucun événement au calendrier.</p>
+        }
+        else
+        {
+            foreach (var grp in grouped)
+            {
+                <div class="mb-3">
+                    <div class="fw-bold text-uppercase small text-muted border-bottom pb-1 mb-2">
+                        @grp.Key.ToString("MMMM yyyy", frCA)
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var item in grp)
+                        {
+                            <div class="list-group-item px-0 py-2">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="text-center" style="min-width:42px;">
+                                        <div class="fw-bold" style="font-size:1.2rem;line-height:1;">@item.Date.Day</div>
+                                        <div class="text-muted" style="font-size:.65rem;text-transform:uppercase;">@item.Date.ToString("ddd", frCA)</div>
+                                    </div>
+                                    <div style="width:3px;border-radius:2px;background:@item.IconColor;align-self:stretch;flex-shrink:0;"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 fw-semibold">
+                                            <i class="bi @item.IconClass" style="color:@item.IconColor;font-size:.9rem;"></i>
+                                            @item.Titre
+                                        </div>
+                                        <div class="small text-muted">@item.SousTexte</div>
+                                        @if (!string.IsNullOrEmpty(item.Lieu))
+                                        {
+                                            <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>@item.Lieu</div>
+                                        }
+                                    </div>
+                                    @if (peutModifier)
+                                    {
+                                        <div class="text-nowrap">
+                                            @if (item.MatchId.HasValue)
+                                            {
+                                                <a asp-controller="Match" asp-action="Edit" asp-route-id="@item.MatchId"
+                                                   class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            }
+                                            @if (item.EvenementId.HasValue)
+                                            {
+                                                <a asp-controller="Evenement" asp-action="Edit" asp-route-id="@item.EvenementId"
+                                                   class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                                        data-ev-id="@item.EvenementId"
+                                                        data-ev-titre="@Html.Raw(item.Titre.Replace("'", "\\'"))"
+                                                        data-equipe-id="@item.EquipeId"
+                                                        data-action="delete-evenement"
+                                                        title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
     @* ── Onglet Équipe école ────────────────────────────────────────────────── *@
     <div class="tab-pane fade" id="tab-staff">
         @if (peutModifier)
@@ -319,7 +452,7 @@
         }
         @if (!staff.Any())
         {
-            <p class="text-muted text-center py-3 mb-0">Aucun membre de l'équipe école.</p>
+            <p class="text-muted text-center py-3 mb-0">Aucun entraineur.</p>
         }
         else
         {
@@ -419,6 +552,26 @@
     </div>
 </div>
 
+<div class="modal fade" id="deleteEvenementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Supprimer l'événement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Supprimer <strong id="deleteEvenementTitre"></strong> ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteEvenementForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteEvenementEquipeId" name="equipeId" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="deleteStaffModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -426,7 +579,7 @@
                 <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Supprimer le membre</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">Supprimer <strong id="deleteStaffNom"></strong> de l'équipe école ?</div>
+            <div class="modal-body">Supprimer <strong id="deleteStaffNom"></strong> des entraineurs ?</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                 <form id="deleteStaffForm" method="post">
@@ -472,6 +625,33 @@
         document.getElementById('deleteStaffForm').action = '/Staff/Delete/' + id;
         new bootstrap.Modal(document.getElementById('deleteStaffModal')).show();
     }
+    function confirmDeleteEvenement(id, titre, equipeId) {
+        document.getElementById('deleteEvenementTitre').textContent = titre;
+        document.getElementById('deleteEvenementEquipeId').value = equipeId;
+        document.getElementById('deleteEvenementForm').action = '/Evenement/Delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteEvenementModal')).show();
+    }
+
+    // Event delegation for evenement delete buttons
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="delete-evenement"]');
+        if (btn) {
+            confirmDeleteEvenement(
+                btn.dataset.evId,
+                btn.dataset.evTitre,
+                btn.dataset.equipeId
+            );
+        }
+    });
+
+    // Open calendrier tab if URL has tab=calendrier
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'calendrier') {
+            var el = document.querySelector('[href="#tab-calendrier"]');
+            if (el) bootstrap.Tab.getOrCreateInstance(el).show();
+        }
+    })();
 </script>
 }
 

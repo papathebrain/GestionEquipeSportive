@@ -154,6 +154,19 @@ public class MatchService : IMatchService
         return _repo.DeleteMatchMedia(id);
     }
 
+    public List<AbsenceMatch> GetAbsencesByMatch(int matchId)
+        => _repo.GetAbsencesByMatch(matchId);
+
+    public void ToggleAbsence(int matchId, int joueurId)
+    {
+        var existing = _repo.GetAbsencesByMatch(matchId)
+            .FirstOrDefault(a => a.JoueurId == joueurId);
+        if (existing != null)
+            _repo.DeleteAbsenceByMatchJoueur(matchId, joueurId);
+        else
+            _repo.AddAbsence(new AbsenceMatch { MatchId = matchId, JoueurId = joueurId });
+    }
+
     private static string? NormaliserHeure(string? heure)
     {
         if (string.IsNullOrWhiteSpace(heure)) return null;

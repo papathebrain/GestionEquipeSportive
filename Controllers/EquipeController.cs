@@ -16,10 +16,12 @@ public class EquipeController : Controller
     private readonly IJoueurService _joueurService;
     private readonly IStaffService _staffService;
     private readonly IMatchService _matchService;
+    private readonly IEvenementService _evenementService;
 
     public EquipeController(IEquipeService equipeService, IEcoleService ecoleService,
         IEcoleAccessService access, IJoueurService joueurService,
-        IStaffService staffService, IMatchService matchService)
+        IStaffService staffService, IMatchService matchService,
+        IEvenementService evenementService)
     {
         _equipeService = equipeService;
         _ecoleService = ecoleService;
@@ -27,6 +29,7 @@ public class EquipeController : Controller
         _joueurService = joueurService;
         _staffService = staffService;
         _matchService = matchService;
+        _evenementService = evenementService;
     }
 
     public IActionResult Index(int ecoleId)
@@ -42,6 +45,9 @@ public class EquipeController : Controller
         ViewBag.NbJoueurs = equipes.ToDictionary(
             e => e.Id,
             e => _joueurService.GetJoueursByEquipe(e.Id).Count);
+        ViewBag.StatsEquipes = equipes.ToDictionary(
+            e => e.Id,
+            e => _matchService.GetStatistiques(e.Id));
         var aujourd = DateTime.Today;
         ViewBag.AnneeCourante = aujourd.Month >= 7
             ? $"{aujourd.Year}-{aujourd.Year + 1}"
@@ -64,12 +70,15 @@ public class EquipeController : Controller
         var matchs = _matchService.GetMatchsByEquipe(id);
         var stats = _matchService.GetStatistiques(id);
 
+        var evenements = _evenementService.GetEvenementsByEquipe(id);
+
         ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
         ViewBag.NbJoueurs = joueurs.Count;
         ViewBag.Joueurs = joueurs;
         ViewBag.Staff = staff;
         ViewBag.Matchs = matchs;
         ViewBag.Stats = stats;
+        ViewBag.Evenements = evenements;
         return View(equipe);
     }
 

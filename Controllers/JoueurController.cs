@@ -125,6 +125,7 @@ public class JoueurController : Controller
         var vm = _joueurService.ToViewModel(joueur);
         vm.NomEquipe = equipe?.Nom;
         vm.EcoleId = equipe?.EcoleId ?? 0;
+        ViewBag.JoueurMedias = _joueurService.GetMediasByJoueur(id);
         return View(vm);
     }
 
@@ -162,6 +163,34 @@ public class JoueurController : Controller
         _joueurService.DeleteJoueur(id, _env.WebRootPath);
         TempData["Success"] = "Joueur supprimé avec succès.";
         return RedirectToAction(nameof(Index), new { equipeId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult AjouterMedia(int id, IFormFile fichier)
+    {
+        var joueur = _joueurService.GetJoueurById(id);
+        if (joueur == null) return NotFound();
+        var equipe = _equipeService.GetEquipeById(joueur.EquipeId);
+        if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0))
+            return Forbid();
+        if (fichier != null && fichier.Length > 0)
+            _joueurService.AddJoueurMedia(id, fichier, _env.WebRootPath);
+        TempData["Success"] = "Photo ajoutée.";
+        return RedirectToAction(nameof(Edit), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult SupprimerMedia(int mediaId, int joueurId)
+    {
+        var joueur = _joueurService.GetJoueurById(joueurId);
+        var equipe = joueur != null ? _equipeService.GetEquipeById(joueur.EquipeId) : null;
+        if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0))
+            return Forbid();
+        _joueurService.DeleteJoueurMedia(mediaId, _env.WebRootPath);
+        TempData["Success"] = "Photo supprimée.";
+        return RedirectToAction(nameof(Edit), new { id = joueurId });
     }
 
     private void SetTheme(Ecole ecole)

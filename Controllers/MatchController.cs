@@ -14,15 +14,18 @@ public class MatchController : Controller
     private readonly IEcoleService _ecoleService;
     private readonly IEcoleAccessService _access;
     private readonly IWebHostEnvironment _env;
+    private readonly IJoueurService _joueurService;
 
     public MatchController(IMatchService matchService, IEquipeService equipeService,
-        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env)
+        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env,
+        IJoueurService joueurService)
     {
         _matchService = matchService;
         _equipeService = equipeService;
         _ecoleService = ecoleService;
         _access = access;
         _env = env;
+        _joueurService = joueurService;
     }
 
     // ─── Index ────────────────────────────────────────────────────────────────
@@ -64,6 +67,10 @@ public class MatchController : Controller
         ViewBag.Ecole = ecole;
         ViewBag.Medias = medias;
         ViewBag.PeutModifier = equipe != null && _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
+
+        var joueurs = _joueurService.GetJoueursByEquipe(match.EquipeId);
+        ViewBag.Joueurs = joueurs;
+        ViewBag.Absences = _matchService.GetAbsencesByMatch(id);
 
         return View(match);
     }
@@ -220,6 +227,21 @@ public class MatchController : Controller
 
         _matchService.DeleteMedia(id, _env.WebRootPath);
         TempData["Success"] = "Média supprimé.";
+        return RedirectToAction(nameof(Details), new { id = matchId });
+    }
+
+    // ─── Absences ─────────────────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ToggleAbsence(int matchId, int joueurId)
+    {
+        var match = _matchService.GetMatchById(matchId);
+        if (match == null) return NotFound();
+        var equipe = _equipeService.GetEquipeById(match.EquipeId);
+        if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0))
+            return Forbid();
+        _matchService.ToggleAbsence(matchId, joueurId);
         return RedirectToAction(nameof(Details), new { id = matchId });
     }
 

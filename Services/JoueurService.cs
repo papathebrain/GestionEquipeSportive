@@ -63,7 +63,8 @@ public class JoueurService : IJoueurService
             Position = vm.Position,
             PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim(),
             NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim(),
-            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim()
+            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
+            ConsentementPhoto = vm.ConsentementPhoto
         };
 
         if (photoFile != null && photoFile.Length > 0)
@@ -84,6 +85,7 @@ public class JoueurService : IJoueurService
         joueur.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim();
         joueur.NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim();
         joueur.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
+        joueur.ConsentementPhoto = vm.ConsentementPhoto;
 
         if (photoFile != null && photoFile.Length > 0)
         {
@@ -120,7 +122,8 @@ public class JoueurService : IJoueurService
         PositionSpecifique = joueur.PositionSpecifique,
         NoFiche = joueur.NoFiche,
         Description = joueur.Description,
-        PhotoPathActuelle = joueur.PhotoPath
+        PhotoPathActuelle = joueur.PhotoPath,
+        ConsentementPhoto = joueur.ConsentementPhoto
     };
 
     private static string SaveFile(IFormFile file, string directory)
@@ -132,5 +135,38 @@ public class JoueurService : IJoueurService
         using var stream = new FileStream(fullPath, FileMode.Create);
         file.CopyTo(stream);
         return $"/uploads/photos/{fileName}";
+    }
+
+    public List<JoueurMedia> GetMediasByJoueur(int joueurId)
+        => _repo.GetMediasByJoueur(joueurId);
+
+    public JoueurMedia AddJoueurMedia(int joueurId, IFormFile file, string webRootPath)
+    {
+        var dir = Path.Combine(webRootPath, "uploads", "joueurs", joueurId.ToString());
+        Directory.CreateDirectory(dir);
+        var ext = Path.GetExtension(file.FileName);
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        var fullPath = Path.Combine(dir, fileName);
+        using var stream = new FileStream(fullPath, FileMode.Create);
+        file.CopyTo(stream);
+        var media = new JoueurMedia
+        {
+            JoueurId = joueurId,
+            CheminFichier = $"/uploads/joueurs/{joueurId}/{fileName}",
+            DateAjout = DateTime.UtcNow
+        };
+        return _repo.AddJoueurMedia(media);
+    }
+
+    public bool DeleteJoueurMedia(int id, string webRootPath)
+    {
+        var all = _repo.GetAllJoueurMedias();
+        var media = all.FirstOrDefault(m => m.Id == id);
+        if (media != null && !string.IsNullOrEmpty(media.CheminFichier))
+        {
+            var path = Path.Combine(webRootPath, media.CheminFichier.TrimStart('/'));
+            if (File.Exists(path)) File.Delete(path);
+        }
+        return _repo.DeleteJoueurMedia(id);
     }
 }

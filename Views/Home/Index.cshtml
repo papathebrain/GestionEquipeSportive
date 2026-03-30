@@ -92,9 +92,9 @@ else
                     </div>
                     <div class="card-footer bg-transparent">
                         <div class="d-flex gap-2">
-                            <a asp-controller="Ecole" asp-action="Details" asp-route-id="@ecole.Id"
+                            <a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole.Id"
                                class="btn btn-sm btn-primary flex-fill">
-                                <i class="bi bi-building me-1"></i>Voir l'école
+                                <i class="bi bi-people me-1"></i>Voir l'école
                             </a>
                             @if (User.IsInRole("Admin"))
                             {

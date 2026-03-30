@@ -15,6 +15,9 @@ public class ExcelRepository : IExcelRepository
     private string StaffFile => Path.Combine(_dataPath, "staff.xlsx");
     private string MatchsFile => Path.Combine(_dataPath, "matchs.xlsx");
     private string MatchMediasFile => Path.Combine(_dataPath, "match_medias.xlsx");
+    private string JoueurMediasFile => Path.Combine(_dataPath, "joueur_medias.xlsx");
+    private string AbsencesFile => Path.Combine(_dataPath, "absences_match.xlsx");
+    private string EvenementsFile => Path.Combine(_dataPath, "evenements.xlsx");
 
     public ExcelRepository(IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -32,6 +35,9 @@ public class ExcelRepository : IExcelRepository
         InitStaffFile();
         InitMatchsFile();
         InitMatchMediasFile();
+        InitJoueurMediasFile();
+        InitAbsencesFile();
+        InitEvenementsFile();
     }
 
     private void InitEcolesFile()
@@ -46,6 +52,7 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 4).Value = "LogoPath";
             ws.Cell(1, 5).Value = "CouleurPrimaire";
             ws.Cell(1, 6).Value = "CouleurSecondaire";
+            ws.Cell(1, 7).Value = "LiensSociaux";
             wb.SaveAs(EcolesFile);
         }
     }
@@ -83,6 +90,7 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 8).Value = "NoFiche";
             ws.Cell(1, 9).Value = "PositionSpecifique";
             ws.Cell(1, 10).Value = "Description";
+            ws.Cell(1, 11).Value = "ConsentementPhoto";
             wb.SaveAs(JoueursFile);
         }
     }
@@ -118,6 +126,13 @@ public class ExcelRepository : IExcelRepository
                 var idCell = ws.Cell(row, 1).Value;
                 if (idCell.IsBlank) continue;
 
+                var liensJson = ws.Cell(row, 7).GetString();
+                List<LienSocial> liens = new();
+                if (!string.IsNullOrWhiteSpace(liensJson))
+                {
+                    try { liens = System.Text.Json.JsonSerializer.Deserialize<List<LienSocial>>(liensJson) ?? new(); }
+                    catch { liens = new(); }
+                }
                 ecoles.Add(new Ecole
                 {
                     Id = (int)ws.Cell(row, 1).GetDouble(),
@@ -125,7 +140,8 @@ public class ExcelRepository : IExcelRepository
                     NomEquipe = ws.Cell(row, 3).GetString(),
                     LogoPath = ws.Cell(row, 4).GetString() is string s && s.Length > 0 ? s : null,
                     CouleurPrimaire = ws.Cell(row, 5).GetString() is string cp && cp.Length > 0 ? cp : "#1a3a5c",
-                    CouleurSecondaire = ws.Cell(row, 6).GetString() is string cs && cs.Length > 0 ? cs : "#e8a020"
+                    CouleurSecondaire = ws.Cell(row, 6).GetString() is string cs && cs.Length > 0 ? cs : "#e8a020",
+                    LiensSociaux = liens
                 });
             }
             return ecoles;
@@ -201,6 +217,9 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 4).Value = ecole.LogoPath ?? string.Empty;
         ws.Cell(row, 5).Value = ecole.CouleurPrimaire;
         ws.Cell(row, 6).Value = ecole.CouleurSecondaire;
+        ws.Cell(row, 7).Value = ecole.LiensSociaux.Count > 0
+            ? System.Text.Json.JsonSerializer.Serialize(ecole.LiensSociaux)
+            : string.Empty;
     }
 
     // ==================== ÉQUIPES ====================
@@ -333,7 +352,8 @@ public class ExcelRepository : IExcelRepository
                     PhotoPath = ws.Cell(row, 7).GetString() is string p && p.Length > 0 ? p : null,
                     NoFiche = ws.Cell(row, 8).GetString() is string nf && nf.Length > 0 ? nf : null,
                     PositionSpecifique = ws.Cell(row, 9).GetString() is string ps && ps.Length > 0 ? ps : null,
-                    Description = ws.Cell(row, 10).GetString() is string desc && desc.Length > 0 ? desc : null
+                    Description = ws.Cell(row, 10).GetString() is string desc && desc.Length > 0 ? desc : null,
+                    ConsentementPhoto = ws.Cell(row, 11).Value.IsBlank || ws.Cell(row, 11).GetString().ToLowerInvariant() != "false"
                 });
             }
             return joueurs;
@@ -415,6 +435,7 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 8).Value = joueur.NoFiche ?? string.Empty;
         ws.Cell(row, 9).Value = joueur.PositionSpecifique ?? string.Empty;
         ws.Cell(row, 10).Value = joueur.Description ?? string.Empty;
+        ws.Cell(row, 11).Value = joueur.ConsentementPhoto.ToString().ToLower();
     }
 
     // ==================== GALERIE ====================
@@ -685,6 +706,35 @@ public class ExcelRepository : IExcelRepository
         }
     }
 
+    private void InitJoueurMediasFile()
+    {
+        if (!File.Exists(JoueurMediasFile))
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("JoueurMedias");
+            ws.Cell(1, 1).Value = "Id";
+            ws.Cell(1, 2).Value = "JoueurId";
+            ws.Cell(1, 3).Value = "CheminFichier";
+            ws.Cell(1, 4).Value = "Description";
+            ws.Cell(1, 5).Value = "DateAjout";
+            wb.SaveAs(JoueurMediasFile);
+        }
+    }
+
+    private void InitAbsencesFile()
+    {
+        if (!File.Exists(AbsencesFile))
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Absences");
+            ws.Cell(1, 1).Value = "Id";
+            ws.Cell(1, 2).Value = "MatchId";
+            ws.Cell(1, 3).Value = "JoueurId";
+            ws.Cell(1, 4).Value = "Raison";
+            wb.SaveAs(AbsencesFile);
+        }
+    }
+
     public List<Match> GetAllMatchs()
     {
         lock (_lock)
@@ -902,5 +952,304 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 4).Value = media.TypeMedia.ToString();
         ws.Cell(row, 5).Value = media.Description ?? string.Empty;
         ws.Cell(row, 6).Value = media.DateAjout;
+    }
+
+    // ==================== MÉDIAS JOUEUR ====================
+
+    public List<JoueurMedia> GetAllJoueurMedias()
+    {
+        lock (_lock)
+        {
+            var medias = new List<JoueurMedia>();
+            using var wb = new XLWorkbook(JoueurMediasFile);
+            var ws = wb.Worksheet("JoueurMedias");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (ws.Cell(row, 1).Value.IsBlank) continue;
+                DateTime dateAjout = DateTime.UtcNow;
+                var dateCell = ws.Cell(row, 5);
+                if (!dateCell.Value.IsBlank)
+                {
+                    if (dateCell.Value.IsDateTime) dateAjout = dateCell.GetDateTime();
+                    else if (DateTime.TryParse(dateCell.GetString(), out var d)) dateAjout = d;
+                }
+                medias.Add(new JoueurMedia
+                {
+                    Id = (int)ws.Cell(row, 1).GetDouble(),
+                    JoueurId = (int)ws.Cell(row, 2).GetDouble(),
+                    CheminFichier = ws.Cell(row, 3).GetString(),
+                    Description = ws.Cell(row, 4).GetString() is string desc && desc.Length > 0 ? desc : null,
+                    DateAjout = dateAjout
+                });
+            }
+            return medias;
+        }
+    }
+
+    public List<JoueurMedia> GetMediasByJoueur(int joueurId)
+        => GetAllJoueurMedias().Where(m => m.JoueurId == joueurId).ToList();
+
+    public JoueurMedia AddJoueurMedia(JoueurMedia media)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(JoueurMediasFile);
+            var ws = wb.Worksheet("JoueurMedias");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var all = GetAllJoueurMedias();
+            media.Id = all.Count > 0 ? all.Max(m => m.Id) + 1 : 1;
+            ws.Cell(lastRow + 1, 1).Value = media.Id;
+            ws.Cell(lastRow + 1, 2).Value = media.JoueurId;
+            ws.Cell(lastRow + 1, 3).Value = media.CheminFichier;
+            ws.Cell(lastRow + 1, 4).Value = media.Description ?? string.Empty;
+            ws.Cell(lastRow + 1, 5).Value = media.DateAjout;
+            wb.Save();
+            return media;
+        }
+    }
+
+    public bool DeleteJoueurMedia(int id)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(JoueurMediasFile);
+            var ws = wb.Worksheet("JoueurMedias");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == id)
+                {
+                    ws.Row(row).Delete();
+                    wb.Save();
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    // ==================== ABSENCES MATCH ====================
+
+    public List<AbsenceMatch> GetAllAbsences()
+    {
+        lock (_lock)
+        {
+            var list = new List<AbsenceMatch>();
+            using var wb = new XLWorkbook(AbsencesFile);
+            var ws = wb.Worksheet("Absences");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (ws.Cell(row, 1).Value.IsBlank) continue;
+                list.Add(new AbsenceMatch
+                {
+                    Id = (int)ws.Cell(row, 1).GetDouble(),
+                    MatchId = (int)ws.Cell(row, 2).GetDouble(),
+                    JoueurId = (int)ws.Cell(row, 3).GetDouble(),
+                    Raison = ws.Cell(row, 4).GetString() is string r && r.Length > 0 ? r : null
+                });
+            }
+            return list;
+        }
+    }
+
+    public List<AbsenceMatch> GetAbsencesByMatch(int matchId)
+        => GetAllAbsences().Where(a => a.MatchId == matchId).ToList();
+
+    public AbsenceMatch AddAbsence(AbsenceMatch absence)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(AbsencesFile);
+            var ws = wb.Worksheet("Absences");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var all = GetAllAbsences();
+            absence.Id = all.Count > 0 ? all.Max(a => a.Id) + 1 : 1;
+            ws.Cell(lastRow + 1, 1).Value = absence.Id;
+            ws.Cell(lastRow + 1, 2).Value = absence.MatchId;
+            ws.Cell(lastRow + 1, 3).Value = absence.JoueurId;
+            ws.Cell(lastRow + 1, 4).Value = absence.Raison ?? string.Empty;
+            wb.Save();
+            return absence;
+        }
+    }
+
+    public bool DeleteAbsence(int id)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(AbsencesFile);
+            var ws = wb.Worksheet("Absences");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == id)
+                {
+                    ws.Row(row).Delete();
+                    wb.Save();
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private void InitEvenementsFile()
+    {
+        if (!File.Exists(EvenementsFile))
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Evenements");
+            ws.Cell(1, 1).Value = "Id";
+            ws.Cell(1, 2).Value = "EquipeId";
+            ws.Cell(1, 3).Value = "Titre";
+            ws.Cell(1, 4).Value = "Type";
+            ws.Cell(1, 5).Value = "DateDebut";
+            ws.Cell(1, 6).Value = "DateFin";
+            ws.Cell(1, 7).Value = "Lieu";
+            ws.Cell(1, 8).Value = "Notes";
+            wb.SaveAs(EvenementsFile);
+        }
+    }
+
+    // ==================== ÉVÉNEMENTS ====================
+
+    public List<Evenement> GetAllEvenements()
+    {
+        lock (_lock)
+        {
+            var list = new List<Evenement>();
+            using var wb = new XLWorkbook(EvenementsFile);
+            var ws = wb.Worksheet("Evenements");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (ws.Cell(row, 1).Value.IsBlank) continue;
+                DateTime dateDebut = DateTime.Today;
+                var dbCell = ws.Cell(row, 5);
+                if (!dbCell.Value.IsBlank)
+                {
+                    if (dbCell.Value.IsDateTime) dateDebut = dbCell.GetDateTime();
+                    else if (DateTime.TryParse(dbCell.GetString(), out var d)) dateDebut = d;
+                }
+                DateTime? dateFin = null;
+                var dfCell = ws.Cell(row, 6);
+                if (!dfCell.Value.IsBlank)
+                {
+                    if (dfCell.Value.IsDateTime) dateFin = dfCell.GetDateTime();
+                    else if (DateTime.TryParse(dfCell.GetString(), out var df)) dateFin = df;
+                }
+                Enum.TryParse<TypeEvenement>(ws.Cell(row, 4).GetString(), out var type);
+                list.Add(new Evenement
+                {
+                    Id = (int)ws.Cell(row, 1).GetDouble(),
+                    EquipeId = (int)ws.Cell(row, 2).GetDouble(),
+                    Titre = ws.Cell(row, 3).GetString(),
+                    Type = type,
+                    DateDebut = dateDebut,
+                    DateFin = dateFin,
+                    Lieu = ws.Cell(row, 7).GetString() is string l && l.Length > 0 ? l : null,
+                    Notes = ws.Cell(row, 8).GetString() is string n && n.Length > 0 ? n : null,
+                });
+            }
+            return list;
+        }
+    }
+
+    public List<Evenement> GetEvenementsByEquipe(int equipeId)
+        => GetAllEvenements().Where(e => e.EquipeId == equipeId).ToList();
+
+    public Evenement? GetEvenementById(int id)
+        => GetAllEvenements().FirstOrDefault(e => e.Id == id);
+
+    public Evenement AddEvenement(Evenement ev)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(EvenementsFile);
+            var ws = wb.Worksheet("Evenements");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var all = GetAllEvenements();
+            ev.Id = all.Count > 0 ? all.Max(e => e.Id) + 1 : 1;
+            WriteEvenementRow(ws, lastRow + 1, ev);
+            wb.Save();
+            return ev;
+        }
+    }
+
+    public Evenement UpdateEvenement(Evenement ev)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(EvenementsFile);
+            var ws = wb.Worksheet("Evenements");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == ev.Id)
+                {
+                    WriteEvenementRow(ws, row, ev);
+                    break;
+                }
+            }
+            wb.Save();
+            return ev;
+        }
+    }
+
+    public bool DeleteEvenement(int id)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(EvenementsFile);
+            var ws = wb.Worksheet("Evenements");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == id)
+                {
+                    ws.Row(row).Delete();
+                    wb.Save();
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static void WriteEvenementRow(IXLWorksheet ws, int row, Evenement ev)
+    {
+        ws.Cell(row, 1).Value = ev.Id;
+        ws.Cell(row, 2).Value = ev.EquipeId;
+        ws.Cell(row, 3).Value = ev.Titre;
+        ws.Cell(row, 4).Value = ev.Type.ToString();
+        ws.Cell(row, 5).Value = ev.DateDebut.ToString("yyyy-MM-dd HH:mm");
+        ws.Cell(row, 6).Value = ev.DateFin.HasValue ? ev.DateFin.Value.ToString("yyyy-MM-dd HH:mm") : string.Empty;
+        ws.Cell(row, 7).Value = ev.Lieu ?? string.Empty;
+        ws.Cell(row, 8).Value = ev.Notes ?? string.Empty;
+    }
+
+    public bool DeleteAbsenceByMatchJoueur(int matchId, int joueurId)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(AbsencesFile);
+            var ws = wb.Worksheet("Absences");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            bool found = false;
+            for (int row = lastRow; row >= 2; row--)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank
+                    && (int)ws.Cell(row, 2).GetDouble() == matchId
+                    && (int)ws.Cell(row, 3).GetDouble() == joueurId)
+                {
+                    ws.Row(row).Delete();
+                    found = true;
+                }
+            }
+            if (found) wb.Save();
+            return found;
+        }
     }
 }

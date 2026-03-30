@@ -1,0 +1,73 @@
+@model GestionEquipeSportive.ViewModels.EvenementViewModel
+@{
+    ViewData["Title"] = "Ajouter un événement";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId">@Model.NomEquipe</a></li>
+            <li class="breadcrumb-item active">Ajouter un événement</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-calendar-plus me-2 text-primary"></i>Ajouter un événement</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="EquipeId" />
+                    @await Html.PartialAsync("_EvenementForm", Model)
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Ajouter
+                        </button>
+                        <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    (function () {
+        var sw = document.getElementById('switchRecurrence');
+        if (!sw) return;
+        var opts = document.getElementById('recurrenceOptions');
+        sw.addEventListener('change', function () { opts.style.display = this.checked ? '' : 'none'; });
+
+        function updatePreview() {
+            var dateStr = document.querySelector('[name="DateStr"]')?.value;
+            var finStr  = document.querySelector('[name="RecurrenceDateFin"]')?.value;
+            var checks  = Array.from(document.querySelectorAll('.jour-check:checked'));
+            var preview = document.getElementById('recurrencePreview');
+            if (!dateStr || !finStr || checks.length === 0) {
+                preview.style.setProperty('display', 'none', 'important'); return;
+            }
+            var jours = ['', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            var labels = checks.map(function (c) { return jours[parseInt(c.value)]; }).join(', ');
+            var d1 = new Date(dateStr + 'T00:00:00'), d2 = new Date(finStr + 'T00:00:00');
+            var count = 0;
+            for (var d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+                var dow = d.getDay() === 0 ? 7 : d.getDay();
+                if (checks.some(function (c) { return parseInt(c.value) === dow; })) count++;
+            }
+            preview.textContent = count + ' occurrence(s) \u2014 ' + labels;
+            preview.style.removeProperty('display');
+        }
+
+        document.querySelectorAll('.jour-check').forEach(function (c) { c.addEventListener('change', updatePreview); });
+        document.querySelector('[name="DateStr"]')?.addEventListener('change', updatePreview);
+        document.querySelector('[name="RecurrenceDateFin"]')?.addEventListener('change', updatePreview);
+    })();
+</script>
+}

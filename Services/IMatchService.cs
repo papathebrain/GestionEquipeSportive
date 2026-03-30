@@ -17,4 +17,8 @@ public interface IMatchService
     List<MatchMedia> GetMediasByMatch(int matchId);
     List<MatchMedia> AddMedias(int matchId, List<IFormFile> fichiers, TypeMedia type, string? description, string webRootPath);
     bool DeleteMedia(int id, string webRootPath);
+
+    // Absences
+    List<AbsenceMatch> GetAbsencesByMatch(int matchId);
+    void ToggleAbsence(int matchId, int joueurId);
 }

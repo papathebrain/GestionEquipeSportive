@@ -1,3 +1,4 @@
+using GestionEquipeSportive.Models;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
@@ -28,4 +29,6 @@ public class EcoleViewModel
     [Required(ErrorMessage = "La couleur secondaire est obligatoire")]
     [Display(Name = "Couleur secondaire")]
     public string CouleurSecondaire { get; set; } = "#e8a020";
+
+    public List<LienSocial> LiensSociaux { get; set; } = new();
 }

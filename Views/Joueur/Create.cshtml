@@ -64,6 +64,17 @@
                             <textarea asp-for="Description" class="form-control" rows="3"
                                       placeholder="Notes, informations supplémentaires..."></textarea>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input asp-for="ConsentementPhoto" class="form-check-input" role="switch" />
+                                <label asp-for="ConsentementPhoto" class="form-check-label fw-semibold">
+                                    Consentement parental — diffusion des photos autorisée
+                                </label>
+                            </div>
+                            <div class="form-text text-muted">
+                                Si désactivé, les photos de ce joueur ne seront pas affichées sur la page publique.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row g-3 mt-1">

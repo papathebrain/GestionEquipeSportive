@@ -15,4 +15,7 @@ public interface IJoueurService
     Joueur UpdateJoueur(JoueurViewModel vm, IFormFile? photoFile, string webRootPath);
     bool DeleteJoueur(int id, string webRootPath);
     JoueurViewModel ToViewModel(Joueur joueur);
+    List<JoueurMedia> GetMediasByJoueur(int joueurId);
+    JoueurMedia AddJoueurMedia(int joueurId, IFormFile file, string webRootPath);
+    bool DeleteJoueurMedia(int id, string webRootPath);
 }

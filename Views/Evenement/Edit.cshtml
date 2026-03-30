@@ -1,0 +1,34 @@
+@model GestionEquipeSportive.ViewModels.EvenementViewModel
+@{
+    ViewData["Title"] = "Modifier l'événement";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId">@Model.NomEquipe</a></li>
+            <li class="breadcrumb-item active">Modifier l'événement</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-calendar-check me-2 text-primary"></i>Modifier l'événement</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="EquipeId" />
+                    @await Html.PartialAsync("_EvenementForm", Model)
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Enregistrer</button>
+                        <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-2"></i>Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

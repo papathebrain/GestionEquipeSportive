@@ -65,6 +65,17 @@
                             <textarea asp-for="Description" class="form-control" rows="3"
                                       placeholder="Notes, informations supplémentaires..."></textarea>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input asp-for="ConsentementPhoto" class="form-check-input" role="switch" />
+                                <label asp-for="ConsentementPhoto" class="form-check-label fw-semibold">
+                                    Consentement parental — diffusion des photos autorisée
+                                </label>
+                            </div>
+                            <div class="form-text text-muted">
+                                Si désactivé, les photos de ce joueur ne seront pas affichées sur la page publique.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row g-3 mt-1">
@@ -106,6 +117,65 @@
                         </a>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Galerie de photos supplémentaires ────────────────────────────────── *@
+@{
+    var joueurMedias = ViewBag.JoueurMedias as List<GestionEquipeSportive.Models.JoueurMedia> ?? new();
+}
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-images me-2"></i>Photos supplémentaires
+                    <span class="badge bg-secondary ms-1">@joueurMedias.Count</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="AjouterMedia" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
+                      class="d-flex gap-2 align-items-end mb-3">
+                    @Html.AntiForgeryToken()
+                    <div class="flex-grow-1">
+                        <label class="form-label fw-semibold small">Ajouter une photo</label>
+                        <input type="file" name="fichier" class="form-control form-control-sm" accept="image/*" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-upload me-1"></i>Ajouter
+                    </button>
+                </form>
+
+                @if (!joueurMedias.Any())
+                {
+                    <p class="text-muted small mb-0">Aucune photo supplémentaire.</p>
+                }
+                else
+                {
+                    <div class="row g-2">
+                        @foreach (var m in joueurMedias.OrderBy(m => m.DateAjout))
+                        {
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="position-relative">
+                                    <img src="@m.CheminFichier" alt="@m.Description"
+                                         class="img-fluid rounded shadow-sm w-100"
+                                         style="height:110px;object-fit:cover;" />
+                                    <form asp-action="SupprimerMedia" method="post" class="mt-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="mediaId" value="@m.Id" />
+                                        <input type="hidden" name="joueurId" value="@Model.Id" />
+                                        <button type="submit" class="btn btn-danger btn-sm w-100 py-0"
+                                                onclick="return confirm('Supprimer cette photo ?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>

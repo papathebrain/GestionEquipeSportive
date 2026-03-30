@@ -12,7 +12,17 @@ public class Joueur
     public string? PhotoPath { get; set; }
     public string? NoFiche { get; set; }  // Identifiant permanent du joueur entre les années
     public string? Description { get; set; }
+    public bool ConsentementPhoto { get; set; } = true;  // Consentement parental pour diffusion des photos
 
     // Navigation
     public Equipe? Equipe { get; set; }
+}
+
+public class JoueurMedia
+{
+    public int Id { get; set; }
+    public int JoueurId { get; set; }
+    public string CheminFichier { get; set; } = "";
+    public string? Description { get; set; }
+    public DateTime DateAjout { get; set; } = DateTime.UtcNow;
 }
