@@ -1,0 +1,72 @@
+@model GestionEquipeSportive.ViewModels.StaffViewModel
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Prenom" class="form-label fw-semibold"></label>
+        <input asp-for="Prenom" class="form-control" />
+        <span asp-validation-for="Prenom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Nom" class="form-label fw-semibold"></label>
+        <input asp-for="Nom" class="form-control" />
+        <span asp-validation-for="Nom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Titre" class="form-label fw-semibold"></label>
+        <input asp-for="Titre" class="form-control" list="titresSuggestion"
+               placeholder="Ex: Entraîneur chef, Physio, Gérant..." />
+        <datalist id="titresSuggestion">
+            <option value="Entraîneur chef" />
+            <option value="Entraîneur adjoint" />
+            <option value="Entraîneur spécialisé" />
+            <option value="Physiothérapeute" />
+            <option value="Médecin" />
+            <option value="Gérant d'équipement" />
+            <option value="Statisticien" />
+            <option value="Vidéaste" />
+            <option value="Bénévole" />
+        </datalist>
+        <span asp-validation-for="Titre" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ResponsableDe" class="form-label fw-semibold"></label>
+        <input asp-for="ResponsableDe" class="form-control"
+               placeholder="Ex: Attaque, Défense, Gardiens..." />
+        <span asp-validation-for="ResponsableDe" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="mt-3">
+    @if (!string.IsNullOrEmpty(Model.PhotoPathActuelle))
+    {
+        <div class="mb-2 d-flex align-items-center gap-3">
+            <img src="@Model.PhotoPathActuelle" alt="Photo actuelle"
+                 class="rounded-circle" style="width:70px;height:70px;object-fit:cover;" />
+            <small class="text-muted">Photo actuelle</small>
+        </div>
+    }
+    <label asp-for="PhotoFile" class="form-label fw-semibold">
+        @(string.IsNullOrEmpty(Model.PhotoPathActuelle) ? "Photo" : "Nouvelle photo (optionnel)")
+    </label>
+    <input asp-for="PhotoFile" type="file" class="form-control" accept="image/*"
+           onchange="previewPhoto(this)" />
+    <div class="mt-2" id="photoPreviewContainer" style="display:none;">
+        <img id="photoPreview" src="#" alt="Aperçu"
+             class="rounded-circle" style="width:70px;height:70px;object-fit:cover;" />
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('photoPreview').src = e.target.result;
+            document.getElementById('photoPreviewContainer').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+}

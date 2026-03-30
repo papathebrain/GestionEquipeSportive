@@ -27,7 +27,7 @@ body {
 
 /* ========== NAVBAR ========== */
 .app-navbar {
-    background: linear-gradient(135deg, var(--couleur-primaire) 0%, #0d2340 100%);
+    background-color: var(--couleur-primaire);
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     padding: 0.75rem 0;
 }
@@ -57,7 +57,7 @@ body {
 
 /* ========== HERO SECTION ========== */
 .hero-section {
-    background: linear-gradient(135deg, var(--couleur-primaire) 0%, #2a5a8c 100%);
+    background-color: var(--couleur-primaire);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
 }
@@ -143,6 +143,15 @@ body {
 /* ========== TEAM CARDS ========== */
 .team-card {
     border-left: 4px solid var(--couleur-primaire);
+}
+
+.team-card-clickable {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.team-card-clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
 }
 
 .niveau-badge {
@@ -301,13 +310,15 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--couleur-primaire, #1a3a5c);
-    border-color: var(--couleur-primaire, #1a3a5c);
+    background-color: var(--couleur-secondaire, #e8a020);
+    border-color: var(--couleur-secondaire, #e8a020);
+    color: white;
 }
 
 .btn-primary:hover {
-    background-color: color-mix(in srgb, var(--couleur-primaire, #1a3a5c) 85%, black);
-    border-color: color-mix(in srgb, var(--couleur-primaire, #1a3a5c) 85%, black);
+    background-color: color-mix(in srgb, var(--couleur-secondaire, #e8a020) 85%, black);
+    border-color: color-mix(in srgb, var(--couleur-secondaire, #e8a020) 85%, black);
+    color: white;
 }
 
 /* ========== TABLES ========== */

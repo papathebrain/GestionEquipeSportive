@@ -11,9 +11,9 @@ public class EcoleViewModel
     [Display(Name = "Nom de l'école")]
     public string Nom { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le code est obligatoire")]
-    [Display(Name = "Code de l'école")]
-    public string CodeEcole { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Le nom d'équipe est obligatoire")]
+    [Display(Name = "Nom d'équipe")]
+    public string NomEquipe { get; set; } = string.Empty;
 
     [Display(Name = "Logo actuel")]
     public string? LogoPathActuel { get; set; }

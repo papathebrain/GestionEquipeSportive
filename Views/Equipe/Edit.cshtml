@@ -27,12 +27,6 @@
                     <input asp-for="Id" type="hidden" />
                     <input asp-for="EcoleId" type="hidden" />
 
-                    <div class="mb-3">
-                        <label asp-for="Nom" class="form-label fw-semibold"></label>
-                        <input asp-for="Nom" class="form-control" />
-                        <span asp-validation-for="Nom" class="text-danger small"></span>
-                    </div>
-
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label asp-for="TypeSport" class="form-label fw-semibold"></label>
@@ -43,12 +37,8 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Niveau" class="form-label fw-semibold"></label>
-                            <select asp-for="Niveau" class="form-select" id="niveauSelect">
+                            <select asp-for="Niveau" asp-items="Model.NiveauxList" class="form-select" id="niveauSelect">
                                 <option value="">-- Sélectionner un niveau --</option>
-                                @foreach (var item in Model.NiveauxList)
-                                {
-                                    <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option>
-                                }
                             </select>
                             <span asp-validation-for="Niveau" class="text-danger small"></span>
                         </div>
@@ -60,6 +50,12 @@
                             <option value="">-- Sélectionner une année --</option>
                         </select>
                         <span asp-validation-for="AnneeScolaire" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-check mt-3">
+                        <input asp-for="AfficherPublic" class="form-check-input" />
+                        <label asp-for="AfficherPublic" class="form-check-label fw-semibold"></label>
+                        <div class="form-text">Rend la page de cette équipe accessible publiquement sans connexion.</div>
                     </div>
 
                     <div class="d-flex gap-2 mt-4">

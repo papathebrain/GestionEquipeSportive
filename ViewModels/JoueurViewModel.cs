@@ -23,8 +23,17 @@ public class JoueurViewModel
     public string Numero { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "La position est obligatoire")]
-    [Display(Name = "Position")]
+    [Display(Name = "Position (groupe)")]
     public string Position { get; set; } = string.Empty;
+
+    [Display(Name = "Position spécifique")]
+    public string? PositionSpecifique { get; set; }
+
+    [Display(Name = "Numéro de fiche")]
+    public string? NoFiche { get; set; }
+
+    [Display(Name = "Description / Notes")]
+    public string? Description { get; set; }
 
     [Display(Name = "Photo actuelle")]
     public string? PhotoPathActuelle { get; set; }

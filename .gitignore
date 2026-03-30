@@ -1,0 +1,6 @@
+.vs/
+bin/
+obj/
+*.user
+Data/users.json
+wwwroot/uploads/

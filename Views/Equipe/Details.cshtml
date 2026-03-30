@@ -1,111 +1,490 @@
 @model GestionEquipeSportive.Models.Equipe
+@using GestionEquipeSportive.Models
+@using GestionEquipeSportive.ViewModels
+@using System.Globalization
 @{
     ViewData["Title"] = Model.Nom;
     var ecole = Model.Ecole;
+    int nbJoueurs = ViewBag.NbJoueurs is int n ? n : 0;
+    bool peutModifier = ViewBag.PeutModifier == true;
+    var joueurs = ViewBag.Joueurs as List<Joueur> ?? new();
+    var staff = ViewBag.Staff as List<Staff> ?? new();
+    var matchs = ViewBag.Matchs as List<Match> ?? new();
+    var stats = ViewBag.Stats as StatistiquesMatchViewModel ?? new();
+    var frCA = new CultureInfo("fr-CA");
+    var now = DateTime.Now;
 }
 
 @section BannerContent {
-    <div class="d-flex align-items-center gap-3 text-white">
+    <div class="d-flex align-items-center justify-content-between text-white flex-wrap gap-2">
         <div>
-            <small class="opacity-75">@ecole?.Nom — @GetSportDisplayName(Model.TypeSport)</small>
+            <small class="opacity-75">@ecole?.Nom — @GetSportDisplay(Model.TypeSport)</small>
             <h2 class="mb-0 fw-bold">@Model.Nom</h2>
-            <div class="d-flex gap-2 mt-1">
-                <span class="badge bg-white text-dark">@GetNiveauDisplayName(Model.Niveau)</span>
+            <div class="d-flex gap-2 mt-1 flex-wrap">
+                <span class="badge bg-white text-dark">@GetNiveauDisplay(Model.Niveau)</span>
                 <span class="badge bg-white text-dark">@Model.AnneeScolaire</span>
+                <span class="badge bg-white text-dark">
+                    <i class="bi bi-person-fill me-1"></i>@nbJoueurs joueur@(nbJoueurs > 1 ? "s" : "")
+                </span>
+                @if (Model.AfficherPublic)
+                {
+                    <span class="badge bg-success"><i class="bi bi-globe me-1"></i>Public</span>
+                }
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            @if (peutModifier)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-light">
+                    <i class="bi bi-pencil me-1"></i>Modifier l'équipe
+                </a>
+                <a asp-action="Copier" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-copy me-1"></i>Copier l'équipe
+                </a>
+            }
+            @if (Model.AfficherPublic && ecole != null)
+            {
+                var publicUrl = $"/p/{Ecole.ToSlug(ecole.Nom)}/{Model.AnneeScolaire}/{Model.TypeSport}/{Model.Niveau}";
+                <a href="@publicUrl" target="_blank" class="btn btn-sm btn-success">
+                    <i class="bi bi-globe me-1"></i>Page publique
+                </a>
+            }
+        </div>
+    </div>
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole?.Id">@ecole?.Nom</a></li>
+        <li class="breadcrumb-item active">@Model.Nom</li>
+    </ol>
+</nav>
+
+@* ── Stats rapides ────────────────────────────────────────────────────────── *@
+@if (stats.MatchsJoues > 0 || stats.MatchsAVenir > 0)
+{
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-success">@stats.Victoires</div>
+                    <div class="small text-muted">Victoires</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-danger">@stats.Defaites</div>
+                    <div class="small text-muted">Défaites</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-secondary">@stats.Nuls</div>
+                    <div class="small text-muted">Nuls</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4">@stats.MatchsAVenir</div>
+                    <div class="small text-muted">À venir</div>
+                </div>
             </div>
         </div>
     </div>
 }
 
-<div class="mb-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@ecole?.Id">@ecole?.Nom</a></li>
-            <li class="breadcrumb-item active">@Model.Nom</li>
-        </ol>
-    </nav>
+@* ── Onglets ──────────────────────────────────────────────────────────────── *@
+<ul class="nav nav-tabs mb-0" id="equipeTabs">
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold" data-bs-toggle="tab" href="#tab-matchs">
+            <i class="bi bi-trophy me-1"></i>Matchs
+            <span class="badge bg-secondary ms-1">@matchs.Count</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-joueurs">
+            <i class="bi bi-people me-1"></i>Joueurs
+            <span class="badge bg-secondary ms-1">@joueurs.Count</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-staff">
+            <i class="bi bi-person-badge me-1"></i>Équipe école
+            <span class="badge bg-secondary ms-1">@staff.Count</span>
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content border border-top-0 rounded-bottom shadow-sm bg-white p-3 mb-4">
+
+    @* ── Onglet Matchs ─────────────────────────────────────────────────────── *@
+    <div class="tab-pane fade show active" id="tab-matchs">
+        @if (peutModifier)
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <a asp-controller="Match" asp-action="Create" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un match
+                </a>
+            </div>
+        }
+        @if (!matchs.Any())
+        {
+            <p class="text-muted text-center py-3 mb-0">Aucun match planifié.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Adversaire</th>
+                            <th class="d-none d-md-table-cell">Lieu</th>
+                            <th class="text-center">Résultat</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in matchs.OrderByDescending(m => m.DateMatch))
+                        {
+                            <tr>
+                                <td class="text-nowrap small">
+                                    @m.DateMatch.ToString("d MMM yyyy", frCA)
+                                    @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
+                                    {
+                                        <span class="text-muted ms-1">@m.HeureDebutMatch</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
+                                    @if (m.EstDomicile)
+                                    {
+                                        <span class="badge bg-info text-dark ms-1 small">Dom.</span>
+                                    }
+                                </td>
+                                <td class="text-muted small d-none d-md-table-cell">@m.Lieu</td>
+                                <td class="text-center">
+                                    @if (m.AResultat)
+                                    {
+                                        var cls = m.Resultat switch { "V" => "bg-success", "D" => "bg-danger", _ => "bg-secondary" };
+                                        <span class="badge @cls me-1">@m.Resultat</span>
+                                        <span class="small fw-semibold">@m.ScoreEquipe – @m.ScoreAdversaire</span>
+                                    }
+                                    else if (m.DateMatch >= now)
+                                    {
+                                        <span class="badge bg-light text-dark border small">À venir</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-controller="Match" asp-action="Details" asp-route-id="@m.Id"
+                                       class="btn btn-sm btn-outline-info py-0 px-1" title="Détails / Galerie">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (peutModifier)
+                                    {
+                                        <a asp-controller="Match" asp-action="Edit" asp-route-id="@m.Id"
+                                           class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                                onclick="confirmDeleteMatch(@m.Id, '@Html.Raw(m.Adversaire.Replace("'","\\'"))', @Model.Id)"
+                                                title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    @* ── Onglet Joueurs ─────────────────────────────────────────────────────── *@
+    <div class="tab-pane fade" id="tab-joueurs">
+        @if (peutModifier)
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <a asp-controller="Joueur" asp-action="Create" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un joueur
+                </a>
+            </div>
+        }
+        @if (!joueurs.Any())
+        {
+            <p class="text-muted text-center py-3 mb-0">Aucun joueur dans cette équipe.</p>
+        }
+        else
+        {
+            @foreach (var groupe in joueurs.GroupBy(j => j.Position).OrderBy(g => g.Key))
+            {
+                <div class="mb-4">
+                    <div class="fw-bold text-uppercase small text-muted border-bottom pb-1 mb-2">
+                        @groupe.Key
+                        <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
+                    </div>
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:48px">#</th>
+                                <th>Nom</th>
+                                <th class="d-none d-sm-table-cell">Position spécifique</th>
+                                <th class="d-none d-md-table-cell">Fiche</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var j in groupe.OrderBy(j => j.Numero))
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                        {
+                                            <img src="@j.PhotoPath" class="rounded-circle"
+                                                 style="width:32px;height:32px;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-dark">#@j.Numero</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold">@j.Prenom @j.Nom</span>
+                                        @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                        {
+                                            <span class="text-muted small ms-1">#@j.Numero</span>
+                                        }
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">
+                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                        {
+                                            <span class="badge bg-primary">@j.PositionSpecifique</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small d-none d-md-table-cell">@j.NoFiche</td>
+                                    <td class="text-end text-nowrap">
+                                        <a asp-controller="Joueur" asp-action="Details" asp-route-id="@j.Id"
+                                           class="btn btn-sm btn-outline-info py-0 px-1" title="Détails">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (peutModifier)
+                                        {
+                                            <a asp-controller="Joueur" asp-action="Edit" asp-route-id="@j.Id"
+                                               class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                                    onclick="confirmDeleteJoueur(@j.Id, '@Html.Raw(j.Prenom.Replace("'","\\'")) @Html.Raw(j.Nom.Replace("'","\\'"))', @Model.Id)"
+                                                    title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </div>
+
+    @* ── Onglet Équipe école ────────────────────────────────────────────────── *@
+    <div class="tab-pane fade" id="tab-staff">
+        @if (peutModifier)
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <a asp-controller="Staff" asp-action="Create" asp-route-equipeId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter un membre
+                </a>
+            </div>
+        }
+        @if (!staff.Any())
+        {
+            <p class="text-muted text-center py-3 mb-0">Aucun membre de l'équipe école.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:48px"></th>
+                        <th>Nom</th>
+                        <th>Titre</th>
+                        <th class="d-none d-md-table-cell">Responsable de</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
+                    {
+                        <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(s.PhotoPath))
+                                {
+                                    <img src="@s.PhotoPath" class="rounded-circle"
+                                         style="width:36px;height:36px;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center"
+                                         style="width:36px;height:36px;color:#fff;">
+                                        <i class="bi bi-person-fill" style="font-size:.85rem;"></i>
+                                    </div>
+                                }
+                            </td>
+                            <td class="fw-semibold">@s.Prenom @s.Nom</td>
+                            <td><span class="badge bg-info text-dark">@s.Titre</span></td>
+                            <td class="text-muted small d-none d-md-table-cell">@s.ResponsableDe</td>
+                            <td class="text-end text-nowrap">
+                                @if (peutModifier)
+                                {
+                                    <a asp-controller="Staff" asp-action="Edit" asp-route-id="@s.Id"
+                                       class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                            onclick="confirmDeleteStaff(@s.Id, '@Html.Raw(s.Prenom.Replace("'","\\'")) @Html.Raw(s.Nom.Replace("'","\\'"))', @Model.Id)"
+                                            title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card text-center shadow-sm">
-            <div class="card-body py-3">
-                <i class="bi bi-person-lines-fill text-primary" style="font-size: 2rem;"></i>
-                <h5 class="mt-2 mb-0">Joueurs</h5>
+@* ── Modales de suppression ───────────────────────────────────────────────── *@
+<div class="modal fade" id="deleteJoueurModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Supprimer le joueur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="card-footer">
-                <a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@Model.Id"
-                   class="btn btn-sm btn-primary w-100">
-                    <i class="bi bi-arrow-right me-1"></i>Voir
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center shadow-sm">
-            <div class="card-body py-3">
-                <i class="bi bi-images text-success" style="font-size: 2rem;"></i>
-                <h5 class="mt-2 mb-0">Galerie</h5>
-            </div>
-            <div class="card-footer">
-                <a asp-controller="Galerie" asp-action="Index" asp-route-equipeId="@Model.Id"
-                   class="btn btn-sm btn-success w-100">
-                    <i class="bi bi-arrow-right me-1"></i>Voir
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center shadow-sm">
-            <div class="card-body py-3">
-                <i class="bi bi-pencil-square text-warning" style="font-size: 2rem;"></i>
-                <h5 class="mt-2 mb-0">Modifier</h5>
-            </div>
-            <div class="card-footer">
-                <a asp-action="Edit" asp-route-id="@Model.Id"
-                   class="btn btn-sm btn-warning w-100">
-                    <i class="bi bi-arrow-right me-1"></i>Éditer
-                </a>
+            <div class="modal-body">Supprimer <strong id="deleteJoueurNom"></strong> de l'équipe ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteJoueurForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteJoueurEquipeId" name="equipeId" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Détails de l'équipe</h5>
-    </div>
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Nom</dt>
-            <dd class="col-sm-9">@Model.Nom</dd>
-            <dt class="col-sm-3">École</dt>
-            <dd class="col-sm-9">@ecole?.Nom (@ecole?.CodeEcole)</dd>
-            <dt class="col-sm-3">Sport</dt>
-            <dd class="col-sm-9">@GetSportDisplayName(Model.TypeSport)</dd>
-            <dt class="col-sm-3">Niveau</dt>
-            <dd class="col-sm-9">@GetNiveauDisplayName(Model.Niveau)</dd>
-            <dt class="col-sm-3">Année scolaire</dt>
-            <dd class="col-sm-9">@Model.AnneeScolaire</dd>
-        </dl>
+<div class="modal fade" id="deleteMatchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Supprimer le match</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Supprimer le match contre <strong id="deleteMatchAdversaire"></strong> ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteMatchForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteMatchEquipeId" name="equipeId" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
+
+<div class="modal fade" id="deleteStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Supprimer le membre</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Supprimer <strong id="deleteStaffNom"></strong> de l'équipe école ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteStaffForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteStaffEquipeId" name="equipeId" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Persister l'onglet actif
+    var tabKey = 'equipe_@(Model.Id)_tab';
+    var savedTab = localStorage.getItem(tabKey);
+    if (savedTab) {
+        var el = document.querySelector('[href="' + savedTab + '"]');
+        if (el) bootstrap.Tab.getOrCreateInstance(el).show();
+    }
+    document.querySelectorAll('#equipeTabs [data-bs-toggle="tab"]').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            localStorage.setItem(tabKey, e.target.getAttribute('href'));
+        });
+    });
+
+    function confirmDeleteJoueur(id, nom, equipeId) {
+        document.getElementById('deleteJoueurNom').textContent = nom;
+        document.getElementById('deleteJoueurEquipeId').value = equipeId;
+        document.getElementById('deleteJoueurForm').action = '/Joueur/Delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteJoueurModal')).show();
+    }
+    function confirmDeleteMatch(id, adversaire, equipeId) {
+        document.getElementById('deleteMatchAdversaire').textContent = adversaire;
+        document.getElementById('deleteMatchEquipeId').value = equipeId;
+        document.getElementById('deleteMatchForm').action = '/Match/Delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteMatchModal')).show();
+    }
+    function confirmDeleteStaff(id, nom, equipeId) {
+        document.getElementById('deleteStaffNom').textContent = nom;
+        document.getElementById('deleteStaffEquipeId').value = equipeId;
+        document.getElementById('deleteStaffForm').action = '/Staff/Delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteStaffModal')).show();
+    }
+</script>
+}
 
 @functions {
-    string GetSportDisplayName(GestionEquipeSportive.Models.TypeSport sport) => sport switch
-    {
-        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football américain",
-        GestionEquipeSportive.Models.TypeSport.Soccer => "Soccer",
-        GestionEquipeSportive.Models.TypeSport.Hockey => "Hockey",
-        _ => sport.ToString()
+    string GetSportDisplay(TypeSport s) => s switch {
+        TypeSport.FootballAmericain => "Football",
+        TypeSport.Soccer => "Soccer",
+        TypeSport.Hockey => "Hockey",
+        _ => s.ToString()
     };
-
-    string GetNiveauDisplayName(GestionEquipeSportive.Models.NiveauEquipe niveau) => niveau switch
-    {
-        GestionEquipeSportive.Models.NiveauEquipe.Juvenil => "Juvénile",
-        GestionEquipeSportive.Models.NiveauEquipe.PeeWee => "Pee-Wee",
-        _ => niveau.ToString()
+    string GetNiveauDisplay(NiveauEquipe n) => n switch {
+        NiveauEquipe.Juvenil => "Juvénile",
+        NiveauEquipe.PeeWee => "Pee-Wee",
+        _ => n.ToString()
     };
 }

@@ -19,7 +19,15 @@
     </div>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+@{
+    var annees = Model.Select(e => e.AnneeScolaire).Where(a => !string.IsNullOrEmpty(a))
+        .Distinct().OrderByDescending(a => a).ToList();
+    bool peutModifier = ViewBag.PeutModifier == true;
+    var nbJoueurs = ViewBag.NbJoueurs as Dictionary<int, int> ?? new();
+    var anneeCourante = ViewBag.AnneeCourante as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -31,9 +39,12 @@
         </nav>
         <h1 class="h3 mb-0"><i class="bi bi-people me-2 text-primary"></i>Équipes de @ecole?.Nom</h1>
     </div>
-    <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Nouvelle équipe
-    </a>
+    @if (peutModifier)
+    {
+        <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Nouvelle équipe
+        </a>
+    }
 </div>
 
 @if (!Model.Any())
@@ -41,58 +52,78 @@
     <div class="text-center py-5">
         <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
         <h3 class="mt-3 text-muted">Aucune équipe</h3>
-        <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary mt-3">
-            <i class="bi bi-plus-circle me-2"></i>Créer la première équipe
-        </a>
+        @if (peutModifier)
+        {
+            <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle me-2"></i>Créer la première équipe
+            </a>
+        }
     </div>
 }
 else
 {
-    @{
-        var groupedBySport = Model.GroupBy(e => e.TypeSport).OrderBy(g => g.Key.ToString());
-    }
-    @foreach (var sportGroup in groupedBySport)
+    <!-- Filtre par année scolaire -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center gap-3">
+                <label class="form-label mb-0 fw-semibold text-nowrap">
+                    <i class="bi bi-calendar2-range me-1"></i>Année scolaire :
+                </label>
+                <select id="filtreAnnee" class="form-select form-select-sm w-auto">
+                    @foreach (var a in annees)
+                    {
+                        <option value="@a">@a</option>
+                    }
+                </select>
+                <span class="text-muted small" id="compteEquipes"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Équipes groupées par sport, toutes années incluses (filtrées par JS) -->
+    @foreach (var sport in Model.Select(e => e.TypeSport).Distinct().OrderBy(s => s.ToString()))
     {
-        <div class="mb-4">
+        var equipesSport = Model.Where(e => e.TypeSport == sport).OrderBy(e => e.Niveau.ToString()).ToList();
+        <div class="sport-section mb-4" data-sport="@sport">
             <h4 class="d-flex align-items-center gap-2 mb-3">
-                <span class="badge sport-badge fs-6 @GetSportBadgeClass(sportGroup.Key)">
-                    @GetSportIcon(sportGroup.Key) @GetSportDisplayName(sportGroup.Key)
+                <span class="badge sport-badge fs-6 @GetSportBadgeClass(sport)">
+                    @GetSportIcon(sport) @GetSportDisplayName(sport)
                 </span>
-                <span class="text-muted">(@sportGroup.Count() équipe@(sportGroup.Count() > 1 ? "s" : ""))</span>
+                <span class="text-muted sport-count"></span>
             </h4>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                @foreach (var equipe in sportGroup.OrderBy(e => e.Niveau.ToString()))
+                @foreach (var equipe in equipesSport)
                 {
-                    <div class="col">
-                        <div class="card h-100 shadow-sm team-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0 fw-semibold">@equipe.Nom</h5>
-                                    <span class="badge niveau-badge">@GetNiveauDisplayName(equipe.Niveau)</span>
+                    <div class="col equipe-card" data-annee="@equipe.AnneeScolaire">
+                        <div class="card h-100 shadow-sm team-card team-card-clickable position-relative">
+                            <a asp-action="Details" asp-route-id="@equipe.Id"
+                               class="text-decoration-none stretched-link">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0 fw-semibold text-dark">@equipe.Nom</h5>
+                                        <span class="badge niveau-badge">@GetNiveauDisplayName(equipe.Niveau)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 text-muted small">
+                                        <span><i class="bi bi-calendar3 me-1"></i>@equipe.AnneeScolaire</span>
+                                        <span class="ms-auto">
+                                            <i class="bi bi-person-fill me-1"></i>
+                                            <strong>@(nbJoueurs.TryGetValue(equipe.Id, out var nb) ? nb : 0)</strong> joueur@(nbJoueurs.TryGetValue(equipe.Id, out var nb2) && nb2 > 1 ? "s" : "")
+                                        </span>
+                                    </div>
                                 </div>
-                                <p class="text-muted small mb-2">
-                                    <i class="bi bi-calendar3 me-1"></i>@equipe.AnneeScolaire
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="d-flex gap-2">
-                                    <a asp-action="Details" asp-route-id="@equipe.Id"
-                                       class="btn btn-sm btn-outline-primary flex-fill">
-                                        <i class="bi bi-eye me-1"></i>Détails
-                                    </a>
-                                    <a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@equipe.Id"
-                                       class="btn btn-sm btn-outline-success flex-fill">
-                                        <i class="bi bi-person-lines-fill me-1"></i>Joueurs
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@equipe.Id"
-                                       class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmDelete(@equipe.Id, '@equipe.Nom', @ecole!.Id)">
+                            </a>
+                            <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                                <span class="text-muted small"><i class="bi bi-arrow-right-circle me-1"></i>Voir les détails</span>
+                                @if (peutModifier)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger position-relative"
+                                            style="z-index:2"
+                                            onclick="confirmDelete(@equipe.Id, '@Html.Raw(equipe.Nom.Replace("'", "\\'"))', @ecole!.Id)"
+                                            title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </button>
-                                </div>
+                                }
                             </div>
                         </div>
                     </div>
@@ -100,6 +131,10 @@ else
             </div>
         </div>
     }
+    <div id="aucuneEquipe" class="text-center py-4 d-none">
+        <i class="bi bi-calendar-x text-muted" style="font-size:3rem"></i>
+        <p class="text-muted mt-2">Aucune équipe pour cette année scolaire.</p>
+    </div>
 }
 
 <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -109,7 +144,10 @@ else
                 <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmer la suppression</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">Supprimer l'équipe <strong id="deleteEquipeName"></strong> ?</div>
+            <div class="modal-body">
+                Supprimer l'équipe <strong id="deleteEquipeName"></strong> ?
+                <div class="text-muted small mt-1">Cette action supprimera également les joueurs, le staff et les matchs associés.</div>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                 <form id="deleteForm" method="post">
@@ -124,6 +162,51 @@ else
 
 @section Scripts {
     <script>
+        function filtrerParAnnee(annee) {
+            let total = 0;
+            document.querySelectorAll('.sport-section').forEach(function (section) {
+                let visibles = 0;
+                section.querySelectorAll('.equipe-card').forEach(function (card) {
+                    const afficher = card.dataset.annee === annee;
+                    card.style.display = afficher ? '' : 'none';
+                    if (afficher) { visibles++; total++; }
+                });
+                section.style.display = visibles > 0 ? '' : 'none';
+                const compteur = section.querySelector('.sport-count');
+                if (compteur) compteur.textContent = visibles > 0
+                    ? '(' + visibles + ' équipe' + (visibles > 1 ? 's' : '') + ')'
+                    : '';
+            });
+            const aucune = document.getElementById('aucuneEquipe');
+            if (aucune) aucune.classList.toggle('d-none', total > 0);
+            const compte = document.getElementById('compteEquipes');
+            if (compte) compte.textContent = total + ' équipe' + (total > 1 ? 's' : '');
+        }
+
+        (function () {
+            var GLOBAL_KEY = 'annee_scolaire_globale';
+            var anneeCourante = '@anneeCourante';
+            var select = document.getElementById('filtreAnnee');
+            if (!select) return;
+
+            var options = Array.from(select.options).map(function (o) { return o.value; });
+
+            // Choisir l'année initiale : globale sauvegardée → courante → première dispo
+            var saved = localStorage.getItem(GLOBAL_KEY);
+            var anneeInitiale = (saved && options.includes(saved)) ? saved
+                : (anneeCourante && options.includes(anneeCourante)) ? anneeCourante
+                : (options.length > 0 ? options[0] : '');
+
+            if (anneeInitiale) localStorage.setItem(GLOBAL_KEY, anneeInitiale);
+            select.value = anneeInitiale;
+            filtrerParAnnee(anneeInitiale);
+
+            select.addEventListener('change', function () {
+                localStorage.setItem(GLOBAL_KEY, this.value);
+                filtrerParAnnee(this.value);
+            });
+        })();
+
         function confirmDelete(id, nom, ecoleId) {
             document.getElementById('deleteEquipeName').textContent = nom;
             document.getElementById('deleteEcoleId').value = ecoleId;
@@ -152,7 +235,7 @@ else
 
     string GetSportDisplayName(GestionEquipeSportive.Models.TypeSport sport) => sport switch
     {
-        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football américain",
+        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football",
         GestionEquipeSportive.Models.TypeSport.Soccer => "Soccer",
         GestionEquipeSportive.Models.TypeSport.Hockey => "Hockey",
         _ => sport.ToString()

@@ -1,0 +1,380 @@
+@model GestionEquipeSportive.ViewModels.PublicEquipeViewModel
+@using GestionEquipeSportive.Models
+@using System.Globalization
+@{
+    Layout = "_LayoutPublic";
+    ViewData["Title"] = $"{Model.SportDisplay} — {Model.NiveauDisplay} {Model.Equipe.AnneeScolaire}";
+    ViewBag.NomEcole = Model.Ecole.Nom;
+    ViewBag.CouleurPrimaire = Model.Ecole.CouleurPrimaire;
+    ViewBag.CouleurSecondaire = Model.Ecole.CouleurSecondaire;
+    ViewBag.LogoPath = Model.Ecole.LogoPath;
+    var frCA = new CultureInfo("fr-CA");
+    var now = DateTime.Now;
+}
+
+@* ── Bannière ─────────────────────────────────────────────────────────────── *@
+<div style="background-color:@Model.Ecole.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
+    @if (Model.PhotoBanniere != null)
+    {
+        <div style="position:absolute;inset:0;background:url('@Model.PhotoBanniere.CheminFichier') center/cover no-repeat;opacity:.3;"></div>
+    }
+
+    <div class="container py-4" style="position:relative;z-index:1;">
+        @if (Model.ProchainMatch != null)
+        {
+            var pm = Model.ProchainMatch;
+            <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
+                <span class="rounded px-3 py-1 fw-bold text-uppercase small"
+                      style="background-color:var(--couleur-secondaire);letter-spacing:.05em;">
+                    Prochain match
+                </span>
+                <span class="fs-5 fw-semibold">
+                    @pm.DateMatch.ToString("dddd d MMMM yyyy", frCA)
+                    @if (!string.IsNullOrEmpty(pm.HeureDebutMatch))
+                    { <span class="opacity-75 ms-1">@pm.HeureDebutMatch</span> }
+                </span>
+            </div>
+            <div class="fs-4 fw-bold">@(pm.EstDomicile ? "vs" : "@") @pm.Adversaire</div>
+            @if (!string.IsNullOrEmpty(pm.Lieu))
+            { <div class="mt-1 opacity-75"><i class="bi bi-geo-alt me-1"></i>@pm.Lieu</div> }
+            @if (!pm.EstDomicile && !string.IsNullOrEmpty(pm.HeureDepartAutobus))
+            { <div class="mt-1 opacity-75 small"><i class="bi bi-bus-front me-1"></i>Autobus : @pm.HeureDepartAutobus</div> }
+        }
+        else if (Model.DernierMatchAvecResultat != null)
+        {
+            var dm = Model.DernierMatchAvecResultat;
+            var resultCss = dm.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" };
+            var resultLabel = dm.Resultat switch { "V" => "Victoire", "D" => "Défaite", _ => "Nul" };
+            <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
+                <span class="rounded px-3 py-1 fw-bold text-uppercase small"
+                      style="background-color:@resultCss;letter-spacing:.05em;">@resultLabel</span>
+                <span class="opacity-75 small">Dernier match · @dm.DateMatch.ToString("d MMMM yyyy", frCA)</span>
+            </div>
+            <div class="d-flex align-items-baseline gap-3">
+                <span class="fw-bold" style="font-size:3.5rem;line-height:1;">@dm.ScoreEquipe</span>
+                <span class="opacity-50 fs-4">–</span>
+                <span class="fw-bold" style="font-size:3.5rem;line-height:1;">@dm.ScoreAdversaire</span>
+                <span class="fs-4 ms-2">@(dm.EstDomicile ? "vs" : "@") @dm.Adversaire</span>
+            </div>
+        }
+        else
+        {
+            <div class="fs-3 fw-bold">@Model.Equipe.Nom</div>
+            <div class="opacity-75">@Model.SportDisplay — @Model.NiveauDisplay — @Model.Equipe.AnneeScolaire</div>
+        }
+    </div>
+</div>
+
+@* ── Stats ────────────────────────────────────────────────────────────────── *@
+@if (Model.Stats.MatchsJoues > 0)
+{
+    <div style="background-color:@Model.Ecole.CouleurPrimaire;opacity:.9;">
+        <div class="container">
+            <div class="row g-0 text-white text-center">
+                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                    <div class="fw-bold fs-4">@Model.Stats.Victoires</div>
+                    <div class="small opacity-75">V</div>
+                </div>
+                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                    <div class="fw-bold fs-4">@Model.Stats.Defaites</div>
+                    <div class="small opacity-75">D</div>
+                </div>
+                <div class="col-3 py-2 border-end border-white border-opacity-25">
+                    <div class="fw-bold fs-4">@Model.Stats.Nuls</div>
+                    <div class="small opacity-75">N</div>
+                </div>
+                <div class="col-3 py-2">
+                    <div class="fw-bold fs-4">@Model.Stats.ButsPour–@Model.Stats.ButsContre</div>
+                    <div class="small opacity-75">Buts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Navigation sous-menus ───────────────────────────────────────────────── *@
+<div class="sticky-top bg-white shadow-sm" style="top:0;z-index:100;">
+    <div class="container">
+        <ul class="nav nav-tabs border-0" id="publicTabs">
+            <li class="nav-item">
+                <a class="nav-link active fw-semibold" data-bs-toggle="tab" href="#tab-matchs">
+                    <i class="bi bi-calendar3 me-1"></i>Matchs
+                    <span class="badge bg-secondary ms-1">@Model.Matchs.Count</span>
+                </a>
+            </li>
+            @if (Model.Staff.Any())
+            {
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-coachs">
+                        <i class="bi bi-person-badge me-1"></i>Équipe de l'école
+                        <span class="badge bg-secondary ms-1">@Model.Staff.Count</span>
+                    </a>
+                </li>
+            }
+            @if (Model.Joueurs.Any())
+            {
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-joueurs">
+                        <i class="bi bi-people me-1"></i>Joueurs
+                        <span class="badge bg-secondary ms-1">@Model.Joueurs.Count</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+<div class="container my-4">
+    <div class="tab-content">
+
+        @* ── Onglet Matchs ─────────────────────────────────────────────────── *@
+        <div class="tab-pane fade show active" id="tab-matchs">
+            @{
+                var matchsAvenir = Model.Matchs.Where(m => !m.AResultat && m.DateMatch >= now).OrderBy(m => m.DateMatch).ToList();
+                var matchsPassés = Model.Matchs.Where(m => m.AResultat || m.DateMatch < now).OrderByDescending(m => m.DateMatch).ToList();
+            }
+
+            @if (matchsAvenir.Any())
+            {
+                <h2 class="h5 section-title mb-3"><i class="bi bi-calendar-event me-2"></i>Prochains matchs</h2>
+                <div class="row g-3 mb-4">
+                    @foreach (var m in matchsAvenir)
+                    {
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100" style="border-left:4px solid var(--couleur-secondaire) !important;">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-bold fs-5">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</div>
+                                            <div class="text-muted small">
+                                                <i class="bi bi-calendar3 me-1"></i>@m.DateMatch.ToString("dddd d MMMM yyyy", frCA)
+                                                @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
+                                                { <span class="ms-2"><i class="bi bi-clock me-1"></i>@m.HeureDebutMatch</span> }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(m.Lieu))
+                                            { <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>@m.Lieu</div> }
+                                        </div>
+                                        <span class="badge @(m.EstDomicile ? "bg-success" : "bg-secondary")">
+                                            @(m.EstDomicile ? "Domicile" : "Extérieur")
+                                        </span>
+                                    </div>
+                                    @if (!m.EstDomicile && (!string.IsNullOrEmpty(m.HeureDepartAutobus) || !string.IsNullOrEmpty(m.HeureArriveeVestiaire)))
+                                    {
+                                        <hr class="my-2" />
+                                        <div class="small text-muted d-flex gap-3 flex-wrap">
+                                            @if (!string.IsNullOrEmpty(m.HeureArriveeVestiaire))
+                                            { <span><i class="bi bi-door-open me-1"></i>Vestiaire @m.HeureArriveeVestiaire</span> }
+                                            @if (!string.IsNullOrEmpty(m.HeureDepartAutobus))
+                                            { <span><i class="bi bi-bus-front me-1"></i>Autobus @m.HeureDepartAutobus</span> }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (matchsPassés.Any())
+            {
+                <h2 class="h5 section-title mb-3"><i class="bi bi-clock-history me-2"></i>Résultats</h2>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Adversaire</th>
+                                <th class="d-none d-md-table-cell">Lieu</th>
+                                <th class="text-center">Résultat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in matchsPassés)
+                            {
+                                <tr>
+                                    <td class="text-nowrap small">@m.DateMatch.ToString("d MMM yyyy", frCA)</td>
+                                    <td>
+                                        <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
+                                        @if (m.EstDomicile)
+                                        { <span class="badge bg-info text-dark ms-1 small">Domicile</span> }
+                                    </td>
+                                    <td class="text-muted small d-none d-md-table-cell">@m.Lieu</td>
+                                    <td class="text-center">
+                                        @if (m.AResultat)
+                                        {
+                                            var cls = m.Resultat switch { "V" => "bg-success", "D" => "bg-danger", _ => "bg-secondary" };
+                                            <span class="badge @cls me-1">@m.Resultat</span>
+                                            <span class="fw-semibold">@m.ScoreEquipe – @m.ScoreAdversaire</span>
+                                        }
+                                        else
+                                        { <span class="text-muted small">—</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (!Model.Matchs.Any())
+            {
+                <p class="text-muted text-center py-4">Aucun match au calendrier.</p>
+            }
+
+            @* Galerie photos du dernier match *@
+            @if (Model.DernierMatchMedias.Any(m => m.TypeMedia == TypeMedia.Photo))
+            {
+                <h2 class="h5 section-title mt-4 mb-3">
+                    <i class="bi bi-images me-2"></i>Photos — @Model.DernierMatchAvecResultat!.DateMatch.ToString("d MMMM yyyy", frCA)
+                </h2>
+                <div class="row g-2">
+                    @foreach (var photo in Model.DernierMatchMedias.Where(m => m.TypeMedia == TypeMedia.Photo))
+                    {
+                        <div class="col-6 col-md-3">
+                            <a href="@photo.CheminFichier" target="_blank">
+                                <img src="@photo.CheminFichier" alt="@photo.Description"
+                                     class="img-fluid rounded shadow-sm"
+                                     style="width:100%;height:160px;object-fit:cover;" />
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ── Onglet Équipe de l'école ────────────────────────────────────────── *@
+        @if (Model.Staff.Any())
+        {
+            <div class="tab-pane fade" id="tab-coachs">
+                <div class="row g-3">
+                    @foreach (var s in Model.Staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
+                    {
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="card border-0 shadow-sm text-center h-100">
+                                <div class="card-body py-3">
+                                    @if (!string.IsNullOrEmpty(s.PhotoPath))
+                                    {
+                                        <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom"
+                                             class="rounded-circle mb-2"
+                                             style="width:80px;height:80px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                                             style="width:80px;height:80px;background-color:var(--couleur-primaire);color:#fff;font-size:2rem;">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                    }
+                                    <div class="fw-bold">@s.Prenom @s.Nom</div>
+                                    <div class="badge mt-1" style="background-color:var(--couleur-secondaire);">@s.Titre</div>
+                                    @if (!string.IsNullOrEmpty(s.ResponsableDe))
+                                    {
+                                        <div class="small text-muted mt-1 fst-italic">@s.ResponsableDe</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ── Onglet Joueurs ─────────────────────────────────────────────────── *@
+        @if (Model.Joueurs.Any())
+        {
+            <div class="tab-pane fade" id="tab-joueurs">
+                @* Barre de recherche *@
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="rechercheJoueur" class="form-control border-start-0"
+                               placeholder="Rechercher par nom, prénom ou numéro..." />
+                    </div>
+                </div>
+
+                @* Joueurs groupés par position *@
+                @{
+                    var groupesPosition = Model.Joueurs
+                        .GroupBy(j => j.Position)
+                        .OrderBy(g => g.Key)
+                        .ToList();
+                }
+                @foreach (var groupe in groupesPosition)
+                {
+                    <div class="position-group mb-4" data-position="@groupe.Key.ToLower()">
+                        <h3 class="h6 section-title text-uppercase fw-bold mb-3">
+                            @groupe.Key
+                            <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
+                        </h3>
+                        <div class="row g-2">
+                            @foreach (var j in groupe.OrderBy(j => j.Numero))
+                            {
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 joueur-card"
+                                     data-nom="@j.Nom.ToLower()"
+                                     data-prenom="@j.Prenom.ToLower()"
+                                     data-numero="@j.Numero.ToLower()">
+                                    <div class="card border-0 shadow-sm text-center h-100">
+                                        <div class="card-body py-2 px-1">
+                                            @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                            {
+                                                <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom"
+                                                     class="rounded-circle mb-1"
+                                                     style="width:56px;height:56px;object-fit:cover;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1"
+                                                     style="width:56px;height:56px;background-color:var(--couleur-primaire);color:#fff;font-size:.85rem;font-weight:700;">
+                                                    #@j.Numero
+                                                </div>
+                                            }
+                                            <div class="fw-semibold small">@j.Prenom @j.Nom</div>
+                                            <div class="small text-muted">#@j.Numero</div>
+                                            @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                            {
+                                                <span class="badge small mt-1" style="background-color:var(--couleur-secondaire);">@j.PositionSpecifique</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <p id="aucunResultat" class="text-muted text-center py-3" style="display:none;">
+                    Aucun joueur trouvé.
+                </p>
+            </div>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Recherche joueurs
+    document.getElementById('rechercheJoueur')?.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        let total = 0;
+
+        document.querySelectorAll('.position-group').forEach(groupe => {
+            let visibles = 0;
+            groupe.querySelectorAll('.joueur-card').forEach(card => {
+                const match = !q
+                    || card.dataset.nom.includes(q)
+                    || card.dataset.prenom.includes(q)
+                    || card.dataset.numero.includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) visibles++;
+            });
+            groupe.style.display = visibles > 0 ? '' : 'none';
+            total += visibles;
+        });
+
+        document.getElementById('aucunResultat').style.display = total === 0 ? '' : 'none';
+    });
+</script>
+}

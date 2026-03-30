@@ -1,0 +1,283 @@
+@model List<GestionEquipeSportive.Models.Match>
+@{
+    var equipe = ViewBag.Equipe as GestionEquipeSportive.Models.Equipe;
+    var ecole = ViewBag.Ecole as GestionEquipeSportive.Models.Ecole;
+    var stats = ViewBag.Stats as GestionEquipeSportive.ViewModels.StatistiquesMatchViewModel;
+    bool peutModifier = ViewBag.PeutModifier == true;
+    ViewData["Title"] = "Matchs";
+
+    var matchsAvenir = Model.Where(m => !m.AResultat && m.DateMatch >= DateTime.Today).OrderBy(m => m.DateMatch).ToList();
+    var matchsJoues = Model.Where(m => m.AResultat).OrderByDescending(m => m.DateMatch).ToList();
+    var matchsSansResultat = Model.Where(m => !m.AResultat && m.DateMatch < DateTime.Today).OrderByDescending(m => m.DateMatch).ToList();
+}
+
+@section BannerContent {
+    <div class="d-flex align-items-center gap-3">
+        @if (!string.IsNullOrEmpty(ecole?.LogoPath))
+        {
+            <img src="@ecole.LogoPath" alt="Logo" class="school-logo" />
+        }
+        <div>
+            <small class="text-white opacity-75">@ecole?.Nom</small>
+            <h2 class="text-white mb-0 fw-bold">@equipe?.Nom</h2>
+        </div>
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@equipe?.EcoleId">@ecole?.Nom</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@equipe?.Id">@equipe?.Nom</a></li>
+            <li class="breadcrumb-item active">Matchs</li>
+        </ol>
+    </nav>
+    @if (peutModifier)
+    {
+        <a asp-action="Create" asp-route-equipeId="@equipe?.Id" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Nouveau match
+        </a>
+    }
+</div>
+
+@* Statistiques *@
+@if (stats != null && stats.MatchsJoues > 0)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Statistiques de la saison</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col">
+                            <div class="fs-2 fw-bold text-primary">@stats.MatchsJoues</div>
+                            <small class="text-muted">Matchs joués</small>
+                        </div>
+                        <div class="col">
+                            <div class="fs-2 fw-bold text-success">@stats.Victoires</div>
+                            <small class="text-muted">Victoires</small>
+                        </div>
+                        <div class="col">
+                            <div class="fs-2 fw-bold text-danger">@stats.Defaites</div>
+                            <small class="text-muted">Défaites</small>
+                        </div>
+                        <div class="col">
+                            <div class="fs-2 fw-bold text-secondary">@stats.Nuls</div>
+                            <small class="text-muted">Nuls</small>
+                        </div>
+                        <div class="col border-start">
+                            <div class="fs-2 fw-bold">@stats.ButsPour <small class="fs-6 text-muted">–</small> @stats.ButsContre</div>
+                            <small class="text-muted">Points pour / contre</small>
+                        </div>
+                        <div class="col border-start">
+                            @{
+                                int total = stats.Victoires + stats.Defaites + stats.Nuls;
+                                double pct = total > 0 ? Math.Round((double)stats.Victoires / total * 100) : 0;
+                            }
+                            <div class="fs-2 fw-bold text-info">@pct%</div>
+                            <small class="text-muted">% victoires</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Matchs à venir *@
+@if (matchsAvenir.Any())
+{
+    <h5 class="mb-3"><i class="bi bi-calendar-event me-2 text-primary"></i>Matchs à venir <span class="badge bg-primary">@matchsAvenir.Count</span></h5>
+    <div class="row g-3 mb-4">
+        @foreach (var m in matchsAvenir)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm h-100 border-start border-primary border-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold mb-0">vs @m.Adversaire</h6>
+                            <span class="badge @(m.EstDomicile ? "bg-success" : "bg-secondary")">
+                                @(m.EstDomicile ? "Domicile" : "Extérieur")
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-calendar3 me-1"></i>@m.DateMatch.ToString("ddd d MMM yyyy")
+                        </p>
+                        @if (!string.IsNullOrEmpty(m.HeureArriveeVestiaire))
+                        {
+                            <p class="small mb-1"><i class="bi bi-door-open me-1 text-info"></i>Vestiaire : <strong>@m.HeureArriveeVestiaire</strong></p>
+                        }
+                        @if (!m.EstDomicile && !string.IsNullOrEmpty(m.HeureDepartAutobus))
+                        {
+                            <p class="small mb-1"><i class="bi bi-bus-front me-1 text-warning"></i>Autobus : <strong>@m.HeureDepartAutobus</strong></p>
+                        }
+                        @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
+                        {
+                            <p class="small mb-1"><i class="bi bi-play-circle me-1 text-success"></i>Début : <strong>@m.HeureDebutMatch</strong></p>
+                        }
+                        @if (!string.IsNullOrEmpty(m.Lieu))
+                        {
+                            <p class="small mb-0 text-muted"><i class="bi bi-geo-alt me-1"></i>@m.Lieu</p>
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent d-flex gap-2">
+                        <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="bi bi-eye me-1"></i>Détails
+                        </a>
+                        @if (peutModifier)
+                        {
+                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(@m.Id, '@m.Adversaire', @equipe!.Id)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Matchs sans résultat (passés) *@
+@if (matchsSansResultat.Any())
+{
+    <h5 class="mb-3 text-muted"><i class="bi bi-clock-history me-2"></i>En attente de résultat <span class="badge bg-secondary">@matchsSansResultat.Count</span></h5>
+    <div class="row g-3 mb-4">
+        @foreach (var m in matchsSansResultat)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm h-100 border-start border-warning border-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold mb-0">vs @m.Adversaire</h6>
+                            <span class="badge bg-warning text-dark">Résultat manquant</span>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-calendar3 me-1"></i>@m.DateMatch.ToString("ddd d MMM yyyy")
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent d-flex gap-2">
+                        <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-primary flex-fill">
+                            <i class="bi bi-pencil-square me-1"></i>Entrer résultat
+                        </a>
+                        <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Résultats *@
+@if (matchsJoues.Any())
+{
+    <h5 class="mb-3"><i class="bi bi-trophy me-2 text-warning"></i>Résultats <span class="badge bg-secondary">@matchsJoues.Count</span></h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Adversaire</th>
+                    <th class="text-center">Résultat</th>
+                    <th class="text-center">Score</th>
+                    <th class="text-center">Lieu</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in matchsJoues)
+                {
+                    <tr>
+                        <td class="text-nowrap">@m.DateMatch.ToString("d MMM yyyy")</td>
+                        <td class="fw-semibold">@m.Adversaire</td>
+                        <td class="text-center">
+                            @{
+                                var (badgeClass, label) = m.Resultat switch
+                                {
+                                    "V" => ("bg-success", "Victoire"),
+                                    "D" => ("bg-danger", "Défaite"),
+                                    _ => ("bg-secondary", "Nul")
+                                };
+                            }
+                            <span class="badge @badgeClass">@label</span>
+                        </td>
+                        <td class="text-center fw-bold">@m.ScoreEquipe – @m.ScoreAdversaire</td>
+                        <td class="text-center">
+                            <span class="badge @(m.EstDomicile ? "bg-success" : "bg-secondary")">
+                                @(m.EstDomicile ? "Dom." : "Ext.")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (peutModifier)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="confirmDelete(@m.Id, '@m.Adversaire', @equipe!.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-calendar-x text-muted" style="font-size:4rem"></i>
+        <h4 class="mt-3 text-muted">Aucun match planifié</h4>
+        @if (peutModifier)
+        {
+            <a asp-action="Create" asp-route-equipeId="@equipe?.Id" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle me-2"></i>Ajouter un match
+            </a>
+        }
+    </div>
+}
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Supprimer le match contre <strong id="deleteMatchNom"></strong> ?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteEquipeId" name="equipeId" />
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function confirmDelete(id, nom, equipeId) {
+        document.getElementById('deleteMatchNom').textContent = nom;
+        document.getElementById('deleteEquipeId').value = equipeId;
+        document.getElementById('deleteForm').action = '/Match/Delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+}

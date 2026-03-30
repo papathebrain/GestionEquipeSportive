@@ -39,6 +39,44 @@
                             <i class="bi bi-building me-1"></i>Écoles
                         </a>
                     </li>
+                    @if (User.IsInRole("Admin") || User.IsInRole("AdminEcole"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Utilisateur" asp-action="Index">
+                                <i class="bi bi-people me-1"></i>Utilisateurs
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle me-1"></i>
+                                @User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <span class="badge bg-danger ms-1" style="font-size:.65rem">Admin</span>
+                                }
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Account" asp-action="ChangerMotDePasse">
+                                        <i class="bi bi-key me-2"></i>Changer le mot de passe
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Se déconnecter
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
                 </ul>
             </div>
         </div>
@@ -46,7 +84,7 @@
 
     @if (ViewBag.CouleurPrimaire != null)
     {
-        <div class="theme-banner" style="background: linear-gradient(135deg, @ViewBag.CouleurPrimaire 0%, @ViewBag.CouleurSecondaire 100%);">
+        <div class="theme-banner" style="background-color: @ViewBag.CouleurPrimaire;">
             <div class="container py-2">
                 @RenderSection("BannerContent", required: false)
             </div>

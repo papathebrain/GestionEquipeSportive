@@ -1,0 +1,237 @@
+@model GestionEquipeSportive.ViewModels.EquipeViewModel
+@using GestionEquipeSportive.Models
+@{
+    ViewData["Title"] = "Copier une équipe";
+    var sourceId = (int)ViewBag.SourceEquipeId;
+    var sourceNom = ViewBag.SourceEquipeNom as string ?? "";
+    var joueurs = ViewBag.Joueurs as List<Joueur> ?? new();
+    var staff = ViewBag.Staff as List<Staff> ?? new();
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-ecoleId="@Model.EcoleId">@Model.NomEcole</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@sourceId">@sourceNom</a></li>
+            <li class="breadcrumb-item active">Copier l'équipe</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-copy me-2 text-primary"></i>Copier l'équipe <em>@sourceNom</em></h1>
+    <p class="text-muted">Créez une nouvelle équipe basée sur cette configuration et choisissez les membres à transférer.</p>
+</div>
+
+<form asp-action="Copier" asp-route-id="@sourceId" method="post">
+    @Html.AntiForgeryToken()
+    <input asp-for="EcoleId" type="hidden" />
+
+    <div class="row g-4">
+
+        @* ── Paramètres de la nouvelle équipe ── *@
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Nouvelle équipe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="TypeSport" class="form-label fw-semibold"></label>
+                            <select asp-for="TypeSport" asp-items="Model.SportsList" class="form-select" id="sportSelect">
+                                <option value="">-- Sélectionner --</option>
+                            </select>
+                            <span asp-validation-for="TypeSport" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Niveau" class="form-label fw-semibold"></label>
+                            <select asp-for="Niveau" asp-items="Model.NiveauxList" class="form-select" id="niveauSelect">
+                                <option value="">-- Sélectionner --</option>
+                            </select>
+                            <span asp-validation-for="Niveau" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="AnneeScolaire" class="form-label fw-semibold"></label>
+                        <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select">
+                            <option value="">-- Sélectionner --</option>
+                        </select>
+                        <span asp-validation-for="AnneeScolaire" class="text-danger small"></span>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="AfficherPublic" class="form-check-input" />
+                        <label asp-for="AfficherPublic" class="form-check-label fw-semibold"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Transfert joueurs ── *@
+        <div class="col-lg-7">
+            @if (joueurs.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Joueurs à transférer</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="toggleAll('joueursIds', true)">Tout sélectionner</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="toggleAll('joueursIds', false)">Tout désélectionner</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:36px">
+                                            <input type="checkbox" class="form-check-input" id="selectAllJoueurs"
+                                                   onchange="toggleAll('joueursIds', this.checked)" />
+                                        </th>
+                                        <th>#</th>
+                                        <th>Nom</th>
+                                        <th>Position</th>
+                                        <th>Fiche</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var j in joueurs.OrderBy(j => j.Position).ThenBy(j => j.Numero))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" class="form-check-input joueur-check"
+                                                       name="joueursIds" value="@j.Id" checked />
+                                            </td>
+                                            <td><span class="badge bg-dark">#@j.Numero</span></td>
+                                            <td class="fw-semibold">@j.Prenom @j.Nom</td>
+                                            <td>
+                                                <span class="badge bg-secondary">@j.Position</span>
+                                                @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                                {
+                                                    <span class="badge bg-primary ms-1">@j.PositionSpecifique</span>
+                                                }
+                                            </td>
+                                            <td class="text-muted small">@j.NoFiche</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <small class="text-muted"><span id="nbJoueursSelectionnes">@joueurs.Count</span> joueur(s) sélectionné(s)</small>
+                    </div>
+                </div>
+            }
+
+            @* ── Transfert équipe école ── *@
+            @if (staff.Any())
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Équipe école à transférer</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="toggleAll('staffIds', true)">Tout sélectionner</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="toggleAll('staffIds', false)">Tout désélectionner</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:36px">
+                                            <input type="checkbox" class="form-check-input" id="selectAllStaff"
+                                                   onchange="toggleAll('staffIds', this.checked)" />
+                                        </th>
+                                        <th>Nom</th>
+                                        <th>Titre</th>
+                                        <th>Responsable de</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in staff.OrderBy(s => s.Titre))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" class="form-check-input staff-check"
+                                                       name="staffIds" value="@s.Id" checked />
+                                            </td>
+                                            <td class="fw-semibold">@s.Prenom @s.Nom</td>
+                                            <td><span class="badge bg-info text-dark">@s.Titre</span></td>
+                                            <td class="text-muted small">@s.ResponsableDe</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <small class="text-muted"><span id="nbStaffSelectionnes">@staff.Count</span> membre(s) sélectionné(s)</small>
+                    </div>
+                </div>
+            }
+
+            @if (!joueurs.Any() && !staff.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>Cette équipe ne contient aucun joueur ni membre de l'équipe école à transférer.
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-2"></i>Créer l'équipe
+        </button>
+        <a asp-action="Details" asp-route-id="@sourceId" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-2"></i>Annuler
+        </a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    // Sport → niveaux dynamique
+    document.getElementById('sportSelect')?.addEventListener('change', function () {
+        const sport = this.value;
+        const niveauSelect = document.getElementById('niveauSelect');
+        niveauSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
+        if (!sport) return;
+        fetch('/Equipe/GetNiveaux?sport=' + encodeURIComponent(sport))
+            .then(r => r.json())
+            .then(niveaux => {
+                const labels = { 'Benjamin': 'Benjamin', 'Cadet': 'Cadet', 'Juvenil': 'Juvénile',
+                                 'Atome': 'Atome', 'PeeWee': 'Pee-Wee', 'Bantam': 'Bantam' };
+                niveaux.forEach(n => {
+                    const opt = document.createElement('option');
+                    opt.value = n;
+                    opt.textContent = labels[n] || n;
+                    niveauSelect.appendChild(opt);
+                });
+            });
+    });
+
+    function toggleAll(name, checked) {
+        document.querySelectorAll('input[name="' + name + '"]').forEach(cb => cb.checked = checked);
+        updateCount(name);
+    }
+
+    function updateCount(name) {
+        const count = document.querySelectorAll('input[name="' + name + '"]:checked').length;
+        if (name === 'joueursIds') {
+            const el = document.getElementById('nbJoueursSelectionnes');
+            if (el) el.textContent = count;
+        } else {
+            const el = document.getElementById('nbStaffSelectionnes');
+            if (el) el.textContent = count;
+        }
+    }
+
+    document.querySelectorAll('.joueur-check').forEach(cb => cb.addEventListener('change', () => updateCount('joueursIds')));
+    document.querySelectorAll('.staff-check').forEach(cb => cb.addEventListener('change', () => updateCount('staffIds')));
+</script>
+}

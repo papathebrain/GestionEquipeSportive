@@ -13,9 +13,12 @@
         </nav>
         <h1 class="h3 mb-0"><i class="bi bi-building me-2 text-primary"></i>Gestion des écoles</h1>
     </div>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Nouvelle école
-    </a>
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Nouvelle école
+        </a>
+    }
 </div>
 
 @if (!Model.Any())
@@ -23,9 +26,12 @@
     <div class="text-center py-5">
         <i class="bi bi-building text-muted" style="font-size: 4rem;"></i>
         <h3 class="mt-3 text-muted">Aucune école</h3>
-        <a asp-action="Create" class="btn btn-primary mt-3">
-            <i class="bi bi-plus-circle me-2"></i>Ajouter une école
-        </a>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Create" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle me-2"></i>Ajouter une école
+            </a>
+        }
     </div>
 }
 else
@@ -56,7 +62,7 @@ else
                             }
                         </td>
                         <td class="fw-semibold">@ecole.Nom</td>
-                        <td><span class="badge bg-secondary">@ecole.CodeEcole</span></td>
+                        <td><span class="badge bg-secondary">@ecole.NomEquipe</span></td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="color-swatch-sm" style="background-color: @ecole.CouleurPrimaire;" title="@ecole.CouleurPrimaire"></div>
@@ -73,13 +79,16 @@ else
                                    class="btn btn-outline-primary" title="Équipes">
                                     <i class="bi bi-people"></i>
                                 </a>
-                                <a asp-action="Edit" asp-route-id="@ecole.Id" class="btn btn-outline-warning" title="Modifier">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button type="button" class="btn btn-outline-danger" title="Supprimer"
-                                        onclick="confirmDelete(@ecole.Id, '@ecole.Nom')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <a asp-action="Edit" asp-route-id="@ecole.Id" class="btn btn-outline-warning" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="Supprimer"
+                                            onclick="confirmDelete(@ecole.Id, '@ecole.Nom')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
                             </div>
                         </td>
                     </tr>

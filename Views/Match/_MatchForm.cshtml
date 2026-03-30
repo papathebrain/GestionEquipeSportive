@@ -1,0 +1,68 @@
+@model GestionEquipeSportive.ViewModels.MatchViewModel
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Adversaire" class="form-label fw-semibold"></label>
+        <input asp-for="Adversaire" class="form-control" placeholder="Nom de l'équipe adverse" />
+        <span asp-validation-for="Adversaire" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="DateMatch" class="form-label fw-semibold"></label>
+        <input asp-for="DateMatch" type="date" class="form-control" />
+        <span asp-validation-for="DateMatch" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Lieu" class="form-label fw-semibold"></label>
+        <input asp-for="Lieu" class="form-control" placeholder="Ex: Terrain municipal" />
+        <span asp-validation-for="Lieu" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input asp-for="EstDomicile" class="form-check-input" id="estDomicile" />
+            <label asp-for="EstDomicile" class="form-check-label fw-semibold">Match à domicile</label>
+        </div>
+    </div>
+</div>
+
+<hr class="my-3" />
+<h6 class="fw-semibold mb-3"><i class="bi bi-clock me-2"></i>Horaire</h6>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="HeureArriveeVestiaire" class="form-label fw-semibold"></label>
+        <input asp-for="HeureArriveeVestiaire" type="time" class="form-control" />
+        <span asp-validation-for="HeureArriveeVestiaire" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4" id="rowAutobus" style="@(Model.EstDomicile ? "display:none" : "")">
+        <label asp-for="HeureDepartAutobus" class="form-label fw-semibold"></label>
+        <input asp-for="HeureDepartAutobus" type="time" class="form-control" />
+        <span asp-validation-for="HeureDepartAutobus" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="HeureDebutMatch" class="form-label fw-semibold"></label>
+        <input asp-for="HeureDebutMatch" type="time" class="form-control" />
+        <span asp-validation-for="HeureDebutMatch" class="text-danger small"></span>
+    </div>
+</div>
+
+<hr class="my-3" />
+<h6 class="fw-semibold mb-3"><i class="bi bi-trophy me-2"></i>Résultat <span class="text-muted fw-normal small">(optionnel — laisser vide si match non joué)</span></h6>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="ScoreEquipe" class="form-label fw-semibold"></label>
+        <input asp-for="ScoreEquipe" type="number" min="0" class="form-control" placeholder="—" />
+        <span asp-validation-for="ScoreEquipe" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="ScoreAdversaire" class="form-label fw-semibold"></label>
+        <input asp-for="ScoreAdversaire" type="number" min="0" class="form-control" placeholder="—" />
+        <span asp-validation-for="ScoreAdversaire" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="mt-3">
+    <label asp-for="Notes" class="form-label fw-semibold"></label>
+    <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Notes sur le match..."></textarea>
+    <span asp-validation-for="Notes" class="text-danger small"></span>
+</div>

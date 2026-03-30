@@ -32,9 +32,9 @@
                             <span asp-validation-for="Nom" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="CodeEcole" class="form-label fw-semibold"></label>
-                            <input asp-for="CodeEcole" class="form-control" placeholder="Ex: EPSJ" />
-                            <span asp-validation-for="CodeEcole" class="text-danger small"></span>
+                            <label asp-for="NomEquipe" class="form-label fw-semibold"></label>
+                            <input asp-for="NomEquipe" class="form-control" placeholder="Ex: Les aigles" />
+                            <span asp-validation-for="NomEquipe" class="text-danger small"></span>
                         </div>
                     </div>
 
@@ -88,7 +88,7 @@
             </div>
             <div class="card-body p-0">
                 <div id="themePreview" class="p-3 text-white rounded-top"
-                     style="background: linear-gradient(135deg, @Model.CouleurPrimaire 0%, @Model.CouleurSecondaire 100%);">
+                     style="background-color: @Model.CouleurPrimaire;">
                     <div class="d-flex align-items-center gap-3">
                         <div id="logoPreviewContainer" style="display:none;">
                             <img id="logoPreview" src="#" alt="Logo" class="school-logo" />
@@ -108,7 +108,7 @@
                         <div id="swatchSecondaire" class="color-swatch" style="background-color: @Model.CouleurSecondaire;"></div>
                     </div>
                     <button id="btnPreviewAction" class="btn btn-sm w-100"
-                            style="background-color: @Model.CouleurPrimaire; color: white;">
+                            style="background-color: @Model.CouleurSecondaire; color: white;">
                         <i class="bi bi-people me-1"></i>Voir les équipes
                     </button>
                 </div>
@@ -120,22 +120,22 @@
 @section Scripts {
     <script>
         const nomInput = document.querySelector('[name="Nom"]');
-        const codeInput = document.querySelector('[name="CodeEcole"]');
+        const codeInput = document.querySelector('[name="NomEquipe"]');
         if (nomInput) nomInput.addEventListener('input', updatePreview);
         if (codeInput) codeInput.addEventListener('input', updatePreview);
 
         function updatePreview() {
             const p = document.getElementById('colorPrimaire').value;
             const s = document.getElementById('colorSecondaire').value;
-            document.getElementById('themePreview').style.background =
-                `linear-gradient(135deg, ${p} 0%, ${s} 100%)`;
+            document.getElementById('themePreview').style.backgroundColor = p;
+            document.getElementById('themePreview').style.background = '';
             document.getElementById('swatchPrimaire').style.backgroundColor = p;
             document.getElementById('swatchSecondaire').style.backgroundColor = s;
-            document.getElementById('btnPreviewAction').style.backgroundColor = p;
+            document.getElementById('btnPreviewAction').style.backgroundColor = s;
             document.getElementById('colorPrimaireText').value = p;
             document.getElementById('colorSecondaireText').value = s;
             const nom = document.querySelector('[name="Nom"]')?.value || 'Nom de l\'école';
-            const code = document.querySelector('[name="CodeEcole"]')?.value || 'CODE';
+            const code = document.querySelector('[name="NomEquipe"]')?.value || 'CODE';
             document.getElementById('previewNom').textContent = nom;
             document.getElementById('previewCode').textContent = code;
         }

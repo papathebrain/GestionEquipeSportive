@@ -1,0 +1,94 @@
+@model GestionEquipeSportive.ViewModels.ChangerMotDePasseViewModel
+@{
+    ViewData["Title"] = "Changer le mot de passe";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-key me-2"></i>Changer le mot de passe</h5>
+            </div>
+            <div class="card-body p-4">
+                @if (TempData["Info"] != null)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Info"]
+                    </div>
+                }
+
+                <form asp-action="ChangerMotDePasse" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="MotDePasseActuel" class="form-label fw-semibold"></label>
+                        <input asp-for="MotDePasseActuel" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="MotDePasseActuel" class="text-danger small"></span>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-3">
+                        <label asp-for="NouveauMotDePasse" class="form-label fw-semibold"></label>
+                        <input asp-for="NouveauMotDePasse" class="form-control" autocomplete="new-password" id="nvMdp" />
+                        <span asp-validation-for="NouveauMotDePasse" class="text-danger small"></span>
+                        <div id="strengthBar" class="mt-1" style="display:none">
+                            <div class="progress" style="height:6px">
+                                <div id="strengthFill" class="progress-bar" style="width:0"></div>
+                            </div>
+                            <small id="strengthText" class="text-muted"></small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmerMotDePasse" class="form-label fw-semibold"></label>
+                        <input asp-for="ConfirmerMotDePasse" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmerMotDePasse" class="text-danger small"></span>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <strong>Exigences :</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>Au moins 8 caractères</li>
+                            <li>Une majuscule et une minuscule</li>
+                            <li>Un chiffre</li>
+                            <li>Un caractère spécial : # $ % ! &amp; *</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Enregistrer
+                        </button>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.getElementById('nvMdp').addEventListener('input', function() {
+    const v = this.value;
+    const bar = document.getElementById('strengthBar');
+    const fill = document.getElementById('strengthFill');
+    const text = document.getElementById('strengthText');
+    if (!v) { bar.style.display='none'; return; }
+    bar.style.display='block';
+    let score = 0;
+    if (v.length >= 8) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[a-z]/.test(v)) score++;
+    if (/\d/.test(v)) score++;
+    if (/[\x40#$%!&*]/.test(v)) score++;
+    const pct = (score / 5) * 100;
+    const colors = ['danger','danger','warning','info','success'];
+    const labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
+    fill.style.width = pct + '%';
+    fill.className = 'progress-bar bg-' + colors[score-1] || 'danger';
+    text.textContent = labels[score-1] || '';
+});
+</script>
+}

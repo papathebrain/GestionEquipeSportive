@@ -1,0 +1,149 @@
+@using GestionEquipeSportive.ViewModels
+@model List<EcoleAccesViewModel>
+@{
+    // Toutes les années scolaires disponibles dans toutes les écoles
+    var toutesAnnees = Model
+        .SelectMany(e => e.Equipes)
+        .Select(eq => eq.AnneeScolaire)
+        .Where(a => !string.IsNullOrEmpty(a))
+        .Distinct()
+        .OrderByDescending(a => a)
+        .ToList();
+}
+
+@if (!Model.Any())
+{
+    <p class="text-muted small">Aucune école disponible. Créez d'abord des écoles.</p>
+}
+else
+{
+    <div class="alert alert-secondary small py-2 mb-3">
+        <i class="bi bi-info-circle me-1"></i>
+        Cochez <strong>l'école</strong> pour accès complet à toutes ses équipes, ou choisissez des <strong>équipes spécifiques</strong> en filtrant par année.
+    </div>
+
+    @if (toutesAnnees.Any())
+    {
+        <div class="mb-3 d-flex align-items-center gap-2">
+            <label class="form-label mb-0 fw-semibold small text-nowrap">
+                <i class="bi bi-funnel me-1"></i>Filtrer par année :
+            </label>
+            <select id="filtreAnnee" class="form-select form-select-sm w-auto">
+                <option value="">— Toutes les années —</option>
+                @foreach (var annee in toutesAnnees)
+                {
+                    <option value="@annee">@annee</option>
+                }
+            </select>
+        </div>
+    }
+
+    @for (int i = 0; i < Model.Count; i++)
+    {
+        var equipes = Model[i].Equipes;
+        var anneesEcole = equipes.Select(e => e.AnneeScolaire).Distinct().OrderByDescending(a => a).ToList();
+
+        <input type="hidden" name="Ecoles[@i].Id" value="@Model[i].Id" />
+        <input type="hidden" name="Ecoles[@i].Nom" value="@Model[i].Nom" />
+
+        <div class="card mb-3 border" data-ecole-id="@Model[i].Id">
+            <div class="card-header py-2 bg-light">
+                <div class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input ecole-check"
+                           name="Ecoles[@i].AccesComplet" value="true"
+                           id="ecole_@Model[i].Id"
+                           data-equipes-id="equipes_@Model[i].Id"
+                           @(Model[i].AccesComplet ? "checked" : "") />
+                    <label class="form-check-label fw-semibold" for="ecole_@Model[i].Id">
+                        <i class="bi bi-building me-1"></i>@Model[i].Nom
+                        <span class="badge bg-primary ms-1 small">Accès complet à toutes les équipes</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card-body py-2" id="equipes_@Model[i].Id"
+                 style="@(Model[i].AccesComplet ? "display:none" : "")">
+
+                @if (!equipes.Any())
+                {
+                    <p class="text-muted small mb-0">Aucune équipe dans cette école.</p>
+                }
+                else
+                {
+                    <small class="text-muted d-block mb-2">
+                        Équipes spécifiques — choisissez une ou plusieurs équipes :
+                    </small>
+
+                    @foreach (var annee in anneesEcole)
+                    {
+                        var equipesAnnee = equipes.Where(e => e.AnneeScolaire == annee).ToList();
+                        var groupesSport = equipesAnnee
+                            .GroupBy(e => e.Sport)
+                            .OrderBy(g => g.Key);
+
+                        <div class="annee-groupe mb-2" data-annee="@annee">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-calendar2 me-1"></i>@annee
+                                </span>
+                            </div>
+                            <div class="row ps-2">
+                                @foreach (var sportGroupe in groupesSport)
+                                {
+                                    @foreach (var eq in sportGroupe.OrderBy(e => e.Niveau))
+                                    {
+                                        var idx = equipes.IndexOf(eq);
+                                        <div class="col-md-6 col-lg-4 equipe-item" data-annee="@eq.AnneeScolaire">
+                                            <input type="hidden" name="Ecoles[@i].Equipes[@idx].Id" value="@eq.Id" />
+                                            <input type="hidden" name="Ecoles[@i].Equipes[@idx].Nom" value="@eq.Nom" />
+                                            <input type="hidden" name="Ecoles[@i].Equipes[@idx].AnneeScolaire" value="@eq.AnneeScolaire" />
+                                            <input type="hidden" name="Ecoles[@i].Equipes[@idx].Sport" value="@eq.Sport" />
+                                            <input type="hidden" name="Ecoles[@i].Equipes[@idx].Niveau" value="@eq.Niveau" />
+                                            <div class="form-check mb-1">
+                                                <input type="checkbox" class="form-check-input equipe-check"
+                                                       name="Ecoles[@i].Equipes[@idx].Selectionne" value="true"
+                                                       id="equipe_@eq.Id"
+                                                       @(eq.Selectionne ? "checked" : "") />
+                                                <label class="form-check-label small" for="equipe_@eq.Id">
+                                                    <span class="fw-semibold">@eq.Niveau</span>
+                                                    <span class="text-muted">— @eq.Sport</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+}
+
+<script>
+(function () {
+    // Accès complet → cacher équipes spécifiques
+    document.querySelectorAll('.ecole-check').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var div = document.getElementById(this.dataset.equipesId);
+            if (!div) return;
+            div.style.display = this.checked ? 'none' : '';
+            if (this.checked) {
+                div.querySelectorAll('.equipe-check').forEach(function (eq) { eq.checked = false; });
+            }
+        });
+    });
+
+    // Filtre par année
+    var filtreSelect = document.getElementById('filtreAnnee');
+    if (filtreSelect) {
+        filtreSelect.addEventListener('change', function () {
+            var annee = this.value;
+            document.querySelectorAll('.annee-groupe').forEach(function (g) {
+                g.style.display = (!annee || g.dataset.annee === annee) ? '' : 'none';
+            });
+        });
+    }
+})();
+</script>

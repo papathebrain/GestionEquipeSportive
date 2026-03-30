@@ -14,6 +14,40 @@ public class JoueurService : IJoueurService
 
     public List<Joueur> GetAllJoueurs() => _repo.GetAllJoueurs();
 
+    public List<Joueur> GetHistoriqueJoueur(Joueur joueur)
+    {
+        // NoFiche est la clé unique permanente — sans NoFiche, pas d'historique inter-années
+        if (string.IsNullOrWhiteSpace(joueur.NoFiche))
+            return new List<Joueur> { joueur };
+
+        return _repo.GetAllJoueurs()
+            .Where(j => !string.IsNullOrWhiteSpace(j.NoFiche) &&
+                        string.Equals(j.NoFiche.Trim(), joueur.NoFiche.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(j => j.Id)
+            .ToList();
+    }
+
+    public void CopierVersEquipe(IEnumerable<int> joueurIds, int nouvelleEquipeId)
+    {
+        foreach (var id in joueurIds)
+        {
+            var source = _repo.GetJoueurById(id);
+            if (source == null) continue;
+            _repo.AddJoueur(new Joueur
+            {
+                EquipeId = nouvelleEquipeId,
+                Nom = source.Nom,
+                Prenom = source.Prenom,
+                Numero = source.Numero,
+                Position = source.Position,
+                PositionSpecifique = source.PositionSpecifique,
+                PhotoPath = source.PhotoPath,
+                NoFiche = source.NoFiche,
+                Description = source.Description
+            });
+        }
+    }
+
     public List<Joueur> GetJoueursByEquipe(int equipeId) => _repo.GetJoueursByEquipe(equipeId);
 
     public Joueur? GetJoueurById(int id) => _repo.GetJoueurById(id);
@@ -26,13 +60,14 @@ public class JoueurService : IJoueurService
             Nom = vm.Nom,
             Prenom = vm.Prenom,
             Numero = vm.Numero,
-            Position = vm.Position
+            Position = vm.Position,
+            PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim(),
+            NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim(),
+            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim()
         };
 
         if (photoFile != null && photoFile.Length > 0)
-        {
             joueur.PhotoPath = SaveFile(photoFile, Path.Combine(webRootPath, "uploads", "photos"));
-        }
 
         return _repo.AddJoueur(joueur);
     }
@@ -46,6 +81,9 @@ public class JoueurService : IJoueurService
         joueur.Prenom = vm.Prenom;
         joueur.Numero = vm.Numero;
         joueur.Position = vm.Position;
+        joueur.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim();
+        joueur.NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim();
+        joueur.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
 
         if (photoFile != null && photoFile.Length > 0)
         {
@@ -79,6 +117,9 @@ public class JoueurService : IJoueurService
         Prenom = joueur.Prenom,
         Numero = joueur.Numero,
         Position = joueur.Position,
+        PositionSpecifique = joueur.PositionSpecifique,
+        NoFiche = joueur.NoFiche,
+        Description = joueur.Description,
         PhotoPathActuelle = joueur.PhotoPath
     };
 
