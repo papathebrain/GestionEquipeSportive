@@ -27,6 +27,7 @@ public class Equipe
     public TypeSport TypeSport { get; set; }
     public NiveauEquipe Niveau { get; set; }
     public string Nom { get; set; } = string.Empty;
+    public bool AfficherPublic { get; set; } = false;
 
     // Navigation
     public Ecole? Ecole { get; set; }

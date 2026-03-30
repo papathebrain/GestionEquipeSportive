@@ -23,9 +23,8 @@ public class EquipeViewModel
     [Display(Name = "Niveau")]
     public NiveauEquipe Niveau { get; set; }
 
-    [Required(ErrorMessage = "Le nom est obligatoire")]
-    [Display(Name = "Nom de l'équipe")]
-    public string Nom { get; set; } = string.Empty;
+    [Display(Name = "Afficher sur le site public")]
+    public bool AfficherPublic { get; set; }
 
     // Listes de sélection
     public List<SelectListItem> SportsList { get; set; } = new();

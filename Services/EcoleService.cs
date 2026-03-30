@@ -21,7 +21,7 @@ public class EcoleService : IEcoleService
         var ecole = new Ecole
         {
             Nom = vm.Nom,
-            CodeEcole = vm.CodeEcole,
+            NomEquipe = vm.NomEquipe,
             CouleurPrimaire = vm.CouleurPrimaire,
             CouleurSecondaire = vm.CouleurSecondaire
         };
@@ -39,7 +39,7 @@ public class EcoleService : IEcoleService
         var ecole = _repo.GetEcoleById(vm.Id) ?? new Ecole();
         ecole.Id = vm.Id;
         ecole.Nom = vm.Nom;
-        ecole.CodeEcole = vm.CodeEcole;
+        ecole.NomEquipe = vm.NomEquipe;
         ecole.CouleurPrimaire = vm.CouleurPrimaire;
         ecole.CouleurSecondaire = vm.CouleurSecondaire;
 
@@ -63,7 +63,7 @@ public class EcoleService : IEcoleService
     {
         Id = ecole.Id,
         Nom = ecole.Nom,
-        CodeEcole = ecole.CodeEcole,
+        NomEquipe = ecole.NomEquipe,
         LogoPathActuel = ecole.LogoPath,
         CouleurPrimaire = ecole.CouleurPrimaire,
         CouleurSecondaire = ecole.CouleurSecondaire

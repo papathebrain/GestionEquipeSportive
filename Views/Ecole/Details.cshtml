@@ -3,9 +3,10 @@
     ViewData["Title"] = Model.Nom;
     var equipes = ViewBag.Equipes as List<GestionEquipeSportive.Models.Equipe> ?? new();
     var annees = ViewBag.Annees as List<string> ?? new();
-    var anneeActive = annees.FirstOrDefault() ?? "";
     bool peutModifier = ViewBag.PeutModifier == true;
     bool isAdmin = User.IsInRole("Admin");
+    var nbJoueurs = ViewBag.NbJoueurs as Dictionary<int, int> ?? new();
+    var anneeCourante = ViewBag.AnneeCourante as string ?? "";
 }
 
 @section BannerContent {
@@ -16,7 +17,7 @@
         }
         <div>
             <h2 class="text-white mb-0 fw-bold">@Model.Nom</h2>
-            <small class="text-white opacity-75">@Model.CodeEcole</small>
+            <small class="text-white opacity-75">@Model.NomEquipe</small>
         </div>
     </div>
 }
@@ -35,15 +36,15 @@
     <!-- Informations école -->
     <div class="col-md-4">
         <div class="card shadow-sm h-100">
-            <div class="card-header" style="background: linear-gradient(135deg, @Model.CouleurPrimaire 0%, @Model.CouleurSecondaire 100%);">
+            <div class="card-header" style="background-color: @Model.CouleurPrimaire;">
                 <h5 class="mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Informations</h5>
             </div>
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-5">Nom</dt>
                     <dd class="col-sm-7">@Model.Nom</dd>
-                    <dt class="col-sm-5">Code</dt>
-                    <dd class="col-sm-7"><span class="badge bg-secondary">@Model.CodeEcole</span></dd>
+                    <dt class="col-sm-5">Nom d'équipe</dt>
+                    <dd class="col-sm-7"><span class="badge bg-secondary">@Model.NomEquipe</span></dd>
                     <dt class="col-sm-5">Couleur primaire</dt>
                     <dd class="col-sm-7">
                         <div class="d-flex align-items-center gap-2">
@@ -74,18 +75,37 @@
     <!-- Équipes -->
     <div class="col-md-8">
         <div class="card shadow-sm h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-people me-2"></i>Équipes
-                    <span class="badge bg-primary ms-1" id="compteEquipes">@equipes.Count</span>
-                </h5>
-                @if (peutModifier)
-                {
-                    <a asp-controller="Equipe" asp-action="Create" asp-route-ecoleId="@Model.Id"
-                       class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>Nouvelle équipe
-                    </a>
-                }
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people me-2"></i>Équipes
+                            <span class="badge bg-primary ms-1" id="compteEquipes">@equipes.Count</span>
+                        </h5>
+                        @if (annees.Any())
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0 small fw-semibold text-nowrap">
+                                    <i class="bi bi-calendar2-range me-1"></i>Année :
+                                </label>
+                                <select id="filtreAnnee" class="form-select form-select-sm w-auto">
+                                    <option value="">— Toutes —</option>
+                                    @foreach (var annee in annees)
+                                    {
+                                        <option value="@annee">@annee</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+                    @if (peutModifier)
+                    {
+                        <a asp-controller="Equipe" asp-action="Create" asp-route-ecoleId="@Model.Id"
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Nouvelle équipe
+                        </a>
+                    }
+                </div>
             </div>
 
             <div class="card-body">
@@ -95,22 +115,6 @@
                 }
                 else
                 {
-                    <!-- Filtre année -->
-                    @if (annees.Count > 1)
-                    {
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <label class="form-label mb-0 small fw-semibold text-nowrap">
-                                <i class="bi bi-calendar2-range me-1"></i>Année :
-                            </label>
-                            <select id="filtreAnnee" class="form-select form-select-sm w-auto">
-                                <option value="">— Toutes —</option>
-                                @foreach (var annee in annees)
-                                {
-                                    <option value="@annee" selected="@(annee == anneeActive)">@annee</option>
-                                }
-                            </select>
-                        </div>
-                    }
 
                     <div class="list-group list-group-flush" id="listeEquipes">
                         @foreach (var eq in equipes)
@@ -120,13 +124,17 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <span class="fw-semibold">@eq.Nom</span>
-                                        <div class="d-flex gap-1 mt-1">
+                                        <div class="d-flex gap-1 mt-1 flex-wrap">
                                             <span class="badge @GetSportBadge(eq.TypeSport)">
                                                 @GetSportIcon(eq.TypeSport) @GetSportDisplay(eq.TypeSport)
                                             </span>
                                             <span class="badge bg-secondary">@GetNiveauDisplay(eq.Niveau)</span>
                                             <span class="badge bg-light text-dark border">
                                                 <i class="bi bi-calendar3 me-1"></i>@eq.AnneeScolaire
+                                            </span>
+                                            @{ var n = nbJoueurs.TryGetValue(eq.Id, out var cnt) ? cnt : 0; }
+                                            <span class="badge bg-info text-dark">
+                                                <i class="bi bi-person-fill me-1"></i>@n joueur@(n > 1 ? "s" : "")
                                             </span>
                                         </div>
                                     </div>
@@ -166,8 +174,13 @@
 @section Scripts {
 <script>
 (function () {
+    var GLOBAL_KEY = 'annee_scolaire_globale';
+    var anneeCourante = '@anneeCourante';
     var select = document.getElementById('filtreAnnee');
     if (!select) return;
+
+    // Options disponibles (exclut l'option "— Toutes —" vide)
+    var optionsDisponibles = Array.from(select.options).map(function (o) { return o.value; }).filter(Boolean);
 
     function filtrer(annee) {
         var items = document.querySelectorAll('.equipe-item');
@@ -183,10 +196,20 @@
         if (aucune) aucune.classList.toggle('d-none', count > 0);
     }
 
-    select.addEventListener('change', function () { filtrer(this.value); });
+    select.addEventListener('change', function () {
+        localStorage.setItem(GLOBAL_KEY, this.value);
+        filtrer(this.value);
+    });
 
-    // Appliquer l'année active au chargement
-    filtrer(select.value);
+    // Choisir l'année initiale : globale sauvegardée → courante → première dispo
+    var saved = localStorage.getItem(GLOBAL_KEY);
+    var anneeInitiale = (saved && optionsDisponibles.includes(saved)) ? saved
+        : (anneeCourante && optionsDisponibles.includes(anneeCourante)) ? anneeCourante
+        : (optionsDisponibles.length > 0 ? optionsDisponibles[0] : '');
+
+    if (anneeInitiale) localStorage.setItem(GLOBAL_KEY, anneeInitiale);
+    select.value = anneeInitiale;
+    filtrer(anneeInitiale);
 })();
 </script>
 }
@@ -205,7 +228,7 @@
         _ => "🏅"
     };
     string GetSportDisplay(GestionEquipeSportive.Models.TypeSport s) => s switch {
-        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football américain",
+        GestionEquipeSportive.Models.TypeSport.FootballAmericain => "Football",
         GestionEquipeSportive.Models.TypeSport.Soccer => "Soccer",
         GestionEquipeSportive.Models.TypeSport.Hockey => "Hockey",
         _ => s.ToString()

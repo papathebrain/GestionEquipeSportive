@@ -318,7 +318,7 @@ public class UtilisateurController : Controller
 
     private static string GetSportDisplay(TypeSport sport) => sport switch
     {
-        TypeSport.FootballAmericain => "Football américain",
+        TypeSport.FootballAmericain => "Football",
         TypeSport.Soccer => "Soccer",
         TypeSport.Hockey => "Hockey",
         _ => sport.ToString()
@@ -334,8 +334,15 @@ public class UtilisateurController : Controller
     private static (List<int> ecolesIds, List<int> equipesIds) ExtraireAcces(
         List<EcoleAccesViewModel> ecoles, string role)
     {
-        if (role is Roles.Admin or Roles.AdminEcole)
+        if (role == Roles.Admin)
             return ([], []);
+
+        // AdminEcole : sauvegarder les écoles sélectionnées, pas d'équipes spécifiques
+        if (role == Roles.AdminEcole)
+        {
+            var ecolesAdminIds = ecoles.Where(e => e.AccesComplet).Select(e => e.Id).ToList();
+            return (ecolesAdminIds, []);
+        }
 
         var ecolesIds = ecoles.Where(e => e.AccesComplet).Select(e => e.Id).ToList();
         var equipesIds = ecoles

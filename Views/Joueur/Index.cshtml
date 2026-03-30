@@ -73,6 +73,14 @@ else
                     <div class="card-body text-center pt-2">
                         <h6 class="card-title mb-0 fw-bold">@joueur.Prenom @joueur.Nom</h6>
                         <span class="badge bg-secondary mt-1">@joueur.Position</span>
+                        @if (!string.IsNullOrEmpty(joueur.PositionSpecifique))
+                        {
+                            <span class="badge bg-primary mt-1 ms-1">@joueur.PositionSpecifique</span>
+                        }
+                        @if (!string.IsNullOrEmpty(joueur.NoFiche))
+                        {
+                            <div class="small text-muted mt-1">Fiche : @joueur.NoFiche</div>
+                        }
                     </div>
                     <div class="card-footer bg-transparent py-2">
                         <div class="d-flex gap-1 justify-content-center">

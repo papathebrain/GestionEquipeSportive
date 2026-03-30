@@ -7,7 +7,7 @@
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-03-29T00:56:39.6269995Z",
+    "DerniereConnexion": "2026-03-29T23:45:40.7797136Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [],
     "EquipesIds": []
@@ -16,15 +16,28 @@
     "Id": "1166afcc-74d6-4a12-b1c3-29b1ed1ec4ee",
     "NomUtilisateur": "Benoit",
     "NomComplet": "Belise",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAEHAohFLOfoGJMFi9efrSvKJPc742rGEn/fCvc/ferqdAiqazn6LPfmjWWKqbeEp1Ug==",
-    "Role": "Utilisateur",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAEA61FCURl3QJdsREDkygwfW\u002BZmBKPootLlOa88QrNJVaoPT43qCUmkyL3lt6P\u002Be1rQ==",
+    "Role": "AdminEcole",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": "2026-03-29T00:57:28.0210217Z",
+    "DerniereConnexion": "2026-03-29T19:41:00.979457Z",
     "ChangerMotDePasse": false,
-    "EcolesIds": [],
-    "EquipesIds": [
+    "EcolesIds": [
       1
-    ]
+    ],
+    "EquipesIds": []
+  },
+  {
+    "Id": "98493067-5348-445b-bf7f-d74d99846912",
+    "NomUtilisateur": "AmitieEcole",
+    "NomComplet": "Utilisateur \u00E9cole amiti\u00E9",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAEF2g01sr8jZpZbpDyg6QVfBlnw3i3HpFD85u6ea6nHS1j1yBZFdJyYkTVN2Is4U87w==",
+    "Role": "Utilisateur",
+    "EstActif": true,
+    "DateCreation": "2026-03-29T04:06:43.2015776Z",
+    "DerniereConnexion": null,
+    "ChangerMotDePasse": true,
+    "EcolesIds": [],
+    "EquipesIds": []
   }
 ]

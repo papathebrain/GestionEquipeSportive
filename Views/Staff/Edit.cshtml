@@ -1,0 +1,39 @@
+@model GestionEquipeSportive.ViewModels.StaffViewModel
+@{
+    ViewData["Title"] = "Modifier un membre du staff";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId">@Model.NomEquipe</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-equipeId="@Model.EquipeId">Staff</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-person-gear me-2 text-primary"></i>Modifier — @Model.Prenom @Model.Nom</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="EquipeId" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                    @await Html.PartialAsync("_StaffForm", Model)
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                        </button>
+                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

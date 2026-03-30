@@ -84,7 +84,7 @@
 
     @if (ViewBag.CouleurPrimaire != null)
     {
-        <div class="theme-banner" style="background: linear-gradient(135deg, @ViewBag.CouleurPrimaire 0%, @ViewBag.CouleurSecondaire 100%);">
+        <div class="theme-banner" style="background-color: @ViewBag.CouleurPrimaire;">
             <div class="container py-2">
                 @RenderSection("BannerContent", required: false)
             </div>

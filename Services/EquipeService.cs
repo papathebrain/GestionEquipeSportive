@@ -6,10 +6,12 @@ namespace GestionEquipeSportive.Services;
 public class EquipeService : IEquipeService
 {
     private readonly IExcelRepository _repo;
+    private readonly IEcoleService _ecoleService;
 
-    public EquipeService(IExcelRepository repo)
+    public EquipeService(IExcelRepository repo, IEcoleService ecoleService)
     {
         _repo = repo;
+        _ecoleService = ecoleService;
     }
 
     public List<Equipe> GetAllEquipes() => _repo.GetAllEquipes();
@@ -26,7 +28,8 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = vm.Nom
+            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau),
+            AfficherPublic = vm.AfficherPublic
         };
         return _repo.AddEquipe(equipe);
     }
@@ -40,7 +43,8 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = vm.Nom
+            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau),
+            AfficherPublic = vm.AfficherPublic
         };
         return _repo.UpdateEquipe(equipe);
     }
@@ -54,8 +58,28 @@ public class EquipeService : IEquipeService
         AnneeScolaire = equipe.AnneeScolaire,
         TypeSport = equipe.TypeSport,
         Niveau = equipe.Niveau,
-        Nom = equipe.Nom
+        AfficherPublic = equipe.AfficherPublic
     };
+
+    private string GenererNom(int ecoleId, TypeSport sport, NiveauEquipe niveau)
+    {
+        var ecole = _ecoleService.GetEcoleById(ecoleId);
+        var nomEquipe = ecole?.NomEquipe ?? "";
+        var sportDisplay = sport switch
+        {
+            TypeSport.FootballAmericain => "Football",
+            TypeSport.Soccer => "Soccer",
+            TypeSport.Hockey => "Hockey",
+            _ => sport.ToString()
+        };
+        var niveauDisplay = niveau switch
+        {
+            NiveauEquipe.Juvenil => "Juvénile",
+            NiveauEquipe.PeeWee => "Pee-Wee",
+            _ => niveau.ToString()
+        };
+        return $"{nomEquipe} — {sportDisplay} — {niveauDisplay}";
+    }
 
     public List<string> GetNiveauxPourSport(TypeSport sport)
     {

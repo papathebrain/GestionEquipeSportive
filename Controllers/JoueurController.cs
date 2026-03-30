@@ -52,6 +52,17 @@ public class JoueurController : Controller
         joueur.Equipe = equipe;
         if (equipe != null) equipe.Ecole = ecole;
         ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0);
+
+        // Historique : toutes les participations du joueur (par NoFiche ou nom/prénom)
+        var historique = _joueurService.GetHistoriqueJoueur(joueur);
+        foreach (var j in historique)
+        {
+            j.Equipe = _equipeService.GetEquipeById(j.EquipeId);
+            if (j.Equipe != null)
+                j.Equipe.Ecole = _ecoleService.GetEcoleById(j.Equipe.EcoleId);
+        }
+        ViewBag.Historique = historique;
+
         return View(joueur);
     }
 

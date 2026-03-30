@@ -1,0 +1,50 @@
+@model GestionEquipeSportive.ViewModels.MatchViewModel
+@{
+    ViewData["Title"] = "Modifier le match";
+}
+
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@Model.EcoleId">@Model.NomEcole</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-equipeId="@Model.EquipeId">Matchs</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le match — vs @Model.Adversaire</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="EquipeId" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                    @await Html.PartialAsync("_MatchForm", Model)
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                        </button>
+                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.getElementById('estDomicile').addEventListener('change', toggleAutobus);
+toggleAutobus();
+function toggleAutobus() {
+    var dom = document.getElementById('estDomicile').checked;
+    document.getElementById('rowAutobus').style.display = dom ? 'none' : '';
+}
+</script>
+}

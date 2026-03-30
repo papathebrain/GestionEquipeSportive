@@ -13,14 +13,16 @@ public class EcoleController : Controller
     private readonly IEquipeService _equipeService;
     private readonly IEcoleAccessService _access;
     private readonly IWebHostEnvironment _env;
+    private readonly IJoueurService _joueurService;
 
     public EcoleController(IEcoleService ecoleService, IEquipeService equipeService,
-        IEcoleAccessService access, IWebHostEnvironment env)
+        IEcoleAccessService access, IWebHostEnvironment env, IJoueurService joueurService)
     {
         _ecoleService = ecoleService;
         _equipeService = equipeService;
         _access = access;
         _env = env;
+        _joueurService = joueurService;
     }
 
     public IActionResult Index()
@@ -31,7 +33,12 @@ public class EcoleController : Controller
 
         // Redirection automatique si 1 seule école accessible
         if (ecoles.Count == 1)
+        {
+            // AdminEcole → page de gestion des équipes directement
+            if (User.IsInRole(Roles.AdminEcole) && !User.IsInRole(Roles.Admin))
+                return RedirectToAction("Index", "Equipe", new { ecoleId = ecoles[0].Id });
             return RedirectToAction(nameof(Details), new { id = ecoles[0].Id });
+        }
 
         return View(ecoles);
     }
@@ -54,8 +61,20 @@ public class EcoleController : Controller
             .Where(a => !string.IsNullOrEmpty(a))
             .Distinct().OrderByDescending(a => a).ToList();
 
+        var nbJoueurs = equipes.ToDictionary(
+            e => e.Id,
+            e => _joueurService.GetJoueursByEquipe(e.Id).Count);
+
+        // Année scolaire courante (1 juillet → 30 juin)
+        var aujourd = DateTime.Today;
+        var anneeCourante = aujourd.Month >= 7
+            ? $"{aujourd.Year}-{aujourd.Year + 1}"
+            : $"{aujourd.Year - 1}-{aujourd.Year}";
+
         ViewBag.Equipes = equipes;
         ViewBag.Annees = annees;
+        ViewBag.NbJoueurs = nbJoueurs;
+        ViewBag.AnneeCourante = anneeCourante;
         ViewBag.PeutModifier = _access.PeutModifier(User, id);
         return View(ecole);
     }

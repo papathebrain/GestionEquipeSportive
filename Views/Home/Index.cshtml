@@ -1,6 +1,8 @@
 @model List<GestionEquipeSportive.Models.Ecole>
 @{
     ViewData["Title"] = "Accueil";
+    var anneeScolaire = ViewBag.AnneeScolaire as string ?? "";
+    var nbEquipes = ViewBag.NbEquipes as Dictionary<int, int> ?? new();
 }
 
 <div class="row mb-4">
@@ -27,6 +29,7 @@
             <i class="bi bi-building me-2 text-primary"></i>Écoles
             <span class="badge bg-secondary ms-2">@Model.Count</span>
         </h2>
+        <div class="text-muted small">Année scolaire courante : <strong>@anneeScolaire</strong></div>
     </div>
     @if (User.IsInRole("Admin"))
     {
@@ -56,7 +59,7 @@ else
         {
             <div class="col">
                 <div class="card h-100 school-card shadow-sm" style="border-top: 4px solid @ecole.CouleurPrimaire;">
-                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, @ecole.CouleurPrimaire 0%, @ecole.CouleurSecondaire 100%);">
+                    <div class="card-header text-white py-3" style="background-color: @ecole.CouleurPrimaire;">
                         <div class="d-flex align-items-center">
                             @if (!string.IsNullOrEmpty(ecole.LogoPath))
                             {
@@ -70,19 +73,22 @@ else
                             }
                             <div>
                                 <h5 class="card-title mb-0 fw-bold">@ecole.Nom</h5>
-                                <small class="opacity-75">@ecole.CodeEcole</small>
+                                <small class="opacity-75">@ecole.NomEquipe</small>
                             </div>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex gap-2 mb-3">
-                            <div class="color-swatch" style="background-color: @ecole.CouleurPrimaire;" title="Couleur primaire: @ecole.CouleurPrimaire"></div>
-                            <div class="color-swatch" style="background-color: @ecole.CouleurSecondaire;" title="Couleur secondaire: @ecole.CouleurSecondaire"></div>
+                        @{
+                            var nb = nbEquipes.TryGetValue(ecole.Id, out var cnt) ? cnt : 0;
+                        }
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-people-fill text-primary fs-4"></i>
+                            <div>
+                                <span class="fw-bold fs-5">@nb</span>
+                                <span class="text-muted ms-1">équipe@(nb > 1 ? "s" : "")</span>
+                                <div class="text-muted small">@anneeScolaire</div>
+                            </div>
                         </div>
-                        <p class="text-muted small mb-0">
-                            <i class="bi bi-palette me-1"></i>
-                            @ecole.CouleurPrimaire / @ecole.CouleurSecondaire
-                        </p>
                     </div>
                     <div class="card-footer bg-transparent">
                         <div class="d-flex gap-2">

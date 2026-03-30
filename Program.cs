@@ -28,6 +28,8 @@ builder.Services.AddScoped<IEcoleService, EcoleService>();
 builder.Services.AddScoped<IEquipeService, EquipeService>();
 builder.Services.AddScoped<IJoueurService, JoueurService>();
 builder.Services.AddScoped<IGalerieService, GalerieService>();
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<IStaffService, StaffService>();
 
 var app = builder.Build();
 
@@ -49,7 +51,10 @@ var uploadPaths = new[]
 {
     Path.Combine(app.Environment.WebRootPath, "uploads", "logos"),
     Path.Combine(app.Environment.WebRootPath, "uploads", "photos"),
-    Path.Combine(app.Environment.WebRootPath, "uploads", "galerie")
+    Path.Combine(app.Environment.WebRootPath, "uploads", "galerie"),
+    Path.Combine(app.Environment.WebRootPath, "uploads", "matchs", "photos"),
+    Path.Combine(app.Environment.WebRootPath, "uploads", "matchs", "videos"),
+    Path.Combine(app.Environment.WebRootPath, "uploads", "staff")
 };
 
 foreach (var path in uploadPaths)
@@ -59,6 +64,11 @@ Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "Data"))
 
 // Initialiser UserService au démarrage (affiche le mot de passe admin si premier démarrage)
 app.Services.GetRequiredService<IUserService>();
+
+app.MapControllerRoute(
+    name: "public-equipe",
+    pattern: "p/{ecoleSlug}/{annee}/{sport}/{niveau}",
+    defaults: new { controller = "Public", action = "Equipe" });
 
 app.MapControllerRoute(
     name: "default",

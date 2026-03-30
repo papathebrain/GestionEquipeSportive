@@ -34,4 +34,27 @@ public interface IExcelRepository
     GaleriePhoto AddPhoto(GaleriePhoto photo);
     GaleriePhoto UpdatePhoto(GaleriePhoto photo);
     bool DeletePhoto(int id);
+
+    // Staff
+    List<Staff> GetAllStaff();
+    List<Staff> GetStaffByEquipe(int equipeId);
+    Staff? GetStaffById(int id);
+    Staff AddStaff(Staff staff);
+    Staff UpdateStaff(Staff staff);
+    bool DeleteStaff(int id);
+
+    // Matchs
+    List<Match> GetAllMatchs();
+    List<Match> GetMatchsByEquipe(int equipeId);
+    Match? GetMatchById(int id);
+    Match AddMatch(Match match);
+    Match UpdateMatch(Match match);
+    bool DeleteMatch(int id);
+
+    // Médias de match
+    List<MatchMedia> GetAllMatchMedias();
+    List<MatchMedia> GetMediasByMatch(int matchId);
+    MatchMedia? GetMatchMediaById(int id);
+    MatchMedia AddMatchMedia(MatchMedia media);
+    bool DeleteMatchMedia(int id);
 }
