@@ -43,12 +43,34 @@ public class JoueurService : IJoueurService
                 PositionSpecifique = source.PositionSpecifique,
                 PhotoPath = source.PhotoPath,
                 NoFiche = source.NoFiche,
-                Description = source.Description
+                Description = source.Description,
+                ConsentementPhoto = source.ConsentementPhoto,
+                Actif = source.Actif
             });
         }
     }
 
-    public List<Joueur> GetJoueursByEquipe(int equipeId) => _repo.GetJoueursByEquipe(equipeId);
+    public void DeplacerJoueur(int joueurId, int nouvelleEquipeId)
+    {
+        var joueur = _repo.GetJoueurById(joueurId);
+        if (joueur == null) return;
+        joueur.EquipeId = nouvelleEquipeId;
+        _repo.UpdateJoueur(joueur);
+    }
+
+    public List<Joueur> GetJoueursByEquipe(int equipeId, bool actifSeulement = false)
+    {
+        var tous = _repo.GetJoueursByEquipe(equipeId);
+        return actifSeulement ? tous.Where(j => j.Actif).ToList() : tous;
+    }
+
+    public void ToggleActif(int joueurId)
+    {
+        var joueur = _repo.GetJoueurById(joueurId);
+        if (joueur == null) return;
+        joueur.Actif = !joueur.Actif;
+        _repo.UpdateJoueur(joueur);
+    }
 
     public Joueur? GetJoueurById(int id) => _repo.GetJoueurById(id);
 
@@ -64,7 +86,8 @@ public class JoueurService : IJoueurService
             PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim(),
             NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim(),
             Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
-            ConsentementPhoto = vm.ConsentementPhoto
+            ConsentementPhoto = vm.ConsentementPhoto,
+            Actif = vm.Actif
         };
 
         if (photoFile != null && photoFile.Length > 0)
@@ -86,6 +109,7 @@ public class JoueurService : IJoueurService
         joueur.NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim();
         joueur.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
         joueur.ConsentementPhoto = vm.ConsentementPhoto;
+        joueur.Actif = vm.Actif;
 
         if (photoFile != null && photoFile.Length > 0)
         {
@@ -123,7 +147,8 @@ public class JoueurService : IJoueurService
         NoFiche = joueur.NoFiche,
         Description = joueur.Description,
         PhotoPathActuelle = joueur.PhotoPath,
-        ConsentementPhoto = joueur.ConsentementPhoto
+        ConsentementPhoto = joueur.ConsentementPhoto,
+        Actif = joueur.Actif
     };
 
     private static string SaveFile(IFormFile file, string directory)

@@ -51,6 +51,27 @@
             padding-left: .75rem;
             margin-bottom: 1.25rem;
         }
+        .header-social-link {
+            color: rgba(255,255,255,.75);
+            text-decoration: none;
+            font-size: 1.15rem;
+            transition: color .15s;
+        }
+        .header-social-link:hover { color: #fff; }
+        .switcher-btn {
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.2);
+            color: #fff;
+            border-radius: 6px;
+            padding: .3rem .75rem;
+            font-size: .875rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .switcher-btn:hover { background: rgba(255,255,255,.22); }
+        .switcher-dropdown .dropdown-menu {
+            min-width: 220px;
+        }
     </style>
 </head>
 <body>
@@ -65,10 +86,11 @@
                 {
                     <div class="school-logo-placeholder"><i class="bi bi-shield-fill"></i></div>
                 }
-                <div>
+                <div class="flex-grow-1">
                     <div class="fw-bold fs-5">@ViewBag.NomEcole</div>
                     <div class="small opacity-75">@ViewData["Title"]</div>
                 </div>
+                @await RenderSectionAsync("HeaderRight", required: false)
             </div>
         </div>
     </header>

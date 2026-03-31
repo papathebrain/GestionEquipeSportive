@@ -34,4 +34,8 @@ public class PublicEquipeViewModel
     // Sport/Niveau display
     public string SportDisplay { get; set; } = "";
     public string NiveauDisplay { get; set; } = "";
+
+    // Navigation inter-équipes / inter-écoles
+    public List<(Equipe Equipe, string Url)> AutresEquipesEcole { get; set; } = new();
+    public List<(Ecole Ecole, Equipe PremiereEquipe, string Url)> AutresEcoles { get; set; } = new();
 }

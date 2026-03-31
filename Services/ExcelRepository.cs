@@ -91,6 +91,7 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 9).Value = "PositionSpecifique";
             ws.Cell(1, 10).Value = "Description";
             ws.Cell(1, 11).Value = "ConsentementPhoto";
+            ws.Cell(1, 12).Value = "Actif";
             wb.SaveAs(JoueursFile);
         }
     }
@@ -353,7 +354,8 @@ public class ExcelRepository : IExcelRepository
                     NoFiche = ws.Cell(row, 8).GetString() is string nf && nf.Length > 0 ? nf : null,
                     PositionSpecifique = ws.Cell(row, 9).GetString() is string ps && ps.Length > 0 ? ps : null,
                     Description = ws.Cell(row, 10).GetString() is string desc && desc.Length > 0 ? desc : null,
-                    ConsentementPhoto = ws.Cell(row, 11).Value.IsBlank || ws.Cell(row, 11).GetString().ToLowerInvariant() != "false"
+                    ConsentementPhoto = ws.Cell(row, 11).Value.IsBlank || ws.Cell(row, 11).GetString().ToLowerInvariant() != "false",
+                    Actif = ws.Cell(row, 12).Value.IsBlank || ws.Cell(row, 12).GetString().ToLowerInvariant() != "false"
                 });
             }
             return joueurs;
@@ -436,6 +438,7 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 9).Value = joueur.PositionSpecifique ?? string.Empty;
         ws.Cell(row, 10).Value = joueur.Description ?? string.Empty;
         ws.Cell(row, 11).Value = joueur.ConsentementPhoto.ToString().ToLower();
+        ws.Cell(row, 12).Value = joueur.Actif.ToString().ToLower();
     }
 
     // ==================== GALERIE ====================

@@ -90,7 +90,14 @@
                                         <select name="LiensSociaux[@i].Type" class="form-select form-select-sm">
                                             @foreach (var t in new[] { "Facebook","Instagram","X / Twitter","YouTube","TikTok","Site web","Autre" })
                                             {
-                                                //<option value="@t" @(Model.LiensSociaux[i].Type == t ? "selected" : "")>@t</option>
+                                                if (Model.LiensSociaux[i].Type == t)
+                                                {
+                                                    <option value="@t" selected>@t</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@t">@t</option>
+                                                }
                                             }
                                         </select>
                                     </div>

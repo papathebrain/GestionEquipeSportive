@@ -52,7 +52,9 @@ public class PublicController : Controller
             typeSport = sport.ToLowerInvariant() switch
             {
                 "football" or "footballamericain" or "football-americain" => TypeSport.FootballAmericain,
+                "flagfootball" or "flag-football" or "flag" => TypeSport.FlagFootball,
                 "soccer" => TypeSport.Soccer,
+                "volleyball" => TypeSport.Volleyball,
                 "hockey" => TypeSport.Hockey,
                 _ => (TypeSport)(-1)
             };
@@ -104,21 +106,22 @@ public class PublicController : Controller
             .FirstOrDefault();
 
         // Charger toutes les photos des matchs passés avec résultat
+        // Charger toutes les médias (photos + vidéos) des matchs passés
         var matchesMedias = matchs
             .Where(m => m.AResultat)
             .ToDictionary(
                 m => m.Id,
-                m => _matchService.GetMediasByMatch(m.Id)
-                    .Where(mm => mm.TypeMedia == TypeMedia.Photo)
-                    .ToList());
+                m => _matchService.GetMediasByMatch(m.Id).ToList());
 
         List<MatchMedia> dernierMatchMedias = new();
         MatchMedia? photoBanniere = null;
         if (dernierMatch != null)
         {
             dernierMatchMedias = matchesMedias.TryGetValue(dernierMatch.Id, out var dm) ? dm : new();
-            if (dernierMatchMedias.Any())
-                photoBanniere = dernierMatchMedias[Random.Shared.Next(dernierMatchMedias.Count)];
+            // La bannière utilise une photo (pas une vidéo)
+            var photosSeules = dernierMatchMedias.Where(mm => mm.TypeMedia == TypeMedia.Photo).ToList();
+            if (photosSeules.Any())
+                photoBanniere = photosSeules[Random.Shared.Next(photosSeules.Count)];
         }
 
         // Prochain match dans les 7 jours
@@ -128,7 +131,7 @@ public class PublicController : Controller
             .OrderBy(m => m.DateMatch)
             .FirstOrDefault();
 
-        var joueurs = _joueurService.GetJoueursByEquipe(equipe.Id);
+        var joueurs = _joueurService.GetJoueursByEquipe(equipe.Id, actifSeulement: true);
         var joueurMedias = joueurs.ToDictionary(
             j => j.Id,
             j => _joueurService.GetMediasByJoueur(j.Id));
@@ -172,7 +175,9 @@ public class PublicController : Controller
             SportDisplay = typeSport switch
             {
                 TypeSport.FootballAmericain => "Football",
+                TypeSport.FlagFootball => "Flag Football",
                 TypeSport.Soccer => "Soccer",
+                TypeSport.Volleyball => "Volleyball",
                 TypeSport.Hockey => "Hockey",
                 _ => typeSport.ToString()
             },
@@ -183,6 +188,15 @@ public class PublicController : Controller
                 _ => niveauEquipe.ToString()
             }
         };
+
+        // Autres équipes publiques de la même école
+        vm.AutresEquipesEcole = equipes
+            .Where(e => e.Id != equipe.Id && e.AfficherPublic)
+            .Select(e => (
+                Equipe: e,
+                Url: $"/p/{Ecole.ToSlug(ecole.Nom)}/{e.AnneeScolaire}/{e.TypeSport.ToString().ToLower()}/{e.Niveau.ToString().ToLower()}"
+            ))
+            .ToList();
 
         return View(vm);
     }

@@ -44,6 +44,9 @@ public class JoueurViewModel
     [Display(Name = "Consentement photo")]
     public bool ConsentementPhoto { get; set; } = true;
 
+    [Display(Name = "Joueur actif")]
+    public bool Actif { get; set; } = true;
+
     // Infos de navigation
     public string? NomEquipe { get; set; }
     public int EcoleId { get; set; }

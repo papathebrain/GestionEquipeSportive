@@ -1,9 +1,12 @@
 @model List<GestionEquipeSportive.Models.Joueur>
+@using GestionEquipeSportive.Models
 @{
     ViewData["Title"] = "Joueurs";
-    var equipe = ViewBag.Equipe as GestionEquipeSportive.Models.Equipe;
+    var equipe = ViewBag.Equipe as Equipe;
     var ecole = equipe?.Ecole;
     var groupes = Model.GroupBy(j => j.Position).OrderBy(g => g.Key).ToList();
+    var peutModifier = ViewBag.PeutModifier as bool? ?? false;
+    var equipesEcole = ViewBag.EquipesEcole as List<Equipe> ?? new List<Equipe>();
 }
 
 @section BannerContent {
@@ -30,14 +33,19 @@
             <span class="badge bg-secondary">@Model.Count</span>
         </h1>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-controller="Galerie" asp-action="Index" asp-route-equipeId="@equipe?.Id"
-           class="btn btn-outline-success">
-            <i class="bi bi-images me-1"></i>Galerie
-        </a>
-        <a asp-action="Create" asp-route-equipeId="@equipe?.Id" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Ajouter un joueur
-        </a>
+    <div class="d-flex gap-2 flex-wrap">
+        @if (peutModifier)
+        {
+            <button type="button" class="btn btn-outline-primary" id="btnImporterExistant">
+                <i class="bi bi-person-check me-1"></i>Importer joueur existant
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="btnImporterExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Importer Excel
+            </button>
+            <a asp-action="Create" asp-route-equipeId="@equipe?.Id" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Nouveau joueur
+            </a>
+        }
     </div>
 </div>
 
@@ -65,7 +73,7 @@ else
                 @foreach (var joueur in groupe.OrderBy(j => j.Numero))
                 {
                     <div class="col">
-                        <div class="card h-100 shadow-sm player-card">
+                        <div class="card h-100 shadow-sm player-card" style="@(!joueur.Actif ? "opacity:.5;" : "")">
                             <div class="player-photo-container">
                                 @if (!joueur.ConsentementPhoto)
                                 {
@@ -112,23 +120,47 @@ else
                                 {
                                     <div class="small text-muted mt-1">Fiche : @joueur.NoFiche</div>
                                 }
+                                @if (!joueur.Actif)
+                                {
+                                    <span class="badge bg-danger mt-1">Inactif</span>
+                                }
                             </div>
                             <div class="card-footer bg-transparent py-2">
-                                <div class="d-flex gap-1 justify-content-center">
+                                <div class="d-flex gap-1 justify-content-center flex-wrap">
                                     <a asp-action="Details" asp-route-id="@joueur.Id"
                                        class="btn btn-sm btn-outline-info" title="Détails">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a asp-action="Edit" asp-route-id="@joueur.Id"
-                                       class="btn btn-sm btn-outline-warning" title="Modifier">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
-                                            data-joueur-id="@joueur.Id"
-                                            data-joueur-nom="@joueur.Prenom @joueur.Nom"
-                                            data-equipe-id="@equipe!.Id">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    @if (peutModifier)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@joueur.Id"
+                                           class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post" asp-action="ToggleActif" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@joueur.Id" />
+                                            <input type="hidden" name="equipeId" value="@equipe!.Id" />
+                                            <button type="submit" class="btn btn-sm @(joueur.Actif ? "btn-outline-warning" : "btn-outline-success")"
+                                                    title="@(joueur.Actif ? "Désactiver" : "Réactiver")">
+                                                <i class="bi @(joueur.Actif ? "bi-person-x" : "bi-person-check")"></i>
+                                            </button>
+                                        </form>
+                                        @if (equipesEcole.Any())
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Déplacer vers une autre équipe"
+                                                    data-deplacer-joueur-id="@joueur.Id"
+                                                    data-deplacer-joueur-nom="@joueur.Prenom @joueur.Nom">
+                                                <i class="bi bi-arrow-left-right"></i>
+                                            </button>
+                                        }
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                                data-joueur-id="@joueur.Id"
+                                                data-joueur-nom="@joueur.Prenom @joueur.Nom"
+                                                data-equipe-id="@equipe!.Id">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -138,6 +170,99 @@ else
         </div>
     }
 }
+
+@* ── Modal : Importer joueurs existants ─────────────────────────────────── *@
+<div class="modal fade" id="importerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-check me-2 text-primary"></i>Importer des joueurs existants</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2">Recherchez par nom, prénom ou no de fiche. Une copie sera créée dans cette équipe.</p>
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="importRecherche" class="form-control" placeholder="Nom, prénom ou no de fiche..." autocomplete="off" />
+                    <button type="button" class="btn btn-outline-primary" id="btnRechercherJoueurs">Rechercher</button>
+                </div>
+                <div id="importListe" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small text-muted" id="importCountInfo"></span>
+                        <div class="form-check mb-0">
+                            <input type="checkbox" class="form-check-input" id="importSelectAll" />
+                            <label class="form-check-label small" for="importSelectAll">Tout sélectionner</label>
+                        </div>
+                    </div>
+                    <div id="importListeItems" style="max-height:320px;overflow-y:auto;border:1px solid #dee2e6;border-radius:6px;"></div>
+                </div>
+                <div id="importAucun" class="text-muted text-center py-3" style="display:none;">
+                    <i class="bi bi-search me-1"></i><span id="importAucunMsg"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="me-auto small text-muted" id="importSelectionInfo"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="importerForm" method="post" asp-action="AjouterExistant">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="importJoueurSourceIds" name="joueurSourceIds" value="" />
+                    <input type="hidden" name="equipeId" value="@equipe?.Id" />
+                    <button type="submit" class="btn btn-primary" id="btnConfirmerImport" disabled>
+                        <i class="bi bi-plus-circle me-1"></i>Importer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal : Déplacer joueur vers une autre équipe ────────────────────────── *@
+<div class="modal fade" id="deplacerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2 text-secondary"></i>Déplacer le joueur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Déplacer <strong id="deplacerJoueurNom"></strong> vers :</p>
+                <select class="form-select" id="deplacerEquipeSelect" name="nouvelleEquipeId">
+                    @foreach (var eq in equipesEcole)
+                    {
+                        var sportLabel = eq.TypeSport switch {
+                            TypeSport.FootballAmericain => "Football",
+                            TypeSport.FlagFootball      => "Flag Football",
+                            TypeSport.Soccer            => "Soccer",
+                            TypeSport.Volleyball        => "Volleyball",
+                            TypeSport.Hockey            => "Hockey",
+                            _                           => eq.TypeSport.ToString()
+                        };
+                        var niveauLabel = eq.Niveau switch {
+                            NiveauEquipe.Juvenil => "Juvénile",
+                            NiveauEquipe.PeeWee  => "Pee-Wee",
+                            _                    => eq.Niveau.ToString()
+                        };
+                        <option value="@eq.Id">@sportLabel — @niveauLabel @eq.AnneeScolaire (@eq.Nom)</option>
+                    }
+                </select>
+                <div class="alert alert-info mt-3 py-2 small">
+                    <i class="bi bi-info-circle me-1"></i>Le joueur sera retiré de l'équipe actuelle et ajouté à l'équipe sélectionnée.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deplacerForm" method="post" asp-action="Deplacer">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deplacerJoueurId" name="joueurId" value="" />
+                    <input type="hidden" id="deplacerNouvelleEquipeId" name="nouvelleEquipeId" value="" />
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left-right me-1"></i>Déplacer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
@@ -159,18 +284,165 @@ else
     </div>
 </div>
 
+@* ── Modal : Importer depuis Excel ──────────────────────────────────────── *@
+<div class="modal fade" id="importExcelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Importer depuis Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Le fichier doit contenir les colonnes (en-tête ligne 1) : <strong>NoFiche, Nom, Prenom, Numero, Position, PositionSpecifique</strong></p>
+                <p class="text-muted small">Si le NoFiche correspond à un joueur existant dans l'équipe, sa fiche sera mise à jour. Sinon, un nouveau joueur sera créé.</p>
+                <form id="importExcelForm" method="post" asp-action="ImporterExcel" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="equipeId" value="@equipe?.Id" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fichier Excel (.xlsx)</label>
+                        <input type="file" name="fichierExcel" class="form-control" accept=".xlsx,.xls" required />
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload me-1"></i>Importer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        // ── Supprimer ──────────────────────────────────────────────────────────
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('[data-joueur-id]');
             if (!btn) return;
-            var id = btn.dataset.joueurId;
-            var nom = btn.dataset.joueurNom;
-            var equipeId = btn.dataset.equipeId;
-            document.getElementById('deleteJoueurName').textContent = nom;
-            document.getElementById('deleteEquipeId').value = equipeId;
-            document.getElementById('deleteForm').action = '/Joueur/Delete/' + id;
+            document.getElementById('deleteJoueurName').textContent = btn.dataset.joueurNom;
+            document.getElementById('deleteEquipeId').value = btn.dataset.equipeId;
+            document.getElementById('deleteForm').action = '/Joueur/Delete/' + btn.dataset.joueurId;
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+
+        // ── Déplacer ───────────────────────────────────────────────────────────
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-deplacer-joueur-id]');
+            if (!btn) return;
+            document.getElementById('deplacerJoueurNom').textContent = btn.dataset.deplacerJoueurNom;
+            document.getElementById('deplacerJoueurId').value = btn.dataset.deplacerJoueurId;
+            // sync select → hidden field on submit
+            document.getElementById('deplacerNouvelleEquipeId').value =
+                document.getElementById('deplacerEquipeSelect').value;
+            new bootstrap.Modal(document.getElementById('deplacerModal')).show();
+        });
+
+        document.getElementById('deplacerEquipeSelect')?.addEventListener('change', function () {
+            document.getElementById('deplacerNouvelleEquipeId').value = this.value;
+        });
+
+        // ── Importer joueurs existants ─────────────────────────────────────────
+        var importEquipeId = @(equipe?.Id ?? 0);
+        var importSelectedIds = new Set();
+
+        document.getElementById('btnImporterExistant')?.addEventListener('click', function () {
+            document.getElementById('importRecherche').value = '';
+            document.getElementById('importListe').style.display = 'none';
+            document.getElementById('importAucun').style.display = 'none';
+            document.getElementById('importSelectionInfo').textContent = '';
+            document.getElementById('btnConfirmerImport').disabled = true;
+            importSelectedIds = new Set();
+            new bootstrap.Modal(document.getElementById('importerModal')).show();
+            setTimeout(function() { document.getElementById('importRecherche').focus(); }, 300);
+        });
+
+        document.getElementById('btnRechercherJoueurs').addEventListener('click', rechercherJoueurs);
+        document.getElementById('importRecherche').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); rechercherJoueurs(); }
+        });
+
+        document.getElementById('importSelectAll').addEventListener('change', function () {
+            var cbs = document.querySelectorAll('#importListeItems .import-cb:not(:disabled)');
+            cbs.forEach(function(cb) {
+                cb.checked = this.checked;
+                if (this.checked) importSelectedIds.add(cb.value);
+                else importSelectedIds.delete(cb.value);
+            }, this);
+            majSelectionImport();
+        });
+
+        document.getElementById('importListeItems').addEventListener('change', function(e) {
+            if (!e.target.classList.contains('import-cb')) return;
+            if (e.target.checked) importSelectedIds.add(e.target.value);
+            else importSelectedIds.delete(e.target.value);
+            majSelectionImport();
+        });
+
+        function rechercherJoueurs() {
+            var q = document.getElementById('importRecherche').value.trim();
+            if (q.length < 2) return;
+            importSelectedIds = new Set();
+            document.getElementById('importSelectAll').checked = false;
+
+            fetch('/Joueur/RechercherJoueur?q=' + encodeURIComponent(q) + '&equipeId=' + importEquipeId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    document.getElementById('importListe').style.display = 'none';
+                    document.getElementById('importAucun').style.display = 'none';
+
+                    if (!data.joueurs || data.joueurs.length === 0) {
+                        document.getElementById('importAucunMsg').textContent = data.message || 'Aucun joueur trouvé.';
+                        document.getElementById('importAucun').style.display = '';
+                        majSelectionImport();
+                        return;
+                    }
+
+                    var html = data.joueurs.map(function(j) {
+                        var pos = j.position + (j.positionSpecifique ? ' — ' + j.positionSpecifique : '');
+                        var fiche = j.noFiche ? '<span class="badge bg-light text-dark border ms-1">' + escHtml(j.noFiche) + '</span>' : '';
+                        var disabled = j.dejaPresent ? 'disabled' : '';
+                        var badge = j.dejaPresent
+                            ? '<span class="badge bg-secondary ms-2 small">Déjà dans l\'équipe</span>'
+                            : '';
+                        return '<label class="d-flex align-items-center gap-3 px-3 py-2 border-bottom ' + (j.dejaPresent ? 'text-muted bg-light' : 'hover-bg') + '" style="cursor:' + (j.dejaPresent ? 'default' : 'pointer') + ';">'
+                            + '<input type="checkbox" class="import-cb form-check-input flex-shrink-0" value="' + j.id + '" ' + disabled + '>'
+                            + '<div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.85rem;">#' + escHtml(j.numero) + '</div>'
+                            + '<div class="flex-grow-1 min-width-0">'
+                            +   '<div class="fw-semibold">' + escHtml(j.prenom) + ' ' + escHtml(j.nom) + badge + fiche + '</div>'
+                            +   '<div class="small text-muted">' + escHtml(pos) + ' · <i class="bi bi-people"></i> ' + escHtml(j.equipeActuelle) + '</div>'
+                            + '</div>'
+                            + '</label>';
+                    }).join('');
+
+                    document.getElementById('importListeItems').innerHTML = html;
+                    var dispo = data.joueurs.filter(function(j) { return !j.dejaPresent; }).length;
+                    document.getElementById('importCountInfo').textContent =
+                        data.joueurs.length + ' résultat(s) · ' + dispo + ' disponible(s)';
+                    document.getElementById('importListe').style.display = '';
+                    majSelectionImport();
+                });
+        }
+
+        function majSelectionImport() {
+            var n = importSelectedIds.size;
+            document.getElementById('btnConfirmerImport').disabled = n === 0;
+            document.getElementById('btnConfirmerImport').textContent = n > 0
+                ? 'Importer (' + n + ' joueur' + (n > 1 ? 's' : '') + ')'
+                : 'Importer';
+            document.getElementById('importSelectionInfo').textContent = n > 0
+                ? n + ' joueur' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '')
+                : '';
+            document.getElementById('importJoueurSourceIds').value = Array.from(importSelectedIds).join(',');
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ── Importer depuis Excel ──────────────────────────────────────────────
+        document.getElementById('btnImporterExcel')?.addEventListener('click', function() {
+            new bootstrap.Modal(document.getElementById('importExcelModal')).show();
         });
     </script>
 }

@@ -68,7 +68,9 @@ public class EquipeService : IEquipeService
         var sportDisplay = sport switch
         {
             TypeSport.FootballAmericain => "Football",
+            TypeSport.FlagFootball => "Flag Football",
             TypeSport.Soccer => "Soccer",
+            TypeSport.Volleyball => "Volleyball",
             TypeSport.Hockey => "Hockey",
             _ => sport.ToString()
         };
@@ -86,7 +88,9 @@ public class EquipeService : IEquipeService
         return sport switch
         {
             TypeSport.FootballAmericain => new List<string> { "Benjamin", "Cadet", "Juvenil" },
+            TypeSport.FlagFootball => new List<string> { "Benjamin", "Cadet", "Juvenil" },
             TypeSport.Soccer => new List<string> { "Benjamin", "Cadet", "Juvenil" },
+            TypeSport.Volleyball => new List<string> { "Benjamin", "Cadet", "Juvenil" },
             TypeSport.Hockey => new List<string> { "Atome", "PeeWee", "Bantam" },
             _ => new List<string>()
         };

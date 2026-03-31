@@ -7,10 +7,12 @@ namespace GestionEquipeSportive.Services;
 public interface IJoueurService
 {
     List<Joueur> GetAllJoueurs();
-    List<Joueur> GetJoueursByEquipe(int equipeId);
+    List<Joueur> GetJoueursByEquipe(int equipeId, bool actifSeulement = false);
+    void ToggleActif(int joueurId);
     Joueur? GetJoueurById(int id);
     List<Joueur> GetHistoriqueJoueur(Joueur joueur);
     void CopierVersEquipe(IEnumerable<int> joueurIds, int nouvelleEquipeId);
+    void DeplacerJoueur(int joueurId, int nouvelleEquipeId);
     Joueur CreateJoueur(JoueurViewModel vm, IFormFile? photoFile, string webRootPath);
     Joueur UpdateJoueur(JoueurViewModel vm, IFormFile? photoFile, string webRootPath);
     bool DeleteJoueur(int id, string webRootPath);

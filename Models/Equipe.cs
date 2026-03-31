@@ -3,7 +3,9 @@ namespace GestionEquipeSportive.Models;
 public enum TypeSport
 {
     FootballAmericain,
+    FlagFootball,
     Soccer,
+    Volleyball,
     Hockey
 }
 

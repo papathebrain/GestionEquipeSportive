@@ -12,6 +12,86 @@
     var now = DateTime.Now;
 }
 
+@section HeaderRight {
+    @{
+        // Toutes les équipes publiques de cette école (courante incluse), groupées par sport
+        var toutesEquipes = Model.AutresEquipesEcole
+            .Append((Equipe: Model.Equipe, Url: "#"))
+            .OrderBy(x => x.Equipe.TypeSport)
+            .ThenBy(x => x.Equipe.Niveau)
+            .ThenBy(x => x.Equipe.AnneeScolaire)
+            .ToList();
+
+        var parSport = toutesEquipes
+            .GroupBy(x => x.Equipe.TypeSport)
+            .OrderBy(g => g.Key)
+            .ToList();
+    }
+    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        @* ── Liens sociaux ── *@
+        @if (Model.Ecole.LiensSociaux.Any())
+        {
+            <div class="d-flex align-items-center gap-2 me-1">
+                @foreach (var lien in Model.Ecole.LiensSociaux)
+                {
+                    var lienIcon = lien.Type switch {
+                        "Facebook"    => "bi-facebook",
+                        "Instagram"   => "bi-instagram",
+                        "X / Twitter" => "bi-twitter-x",
+                        "YouTube"     => "bi-youtube",
+                        "TikTok"      => "bi-tiktok",
+                        _             => "bi-globe"
+                    };
+                    <a href="@lien.Url" target="_blank" rel="noopener noreferrer"
+                       class="header-social-link" title="@(string.IsNullOrEmpty(lien.Label) ? lien.Type : lien.Label)">
+                        <i class="bi @lienIcon"></i>
+                    </a>
+                }
+            </div>
+        }
+        @* ── Switcher équipes de la même école ── *@
+        @if (toutesEquipes.Count > 1)
+        {
+            <div class="dropdown switcher-dropdown">
+                <button class="switcher-btn dropdown-toggle" data-bs-toggle="dropdown" type="button">
+                    <i class="bi bi-people me-1"></i>@Model.SportDisplay — @Model.NiveauDisplay
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:240px;">
+                    <li><h6 class="dropdown-header"><i class="bi bi-shield-fill me-1"></i>@Model.Ecole.Nom</h6></li>
+                    @foreach (var sportGroupe in parSport)
+                    {
+                        var sportLabel = sportGroupe.Key switch {
+                            TypeSport.FootballAmericain => "Football",
+                            TypeSport.FlagFootball      => "Flag Football",
+                            TypeSport.Soccer            => "Soccer",
+                            TypeSport.Volleyball        => "Volleyball",
+                            TypeSport.Hockey            => "Hockey",
+                            _                           => sportGroupe.Key.ToString()
+                        };
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><span class="dropdown-header py-1 text-uppercase fw-bold" style="font-size:.7rem;letter-spacing:.06em;">@sportLabel</span></li>
+                        @foreach (var (equipe, url) in sportGroupe)
+                        {
+                            var niveauLabel = equipe.Niveau switch {
+                                NiveauEquipe.Juvenil => "Juvénile",
+                                NiveauEquipe.PeeWee  => "Pee-Wee",
+                                _                    => equipe.Niveau.ToString()
+                            };
+                            var isCurrent = equipe.Id == Model.Equipe.Id;
+                            <li>
+                                <a class="dropdown-item @(isCurrent ? "active" : "")" href="@url">
+                                    @if (isCurrent) { <i class="bi bi-check2 me-1"></i> }
+                                    @niveauLabel @equipe.AnneeScolaire
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+}
+
 @* ── Bannière ─────────────────────────────────────────────────────────────── *@
 <div style="background-color:@Model.Ecole.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
     @if (Model.PhotoBanniere != null)
@@ -84,31 +164,6 @@
                     <div class="small opacity-75">Nuls</div>
                 </div>
             </div>
-        </div>
-    </div>
-}
-
-@* ── Liens sociaux ────────────────────────────────────────────────────────── *@
-@if (Model.Ecole.LiensSociaux.Any())
-{
-    <div style="background-color:@Model.Ecole.CouleurPrimaire;" class="border-top border-white border-opacity-10">
-        <div class="container py-2 d-flex gap-3 flex-wrap justify-content-center">
-            @foreach (var lien in Model.Ecole.LiensSociaux)
-            {
-                var lienIcon = lien.Type switch {
-                    "Facebook"    => "bi-facebook",
-                    "Instagram"   => "bi-instagram",
-                    "X / Twitter" => "bi-twitter-x",
-                    "YouTube"     => "bi-youtube",
-                    "TikTok"      => "bi-tiktok",
-                    _             => "bi-globe"
-                };
-                <a href="@lien.Url" target="_blank" rel="noopener noreferrer"
-                   class="lien-social-pub d-flex align-items-center gap-1 small text-decoration-none text-white">
-                    <i class="bi @lienIcon"></i>
-                    @(string.IsNullOrEmpty(lien.Label) ? lien.Type : lien.Label)
-                </a>
-            }
         </div>
     </div>
 }
@@ -213,17 +268,20 @@
                                 <th>Adversaire</th>
                                 <th class="d-none d-md-table-cell">Lieu</th>
                                 <th class="text-center">Résultat</th>
-                                <th class="text-center"><i class="bi bi-images"></i></th>
+                                <th class="text-center"><i class="bi bi-camera me-1"></i><i class="bi bi-camera-video"></i></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var m in matchsPassés)
                             {
-                                var hasPhotos = Model.MatchesMedias.TryGetValue(m.Id, out var photos) && photos.Any();
-                                <tr class="@(hasPhotos ? "match-row-galerie" : "")"
+                                var allMedia = Model.MatchesMedias.TryGetValue(m.Id, out var meds) ? meds : new List<MatchMedia>();
+                                var photoCount = allMedia.Count(mm => mm.TypeMedia == TypeMedia.Photo);
+                                var videoCount = allMedia.Count(mm => mm.TypeMedia == TypeMedia.Video);
+                                var hasMedia = photoCount > 0 || videoCount > 0;
+                                <tr class="@(hasMedia ? "match-row-galerie" : "")"
                                     data-match-id="@m.Id"
-                                    style="@(hasPhotos ? "cursor:pointer;" : "")"
-                                    title="@(hasPhotos ? "Voir la galerie" : "")">
+                                    style="@(hasMedia ? "cursor:pointer;" : "")"
+                                    title="@(hasMedia ? "Voir photos / vidéos" : "")">
                                     <td class="text-nowrap small">@m.DateMatch.ToString("d MMM yyyy", frCA)</td>
                                     <td>
                                         <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
@@ -242,13 +300,19 @@
                                         { <span class="text-muted small">—</span> }
                                     </td>
                                     <td class="text-center">
-                                        @if (hasPhotos)
+                                        @if (photoCount > 0)
                                         {
-                                            <span class="badge rounded-pill" style="background-color:var(--couleur-secondaire);">
-                                                <i class="bi bi-camera me-1"></i>@photos!.Count
+                                            <span class="badge rounded-pill me-1" style="background-color:var(--couleur-secondaire);">
+                                                <i class="bi bi-camera me-1"></i>@photoCount
                                             </span>
                                         }
-                                        else
+                                        @if (videoCount > 0)
+                                        {
+                                            <span class="badge rounded-pill bg-danger">
+                                                <i class="bi bi-camera-video me-1"></i>@videoCount
+                                            </span>
+                                        }
+                                        @if (!hasMedia)
                                         {
                                             <span class="text-muted small">—</span>
                                         }
@@ -322,17 +386,17 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h5 section-title mb-0"><i class="bi bi-calendar3 me-2"></i>Calendrier</h2>
                 <div class="btn-group btn-group-sm" role="group" id="calViewToggle">
-                    <button type="button" class="btn btn-outline-secondary active" id="btnListe">
+                    <button type="button" class="btn btn-outline-secondary" id="btnListe">
                         <i class="bi bi-list-ul me-1"></i>Liste
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnGrille">
+                    <button type="button" class="btn btn-outline-secondary active" id="btnGrille">
                         <i class="bi bi-grid-3x3-gap me-1"></i>Calendrier
                     </button>
                 </div>
             </div>
 
             @* ── Vue Liste ──────────────────────────────────────────────── *@
-            <div id="calVueListe">
+            <div id="calVueListe" style="display:none;">
                 @if (!pubCalItems.Any())
                 {
                     <p class="text-muted text-center py-4"><i class="bi bi-calendar-x me-2"></i>Aucun événement au calendrier.</p>
@@ -378,7 +442,7 @@
             </div>
 
             @* ── Vue Grille ─────────────────────────────────────────────── *@
-            <div id="calVueGrille" style="display:none;">
+            <div id="calVueGrille">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <button type="button" id="calPrevMois" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chevron-left"></i>
@@ -483,6 +547,10 @@
                                         {
                                             <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom" class="mini-photo" />
                                         }
+                                        else if (!j.ConsentementPhoto && !string.IsNullOrEmpty(Model.Ecole.LogoPath))
+                                        {
+                                            <img src="@Model.Ecole.LogoPath" alt="Logo" class="mini-photo" style="opacity:.45;object-fit:contain;padding:12px;" />
+                                        }
                                         else
                                         {
                                             <div class="mini-no-photo">#@j.Numero</div>
@@ -521,7 +589,11 @@
     var galeriesJson = System.Text.Json.JsonSerializer.Serialize(
         Model.MatchesMedias.ToDictionary(
             kvp => kvp.Key.ToString(),
-            kvp => kvp.Value.Select(p => new { chemin = p.CheminFichier, description = p.Description ?? "" }).ToList()
+            kvp => kvp.Value.Select(p => new {
+                chemin = p.CheminFichier,
+                description = p.Description ?? "",
+                type = p.TypeMedia == GestionEquipeSportive.Models.TypeMedia.Video ? "video" : "photo"
+            }).ToList()
         )
     );
     var titresJson = System.Text.Json.JsonSerializer.Serialize(
@@ -695,8 +767,6 @@
         position:absolute; bottom:0; left:0; right:0; height:4px;
         background:var(--couleur-secondaire);
     }
-    .lien-social-pub { opacity:.75; transition:opacity .15s; }
-    .lien-social-pub:hover { opacity:1; }
 </style>
 
 @* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@
@@ -814,26 +884,48 @@
     var joueurPhotos     = JSON.parse(document.getElementById('joueur-photos-json').textContent);
     var statsJoueursData = JSON.parse(document.getElementById('stats-joueurs-json').textContent);
     var dernierMatchPhotosId = JSON.parse(document.getElementById('dernier-match-photos-id').textContent);
+    var logoEcole = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Ecole.LogoPath ?? ""));
 
     // ── Galerie matchs ────────────────────────────────────────────────────────
     var matchActif = null;
     var galeriePhotosActuelles = [];
 
     function afficherGalerie(matchId, row) {
-        var photos = galeriesData[matchId];
-        if (!photos || photos.length === 0) return;
+        var allMedia = galeriesData[matchId];
+        if (!allMedia || allMedia.length === 0) return;
         document.querySelectorAll('.match-row-galerie').forEach(function(r) { r.classList.remove('table-active'); });
         if (row) row.classList.add('table-active');
         document.getElementById('galerieTitre').innerHTML = '<i class="bi bi-images me-2"></i>' + (matchTitres[matchId] || '');
+
+        var photos = allMedia.filter(function(m) { return m.type !== 'video'; });
+        var videos = allMedia.filter(function(m) { return m.type === 'video'; });
+
+        // Garder seulement les photos pour le lightbox
         galeriePhotosActuelles = photos;
-        var container = document.getElementById('galeriePhotos');
-        container.innerHTML = photos.map(function(p, i) {
+
+        var photoHtml = photos.map(function(p, i) {
             return '<div class="col-6 col-md-3">'
                  + '<img src="' + p.chemin + '" alt="' + p.description + '" class="img-fluid rounded shadow-sm galerie-photo"'
                  + ' data-index="' + i + '"'
                  + ' style="width:100%;height:160px;object-fit:cover;cursor:pointer;" />'
                  + '</div>';
         }).join('');
+
+        var videoHtml = '';
+        if (videos.length > 0) {
+            videoHtml = '<div class="col-12 mt-2"><div class="small text-muted mb-2 fw-semibold">'
+                + '<i class="bi bi-camera-video me-1"></i>Vidéos (' + videos.length + ')</div></div>'
+                + videos.map(function(v) {
+                    return '<div class="col-12 col-md-6">'
+                        + '<video src="' + v.chemin + '" controls preload="metadata"'
+                        + ' class="w-100 rounded shadow-sm" style="max-height:280px;background:#000;">'
+                        + '</video>'
+                        + (v.description ? '<div class="small text-muted mt-1">' + v.description + '</div>' : '')
+                        + '</div>';
+                }).join('');
+        }
+
+        document.getElementById('galeriePhotos').innerHTML = photoHtml + videoHtml;
         var section = document.getElementById('galerieSection');
         section.style.display = '';
         if (matchActif !== matchId) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -841,6 +933,8 @@
     }
 
     function fermerGalerie() {
+        // Pauser toutes les vidéos avant de fermer
+        document.querySelectorAll('#galeriePhotos video').forEach(function(v) { v.pause(); });
         document.getElementById('galerieSection').style.display = 'none';
         document.querySelectorAll('.match-row-galerie').forEach(function(r) { r.classList.remove('table-active'); });
         matchActif = null;
@@ -975,9 +1069,15 @@
         // Face arrière — en-tête
         document.getElementById('cardBackNumeroWm').textContent = '#' + numero;
         document.getElementById('cardBackNom').textContent = nom;
-        document.getElementById('cardBackAvatar').innerHTML = (consentement && currentCardPhotos.length)
-            ? '<img src="' + currentCardPhotos[0] + '" class="rounded-circle" style="width:72px;height:72px;object-fit:cover;border:3px solid rgba(255,255,255,.35);" alt="">'
-            : '<div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:72px;height:72px;background:rgba(255,255,255,.15);color:#fff;font-size:1.8rem;"><i class="bi bi-person-fill"></i></div>';
+        var avatarHtml;
+        if (consentement && currentCardPhotos.length) {
+            avatarHtml = '<img src="' + currentCardPhotos[0] + '" class="rounded-circle" style="width:72px;height:72px;object-fit:cover;border:3px solid rgba(255,255,255,.35);" alt="">';
+        } else if (!consentement && logoEcole) {
+            avatarHtml = '<img src="' + logoEcole + '" class="rounded-circle" style="width:72px;height:72px;object-fit:contain;background:rgba(255,255,255,.15);padding:8px;border:3px solid rgba(255,255,255,.25);" alt="">';
+        } else {
+            avatarHtml = '<div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:72px;height:72px;background:rgba(255,255,255,.15);color:#fff;font-size:1.8rem;"><i class="bi bi-person-fill"></i></div>';
+        }
+        document.getElementById('cardBackAvatar').innerHTML = avatarHtml;
         var badges = document.getElementById('cardBackBadges');
         badges.innerHTML = '';
         if (position) badges.innerHTML += '<span class="badge bg-light text-dark small">' + position + '</span>';
@@ -1145,6 +1245,9 @@
         calMois.setMonth(calMois.getMonth() + 1);
         renderCalGrille();
     });
+
+    // Render initial du calendrier
+    renderCalGrille();
 
     // ── Recherche joueurs ─────────────────────────────────────────────────────
     var rechercheEl = document.getElementById('rechercheJoueur');

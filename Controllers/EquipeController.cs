@@ -79,6 +79,12 @@ public class EquipeController : Controller
         ViewBag.Matchs = matchs;
         ViewBag.Stats = stats;
         ViewBag.Evenements = evenements;
+        ViewBag.EquipesEcole = _equipeService.GetEquipesByEcole(equipe.EcoleId)
+            .Where(e => e.Id != id)
+            .OrderBy(e => e.TypeSport.ToString())
+            .ThenBy(e => e.Niveau.ToString())
+            .ThenBy(e => e.AnneeScolaire)
+            .ToList();
         return View(equipe);
     }
 
@@ -272,7 +278,9 @@ public class EquipeController : Controller
     private static string GetSportDisplayName(TypeSport sport) => sport switch
     {
         TypeSport.FootballAmericain => "Football",
+        TypeSport.FlagFootball => "Flag Football",
         TypeSport.Soccer => "Soccer",
+        TypeSport.Volleyball => "Volleyball",
         TypeSport.Hockey => "Hockey",
         _ => sport.ToString()
     };

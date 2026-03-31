@@ -13,6 +13,7 @@ public class Joueur
     public string? NoFiche { get; set; }  // Identifiant permanent du joueur entre les années
     public string? Description { get; set; }
     public bool ConsentementPhoto { get; set; } = true;  // Consentement parental pour diffusion des photos
+    public bool Actif { get; set; } = true;
 
     // Navigation
     public Equipe? Equipe { get; set; }

@@ -319,7 +319,9 @@ public class UtilisateurController : Controller
     private static string GetSportDisplay(TypeSport sport) => sport switch
     {
         TypeSport.FootballAmericain => "Football",
+        TypeSport.FlagFootball => "Flag Football",
         TypeSport.Soccer => "Soccer",
+        TypeSport.Volleyball => "Volleyball",
         TypeSport.Hockey => "Hockey",
         _ => sport.ToString()
     };
