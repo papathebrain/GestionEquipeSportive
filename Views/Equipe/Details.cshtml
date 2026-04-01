@@ -17,6 +17,116 @@
     var now = DateTime.Now;
 }
 
+<style>
+    /* ── Grille joueurs ──────────────────────────────────────────────────── */
+    .joueurs-grid {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        font-size: .875rem;
+    }
+    /* Colonnes : avatar | nom | posspec | fiche | actif | photo | actions */
+    .joueurs-grid-header,
+    .joueurs-grid-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 140px 100px 95px 75px 155px;
+        align-items: center;
+        column-gap: 12px;
+        padding: 6px 12px;
+    }
+    @@media (max-width: 991px) {
+        .joueurs-grid-header,
+        .joueurs-grid-row { grid-template-columns: 48px 1fr 140px 95px 75px 155px; }
+        .jg-col-fiche { display: none; }
+    }
+    @@media (max-width: 767px) {
+        .joueurs-grid-header,
+        .joueurs-grid-row { grid-template-columns: 48px 1fr 95px 75px 130px; }
+        .jg-col-fiche, .jg-col-posspec { display: none; }
+    }
+    .joueurs-grid-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+    .joueurs-grid-groupe {
+        padding: 5px 12px;
+        background: #f1f3f5;
+        border-top: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .joueurs-grid-groupe:first-of-type { border-top: none; }
+    .joueurs-grid-row {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background .12s;
+    }
+    .joueurs-grid-row:last-child { border-bottom: none; }
+    .joueurs-grid-row:hover { background: #f8f9fb; }
+    .joueur-inactif { opacity: .5; }
+    /* Dans le header : avatar caché, nom s'étend sur 2 colonnes pour partir à gauche */
+    .joueurs-grid-header { grid-template-columns: 0 1fr 140px 100px 95px 75px 155px; padding-left: 12px; }
+    @@media (max-width: 991px) {
+        .joueurs-grid-header { grid-template-columns: 0 1fr 140px 95px 75px 155px; }
+    }
+    @@media (max-width: 767px) {
+        .joueurs-grid-header { grid-template-columns: 0 1fr 95px 75px 130px; }
+    }
+    .joueurs-grid-header .jg-col-avatar { width: 0; overflow: hidden; padding: 0; }
+    /* Header actions aligné droite, contenu actions aligné droite */
+    .jg-col-actions { text-align: right; white-space: nowrap; }
+    .jg-col-actif, .jg-col-photo { white-space: nowrap; }
+
+    /* ── Grille matchs ───────────────────────────────────────────────────── */
+    /* Colonnes : date+heures | adversaire | lieu | résultat | actions */
+    .matchs-grid {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        font-size: .875rem;
+    }
+    .matchs-grid-header,
+    .matchs-grid-row {
+        display: grid;
+        grid-template-columns: 160px 1fr 150px 110px 100px;
+        align-items: center;
+        column-gap: 12px;
+        padding: 6px 12px;
+    }
+    @@media (max-width: 991px) {
+        .matchs-grid-header,
+        .matchs-grid-row { grid-template-columns: 160px 1fr 110px 100px; }
+        .mg-col-lieu { display: none; }
+    }
+    @@media (max-width: 767px) {
+        .matchs-grid-header,
+        .matchs-grid-row { grid-template-columns: 140px 1fr 90px; }
+        .mg-col-lieu, .mg-col-resultat { display: none; }
+    }
+    .matchs-grid-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+    .matchs-grid-header .mg-col-actions { text-align: right; }
+    .matchs-grid-row {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background .12s;
+    }
+    .matchs-grid-row:last-child { border-bottom: none; }
+    .matchs-grid-row:hover { background: #f8f9fb; }
+    .mg-col-actions { text-align: right; white-space: nowrap; }
+</style>
+
 @section BannerContent {
     <div class="d-flex align-items-center justify-content-between text-white flex-wrap gap-2">
         <div>
@@ -150,75 +260,77 @@
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Adversaire</th>
-                            <th class="d-none d-md-table-cell">Lieu</th>
-                            <th class="text-center">Résultat</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var m in matchs.OrderByDescending(m => m.DateMatch))
-                        {
-                            <tr>
-                                <td class="text-nowrap small">
-                                    @m.DateMatch.ToString("d MMM yyyy", frCA)
-                                    @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
-                                    {
-                                        <span class="text-muted ms-1">@m.HeureDebutMatch</span>
-                                    }
-                                </td>
-                                <td>
-                                    <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
-                                    @if (m.EstDomicile)
-                                    {
-                                        <span class="badge bg-info text-dark ms-1 small">Dom.</span>
-                                    }
-                                </td>
-                                <td class="text-muted small d-none d-md-table-cell">@m.Lieu</td>
-                                <td class="text-center">
-                                    @if (m.AResultat)
-                                    {
-                                        var cls = m.Resultat switch { "V" => "bg-success", "D" => "bg-danger", _ => "bg-secondary" };
-                                        <span class="badge @cls me-1">@m.Resultat</span>
-                                        <span class="small fw-semibold">@m.ScoreEquipe – @m.ScoreAdversaire</span>
-                                    }
-                                    else if (m.DateMatch >= now)
-                                    {
-                                        <span class="badge bg-light text-dark border small">À venir</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small">—</span>
-                                    }
-                                </td>
-                                <td class="text-end text-nowrap">
-                                    <a asp-controller="Match" asp-action="Details" asp-route-id="@m.Id"
-                                       class="btn btn-sm btn-outline-info py-0 px-1" title="Détails / Galerie">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    @if (peutModifier)
-                                    {
-                                        <a asp-controller="Match" asp-action="Edit" asp-route-id="@m.Id"
-                                           class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
-                                                onclick="confirmDeleteMatch(@m.Id, '@Html.Raw(m.Adversaire.Replace("'","\\'"))', @Model.Id)"
-                                                title="Supprimer">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="matchs-grid">
+                <div class="matchs-grid-header">
+                    <div class="mg-col-date">Date</div>
+                    <div class="mg-col-adversaire">Adversaire</div>
+                    <div class="mg-col-lieu">Lieu</div>
+                    <div class="mg-col-resultat">Résultat</div>
+                    <div class="mg-col-actions">Actions</div>
+                </div>
+                @foreach (var m in matchs.OrderByDescending(m => m.DateMatch))
+                {
+                    <div class="matchs-grid-row">
+                        <div class="mg-col-date small">
+                            <div class="fw-semibold">@m.DateMatch.ToString("d MMM yyyy", frCA)</div>
+                            @if (!string.IsNullOrEmpty(m.HeureArriveeVestiaire))
+                            {
+                                <div class="text-muted"><i class="bi bi-door-open me-1"></i>Vestiaire @m.HeureArriveeVestiaire</div>
+                            }
+                            @if (!string.IsNullOrEmpty(m.HeureDepartAutobus))
+                            {
+                                <div class="text-muted"><i class="bi bi-bus-front me-1"></i>Autobus @m.HeureDepartAutobus</div>
+                            }
+                            @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
+                            {
+                                <div class="text-muted"><i class="bi bi-play-circle me-1"></i>Début @m.HeureDebutMatch</div>
+                            }
+                        </div>
+                        <div class="mg-col-adversaire">
+                            <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
+                            @if (m.EstDomicile)
+                            {
+                                <span class="badge bg-info text-dark ms-1 small">Dom.</span>
+                            }
+                        </div>
+                        <div class="mg-col-lieu text-muted small">@m.Lieu</div>
+                        <div class="mg-col-resultat">
+                            @if (m.AResultat)
+                            {
+                                var cls = m.Resultat switch { "V" => "bg-success", "D" => "bg-danger", _ => "bg-secondary" };
+                                <span class="badge @cls me-1">@m.Resultat</span>
+                                <span class="small fw-semibold">@m.ScoreEquipe – @m.ScoreAdversaire</span>
+                            }
+                            else if (m.DateMatch >= now)
+                            {
+                                <span class="badge bg-light text-dark border small">À venir</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </div>
+                        <div class="mg-col-actions">
+                            <a asp-controller="Match" asp-action="Details" asp-route-id="@m.Id"
+                               class="btn btn-sm btn-outline-info py-0 px-1" title="Détails / Galerie">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            @if (peutModifier)
+                            {
+                                <a asp-controller="Match" asp-action="Edit" asp-route-id="@m.Id"
+                                   class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                        onclick="confirmDeleteMatch(@m.Id, '@Html.Raw(m.Adversaire.Replace("'","\\'"))', @Model.Id)"
+                                        title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
     </div>
@@ -247,40 +359,28 @@
         else
         {
             var groupesJoueurs = joueurs.GroupBy(j => j.Position).OrderBy(g => g.Key).ToList();
-            <table class="table table-sm table-hover align-middle mb-0">
-                <colgroup>
-                    <col style="width:48px" />
-                    <col />
-                    <col class="d-none d-sm-table-cell" style="width:130px" />
-                    <col class="d-none d-md-table-cell" style="width:90px" />
-                    <col style="width:60px" />
-                    <col style="width:60px" />
-                    <col style="width:1px" />
-                </colgroup>
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Nom</th>
-                        <th class="d-none d-sm-table-cell">Position spécifique</th>
-                        <th class="d-none d-md-table-cell">Fiche</th>
-                        <th class="text-center" title="Actif"><i class="bi bi-person-check"></i></th>
-                        <th class="text-center" title="Photo permise"><i class="bi bi-camera"></i></th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="joueurs-grid">
+                @* En-tête *@
+                <div class="joueurs-grid-header">
+                    <div class="jg-col-avatar"></div>
+                    <div class="jg-col-nom">Joueur</div>
+                    <div class="jg-col-posspec">Position spécifique</div>
+                    <div class="jg-col-fiche">Fiche</div>
+                    <div class="jg-col-actif">Actif</div>
+                    <div class="jg-col-photo">Photo</div>
+                    <div class="jg-col-actions">Actions</div>
+                </div>
                 @foreach (var groupe in groupesJoueurs)
                 {
-                    <tr class="table-secondary">
-                        <td colspan="7" class="fw-bold text-uppercase small text-muted py-1">
-                            @groupe.Key
-                            <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
-                        </td>
-                    </tr>
-                    @foreach (var j in groupe.OrderBy(j => j.Numero))
+                    @* Séparateur de groupe *@
+                    <div class="joueurs-grid-groupe">
+                        <span class="fw-bold text-uppercase small text-muted">@groupe.Key</span>
+                        <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
+                    </div>
+                    @foreach (var j in groupe.OrderBy(g => g.Numero))
                     {
-                        <tr class="@(!j.Actif ? "opacity-50" : "")">
-                            <td>
+                        <div class="joueurs-grid-row @(!j.Actif ? "joueur-inactif" : "")">
+                            <div class="jg-col-avatar">
                                 @if (!string.IsNullOrEmpty(j.PhotoPath))
                                 {
                                     <img src="@j.PhotoPath" class="rounded-circle"
@@ -290,42 +390,50 @@
                                 {
                                     <span class="badge bg-dark">#@j.Numero</span>
                                 }
-                            </td>
-                            <td>
+                            </div>
+                            <div class="jg-col-nom">
                                 <span class="fw-semibold">@j.Prenom @j.Nom</span>
                                 @if (!string.IsNullOrEmpty(j.PhotoPath))
                                 {
                                     <span class="text-muted small ms-1">#@j.Numero</span>
                                 }
-                            </td>
-                            <td class="d-none d-sm-table-cell">
+                            </div>
+                            <div class="jg-col-posspec">
                                 @if (!string.IsNullOrEmpty(j.PositionSpecifique))
                                 {
                                     <span class="badge bg-primary">@j.PositionSpecifique</span>
                                 }
-                            </td>
-                            <td class="text-muted small d-none d-md-table-cell">@j.NoFiche</td>
-                            <td class="text-center">
+                            </div>
+                            <div class="jg-col-fiche text-muted small">@j.NoFiche</div>
+                            <div class="jg-col-actif">
                                 @if (j.Actif)
                                 {
-                                    <i class="bi bi-check-circle-fill text-success" title="Actif"></i>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Actif
+                                    </span>
                                 }
                                 else
                                 {
-                                    <i class="bi bi-x-circle-fill text-danger" title="Inactif"></i>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-x-circle-fill me-1"></i>Inactif
+                                    </span>
                                 }
-                            </td>
-                            <td class="text-center">
+                            </div>
+                            <div class="jg-col-photo">
                                 @if (j.ConsentementPhoto)
                                 {
-                                    <i class="bi bi-check-circle-fill text-success" title="Photo permise"></i>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Oui
+                                    </span>
                                 }
                                 else
                                 {
-                                    <i class="bi bi-x-circle-fill text-danger" title="Photo non permise"></i>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-x-circle-fill me-1"></i>Non
+                                    </span>
                                 }
-                            </td>
-                            <td class="text-end text-nowrap">
+                            </div>
+                            <div class="jg-col-actions">
                                 <a asp-controller="Joueur" asp-action="Details" asp-route-id="@j.Id"
                                    class="btn btn-sm btn-outline-info py-0 px-1" title="Détails">
                                     <i class="bi bi-eye"></i>
@@ -353,12 +461,11 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 }
-                            </td>
-                        </tr>
+                            </div>
+                        </div>
                     }
                 }
-                </tbody>
-            </table>
+            </div>
         }
     </div>
 
