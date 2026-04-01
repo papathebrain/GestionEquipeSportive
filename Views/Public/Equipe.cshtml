@@ -473,36 +473,48 @@
         @if (Model.Staff.Any())
         {
             <div class="tab-pane fade" id="tab-coachs">
-                <div class="row g-2">
+                <div class="staff-grid">
+                    <div class="staff-grid-header">
+                        <div class="sg-col-photo"></div>
+                        <div class="sg-col-nom">Nom</div>
+                        <div class="sg-col-titre">Titre</div>
+                        <div class="sg-col-respo">Responsable de</div>
+                        <div class="sg-col-actions">Actions</div>
+                    </div>
                     @foreach (var s in Model.Staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
                     {
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 staff-card"
+                        <div class="staff-grid-row staff-card"
                              data-fullnom="@s.Prenom @s.Nom"
                              data-photo="@s.PhotoPath"
                              data-titre="@s.Titre"
-                             data-responsable="@s.ResponsableDe"
-                             style="cursor:pointer;">
-                            <div class="mini-trading-card">
+                             data-responsable="@s.ResponsableDe">
+                            <div class="sg-col-photo">
                                 @if (!string.IsNullOrEmpty(s.PhotoPath))
                                 {
-                                    <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" class="mini-photo" />
+                                    <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom"
+                                         class="rounded-circle" style="width:36px;height:36px;object-fit:cover;" />
                                 }
                                 else
                                 {
-                                    <div class="mini-no-photo"><i class="bi bi-person-fill" style="font-size:2.5rem;color:rgba(255,255,255,.3);"></i></div>
+                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                         style="width:36px;height:36px;background:var(--couleur-primaire);">
+                                        <i class="bi bi-person-fill text-white" style="font-size:1.1rem;"></i>
+                                    </div>
                                 }
-                                <div class="mini-gradient"></div>
-                                <div class="mini-badge">
-                                    <span class="badge" style="font-size:.55rem;background-color:var(--couleur-secondaire);">@s.Titre</span>
-                                </div>
-                                <div class="mini-info">
-                                    <div class="mini-nom">@s.Prenom @s.Nom</div>
-                                    @if (!string.IsNullOrEmpty(s.ResponsableDe))
-                                    {
-                                        <div class="mini-pos">@s.ResponsableDe</div>
-                                    }
-                                </div>
-                                <div class="mini-bande"></div>
+                            </div>
+                            <div class="sg-col-nom fw-semibold">@s.Prenom @s.Nom</div>
+                            <div class="sg-col-titre">
+                                @if (!string.IsNullOrEmpty(s.Titre))
+                                {
+                                    <span class="badge" style="background-color:var(--couleur-secondaire);font-size:.72rem;">@s.Titre</span>
+                                }
+                            </div>
+                            <div class="sg-col-respo text-muted small">@s.ResponsableDe</div>
+                            <div class="sg-col-actions">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-2" title="Voir la carte"
+                                        onclick="ouvrirStaff(this.closest('.staff-card'))">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                             </div>
                         </div>
                     }
@@ -695,7 +707,8 @@
 
 @* ── Styles carte de trading ──────────────────────────────────────────────── *@
 <style>
-    .trading-card-wrapper { perspective: 1200px; width: 300px; height: 440px; }
+    /* ── Carte de trading ──────────────────────────────────────────────────── */
+    .trading-card-wrapper { perspective: 1400px; width: 340px; height: 500px; }
     .trading-card {
         width: 100%; height: 100%; position: relative;
         transform-style: preserve-3d;
@@ -705,38 +718,108 @@
     .card-face {
         position: absolute; width: 100%; height: 100%;
         backface-visibility: hidden; -webkit-backface-visibility: hidden;
-        border-radius: 18px; overflow: hidden;
-        box-shadow: 0 24px 64px rgba(0,0,0,.55);
+        border-radius: 16px; overflow: hidden;
+        box-shadow: 0 28px 72px rgba(0,0,0,.6);
     }
     .card-back {
         transform: rotateY(180deg);
         background: #fff;
         display: flex; flex-direction: column;
     }
-    .card-flip-btn {
-        position: absolute; bottom: 12px; right: 12px;
-        width: 38px; height: 38px; border-radius: 50%;
-        border: 2px solid rgba(255,255,255,.55);
-        background: rgba(0,0,0,.35); color: #fff;
-        font-size: 1rem; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: background .2s; z-index: 5;
-    }
-    .card-flip-btn:hover { background: rgba(0,0,0,.65); }
-    .card-flip-btn-back { border-color: rgba(0,0,0,.15); background: rgba(0,0,0,.08); color: #444; }
-    .card-flip-btn-back:hover { background: rgba(0,0,0,.18); }
+    /* card-flip-btn défini plus bas avec les styles bandes */
     .carousel-nav-btn {
         position: absolute; top: 42%; transform: translateY(-50%);
         width: 34px; height: 34px; border-radius: 50%;
         border: none; background: rgba(0,0,0,.45); color: #fff;
-        font-size: 1.4rem; line-height: 1; cursor: pointer; z-index: 4;
+        font-size: 1.4rem; line-height: 1; cursor: pointer; z-index: 8;
         display: flex; align-items: center; justify-content: center;
     }
     .carousel-nav-btn:hover { background: rgba(0,0,0,.7); }
     .card-photo-img { transition: opacity 0.35s ease; }
     #modalJoueur .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
-    #modalJoueur .modal-dialog { max-width: 340px; }
+    #modalJoueur .modal-dialog { max-width: 380px; width: 100%; margin-left: auto; margin-right: auto; }
     .card-back-scroll { flex: 1; overflow-y: auto; padding: 14px 18px; }
+    /* ── Cadre par-dessus la photo ── */
+    .card-border-frame {
+        position: absolute; inset: 0; z-index: 6; pointer-events: none;
+        border: 12px solid var(--couleur-primaire);
+        border-radius: 16px;
+        box-shadow: inset 0 0 0 2px rgba(255,255,255,.3), 0 0 0 2px rgba(255,255,255,.12);
+    }
+    /* Ligne décorative intérieure */
+    .card-border-frame::after {
+        content: '';
+        position: absolute; inset: 4px;
+        border: 2px solid rgba(255,255,255,.2);
+        border-radius: 8px;
+        pointer-events: none;
+    }
+    /* ── Photo centrée entre les deux bandes ── */
+    #cardPhotoTrack img, #cardPhotoTrack > div {
+        position: absolute; inset: 0;
+        /* Laisser de l'espace pour les bandes haut (44px) et bas (~80px) */        
+    }
+    /* ── Numéro flottant à gauche ── */
+    .card-numero-left {
+        position: absolute; top: 52px; left: 14px;
+        z-index: 8; pointer-events: none;
+        font-size: 2.8rem; font-weight: 900;
+        color: #fff;
+        font-family: 'Segoe UI', Arial Black, sans-serif;
+        text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 20px rgba(0,0,0,.5);
+        line-height: 1;
+    }
+    /* ── Bande HAUTE horizontale — nom équipe ── */
+    .card-ribbon-top {
+        position: absolute; top: 0; left: 0; right: 0;
+        height: 44px; z-index: 7; pointer-events: none;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--couleur-secondaire);
+        box-shadow: 0 3px 12px rgba(0,0,0,.4);
+    }
+    .card-ribbon-top-text {
+        font-size: .85rem; font-weight: 700; color: #fff;
+        text-transform: uppercase; letter-spacing: .15em;
+        text-shadow: 0 1px 3px rgba(0,0,0,.6);
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    /* ── Bande BASSE horizontale — nom + position ── */
+    .card-ribbon-bot {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        z-index: 7; pointer-events: none;
+        display: flex; flex-direction: column;
+        background: var(--couleur-secondaire);
+        box-shadow: 0 -3px 12px rgba(0,0,0,.4);
+        padding: 8px 14px 10px;
+    }
+    .card-ribbon-bot-nom {
+        font-size: 1.1rem; font-weight: 700; color: #fff;
+        text-transform: uppercase; letter-spacing: .06em;
+        text-shadow: 0 1px 4px rgba(0,0,0,.6);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-ribbon-bot-pos {
+        font-size: .78rem; color: rgba(255,255,255,.85);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        letter-spacing: .04em;
+        margin-top: 3px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* ── Bouton flip plus visible ── */
+    .card-flip-btn {
+        position: absolute; bottom: 14px; right: 14px;
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.7);
+        background: var(--couleur-primaire); color: #fff;
+        font-size: 1.1rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background .2s, transform .15s; z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,.5);
+    }
+    .card-flip-btn:hover { transform: scale(1.1); }
+    .card-flip-btn-back { background: #fff; color: var(--couleur-primaire); border-color: var(--couleur-primaire); }
+    .card-flip-btn-back:hover { background: #f0f0f0; }
     /* Empêche la face cachée d'intercepter les clics */
     .trading-card:not(.flipped) .card-back { pointer-events: none; }
     .trading-card.flipped .card-front { pointer-events: none; }
@@ -801,11 +884,40 @@
         display: block;
     }
     .galerie-img:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,.28); }
+    /* ── Grille entraineurs ─────────────────────────────────────────────── */
+    .staff-grid {
+        border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: .875rem;
+    }
+    .staff-grid-header,
+    .staff-grid-row {
+        display: grid;
+        grid-template-columns: 44px 1fr 120px 1fr 70px;
+        align-items: center;
+        column-gap: 12px;
+        padding: 6px 12px;
+    }
+    @@media (max-width: 767px) {
+        .staff-grid-header,
+        .staff-grid-row { grid-template-columns: 44px 1fr 100px 60px; }
+        .sg-col-respo { display: none; }
+    }
+    .staff-grid-header {
+        background: #f8f9fa; border-bottom: 2px solid #dee2e6;
+        font-weight: 600; font-size: .78rem; text-transform: uppercase;
+        color: #6c757d; letter-spacing: .03em; white-space: nowrap;
+    }
+    .staff-grid-header .sg-col-actions { text-align: right; }
+    .staff-grid-row {
+        border-bottom: 1px solid #f0f0f0; transition: background .12s; cursor: pointer;
+    }
+    .staff-grid-row:last-child { border-bottom: none; }
+    .staff-grid-row:hover { background: #f8f9fb; }
+    .sg-col-actions { text-align: right; white-space: nowrap; }
 </style>
 
 @* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@
 <div class="modal fade" id="modalJoueur" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;width:100%;padding:0 12px;">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-body p-0 d-flex flex-column align-items-center">
                 <!-- Bouton fermer au-dessus -->
@@ -819,26 +931,27 @@
 
                         <!-- ── Face avant ── -->
                         <div class="card-face card-front">
-                            <!-- Photo / Carousel -->
-                            <div id="cardPhotoTrack" style="position:absolute;inset:0;"></div>
+                            <!-- Photo / Carousel (fond) -->
+                            <div id="cardPhotoTrack" style="position:absolute;inset:0;z-index:1;"></div>
+                            <!-- Boutons carousel -->
                             <button id="carouselPrev" class="carousel-nav-btn" style="left:8px;display:none;">&#8249;</button>
                             <button id="carouselNext" class="carousel-nav-btn" style="right:8px;display:none;">&#8250;</button>
-                            <div id="carouselDots" style="position:absolute;bottom:95px;width:100%;text-align:center;z-index:3;"></div>
-                            <!-- Gradient bas -->
-                            <div style="position:absolute;bottom:0;left:0;right:0;height:58%;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.45) 55%,transparent 100%);z-index:2;border-radius:0 0 16px 16px;"></div>
-                            <!-- Numéro top-left -->
-                            <div id="cardFrontNumero" style="position:absolute;top:14px;left:16px;font-size:2.2rem;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);font-family:Impact,Arial Black,sans-serif;z-index:3;"></div>
-                            <!-- Badge position top-right -->
-                            <div id="cardFrontBadge" style="position:absolute;top:14px;right:14px;z-index:3;"></div>
-                            <!-- Bande couleur secondaire en bas -->
-                            <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background-color:var(--couleur-secondaire);z-index:3;"></div>
-                            <!-- Nom + position -->
-                            <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;padding:0 14px;z-index:3;">
-                                <div id="cardFrontNom" style="font-size:1.15rem;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.9);letter-spacing:.03em;line-height:1.2;"></div>
-                                <div id="cardFrontPosition" style="font-size:.8rem;color:rgba(255,255,255,.7);margin-top:3px;"></div>
+                            <div id="carouselDots" style="position:absolute;bottom:110px;width:100%;text-align:center;z-index:8;"></div>
+                            <!-- Cadre bordure par-dessus la photo -->
+                            <div class="card-border-frame"></div>
+                            <!-- Bande haute horizontale : nom équipe -->
+                            <div class="card-ribbon-top">
+                                <div class="card-ribbon-top-text" id="cardFrontEquipe"></div>
+                            </div>
+                            <!-- Numéro flottant à gauche -->
+                            <div class="card-numero-left" id="cardFrontNumero"></div>
+                            <!-- Bande basse horizontale : nom + position -->
+                            <div class="card-ribbon-bot">
+                                <div class="card-ribbon-bot-nom" id="cardFrontNom"></div>
+                                <div class="card-ribbon-bot-pos" id="cardFrontPos"></div>
                             </div>
                             <!-- Flip btn -->
-                            <button id="btnFlip" class="card-flip-btn" title="Voir les infos" style="bottom:16px;right:14px;z-index:5;">
+                            <button id="btnFlip" class="card-flip-btn" title="Voir les infos">
                                 <i class="bi bi-arrow-repeat"></i>
                             </button>
                         </div>
@@ -918,7 +1031,8 @@
     var joueurPhotos     = JSON.parse(document.getElementById('joueur-photos-json').textContent);
     var statsJoueursData = JSON.parse(document.getElementById('stats-joueurs-json').textContent);
     var dernierMatchPhotosId = JSON.parse(document.getElementById('dernier-match-photos-id').textContent);
-    var logoEcole = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Ecole.LogoPath ?? ""));
+    var logoEcole  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Ecole.LogoPath ?? ""));
+    var nomEquipe  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Equipe.Nom));
 
     // ── Galerie matchs ────────────────────────────────────────────────────────
     var matchActif = null;
@@ -965,7 +1079,6 @@
         document.getElementById('galeriePhotos').innerHTML = photoHtml + videoHtml;
         var section = document.getElementById('galerieSection');
         section.style.display = '';
-        if (matchActif !== matchId) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         matchActif = matchId;
     }
 
@@ -1056,7 +1169,7 @@
             var noPhotoInner = '';
             if (logoEcole) {
                 noPhotoInner = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">'
-                    + '<img src="' + logoEcole + '" alt="" style="width:140px;height:140px;object-fit:contain;opacity:.55;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4));">'
+                    + '<img src="' + logoEcole + '" alt="" style="width:100%;height:100%;object-fit:contain;opacity:.55;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4));">'
                     + '<span style="font-size:4rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
                     + document.getElementById('cardFrontNumero').textContent + '</span></div>';
             } else {
@@ -1106,11 +1219,11 @@
         currentPhotoIndex = 0;
 
         // Face avant
-        document.getElementById('cardFrontNumero').textContent   = '#' + numero;
-        document.getElementById('cardFrontNom').textContent      = nom;
-        document.getElementById('cardFrontPosition').textContent = posSpec || position;
-        document.getElementById('cardFrontBadge').innerHTML = posSpec
-            ? '<span class="badge" style="background-color:var(--couleur-secondaire);font-size:.75rem;">' + posSpec + '</span>' : '';
+        document.getElementById('cardFrontEquipe').textContent = nomEquipe;
+        document.getElementById('cardFrontNom').textContent    = nom;
+        document.getElementById('cardFrontNumero').textContent = numero;
+        var posLabel = [position, posSpec].filter(Boolean).join(' — ');
+        document.getElementById('cardFrontPos').textContent    = posLabel;
 
         // Face arrière — en-tête
         document.getElementById('cardBackNumeroWm').textContent = '#' + numero;
@@ -1152,9 +1265,7 @@
         // Reset flip (toujours face avant à l'ouverture)
         document.getElementById('tradingCard').classList.remove('flipped');
         renderCarousel(false);
-        startCarouselAuto();
         var modal = new bootstrap.Modal(document.getElementById('modalJoueur'));
-        document.getElementById('modalJoueur').addEventListener('hidden.bs.modal', stopCarouselAuto, { once: true });
         modal.show();
     }
 
@@ -1185,12 +1296,10 @@
         if (e.target.closest('#btnFlip'))     { document.getElementById('tradingCard').classList.add('flipped');    return; }
         if (e.target.closest('#btnFlipBack')) { document.getElementById('tradingCard').classList.remove('flipped'); return; }
         if (e.target.closest('#carouselPrev')) {
-            stopCarouselAuto();
             currentPhotoIndex = (currentPhotoIndex - 1 + currentCardPhotos.length) % currentCardPhotos.length;
             renderCarousel(true); return;
         }
         if (e.target.closest('#carouselNext')) {
-            stopCarouselAuto();
             currentPhotoIndex = (currentPhotoIndex + 1) % currentCardPhotos.length;
             renderCarousel(true); return;
         }
