@@ -7,7 +7,7 @@
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-03-30T22:20:41.3651704Z",
+    "DerniereConnexion": "2026-03-31T23:03:32.6713441Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [],
     "EquipesIds": []
@@ -20,7 +20,7 @@
     "Role": "AdminEcole",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": "2026-03-30T21:51:15.9384145Z",
+    "DerniereConnexion": "2026-04-01T00:06:10.4144932Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [
       1
@@ -38,6 +38,21 @@
     "DerniereConnexion": null,
     "ChangerMotDePasse": true,
     "EcolesIds": [],
+    "EquipesIds": []
+  },
+  {
+    "Id": "da911ea1-bba2-48b3-a2f0-f09297f61e6d",
+    "NomUtilisateur": "Ginette",
+    "NomComplet": "Ginette",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAELv8ItX0X2BUWSOZnq7\u002Bs4wd1FOFk3e6AGOqAsqze8ce\u002BSuTVxXDLvx9PLMqYK6/Uw==",
+    "Role": "Utilisateur",
+    "EstActif": true,
+    "DateCreation": "2026-04-01T00:07:04.4265399Z",
+    "DerniereConnexion": "2026-04-01T00:08:30.7708463Z",
+    "ChangerMotDePasse": false,
+    "EcolesIds": [
+      1
+    ],
     "EquipesIds": []
   }
 ]

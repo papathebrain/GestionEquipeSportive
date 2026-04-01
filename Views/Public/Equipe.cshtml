@@ -345,14 +345,14 @@
         @* ── Onglet Calendrier ───────────────────────────────────────────────── *@
         <div class="tab-pane fade" id="tab-calendrier">
             @{
-                var pubCalItems = new List<(DateTime Date, DateTime? DateFin, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, string Heure)>();
+                var pubCalItems = new List<(DateTime Date, DateTime? DateFin, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, string Heure, string HeureArrivee, string HeureDepart, bool EstMatch)>();
                 foreach (var m in Model.Matchs)
                 {
                     var resultColor = m.AResultat ? (m.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" }) : "#6c757d";
                     var adversaire = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire;
-                    var sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : "Match";
+                    var sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : (m.EstDomicile ? "Domicile" : "Extérieur");
                     var heure = m.HeureDebutMatch ?? "";
-                    pubCalItems.Add((m.DateMatch, null, adversaire, sous, m.Lieu ?? "", "bi-flag-fill", resultColor, heure));
+                    pubCalItems.Add((m.DateMatch, null, adversaire, sous, m.Lieu ?? "", "bi-flag-fill", resultColor, heure, m.HeureArriveeVestiaire ?? "", m.HeureDepartAutobus ?? "", true));
                 }
                 foreach (var ev in Model.Evenements)
                 {
@@ -377,7 +377,7 @@
                         _ => "Autre"
                     };
                     var heure = ev.DateDebut.ToString("HH:mm");
-                    pubCalItems.Add((ev.DateDebut, ev.DateFin, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, heure));
+                    pubCalItems.Add((ev.DateDebut, ev.DateFin, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, heure, "", "", false));
                 }
                 var pubGrouped = pubCalItems.OrderBy(x => x.Date).GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1)).ToList();
             }
@@ -419,17 +419,30 @@
                                             <div style="width:3px;border-radius:2px;background:@item.IconColor;align-self:stretch;flex-shrink:0;"></div>
                                             <div class="flex-grow-1">
                                                 <div class="d-flex align-items-center gap-2 fw-semibold small">
-                                                    <i class="bi @item.IconClass" style="color:@item.IconColor;"></i>
+                                                    <i class="bi @item.IconClass text-muted"></i>
                                                     @item.Titre
                                                 </div>
                                                 <div class="small text-muted">@item.SousTexte</div>
-                                                @if (!string.IsNullOrEmpty(item.Heure))
-                                                {
-                                                    <div class="small text-muted"><i class="bi bi-clock me-1"></i>@item.Heure@(item.DateFin.HasValue ? " – " + item.DateFin.Value.ToString("HH:mm") : "")</div>
-                                                }
                                                 @if (!string.IsNullOrEmpty(item.Lieu))
                                                 {
-                                                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>@item.Lieu</div>
+                                                    <div class="small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>@item.Lieu</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.HeureArrivee) || !string.IsNullOrEmpty(item.HeureDepart) || !string.IsNullOrEmpty(item.Heure))
+                                                {
+                                                    <div class="d-flex flex-wrap gap-3 mt-1">
+                                                        @if (!string.IsNullOrEmpty(item.HeureArrivee))
+                                                        {
+                                                            <span class="small text-muted"><i class="bi bi-door-open me-1"></i>Vestiaire <strong>@item.HeureArrivee</strong></span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(item.HeureDepart))
+                                                        {
+                                                            <span class="small text-muted"><i class="bi bi-bus-front me-1"></i>Autobus <strong>@item.HeureDepart</strong></span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(item.Heure))
+                                                        {
+                                                            <span class="small text-muted"><i class="bi bi-play-circle me-1"></i>Début du match <strong>@item.Heure@(item.DateFin.HasValue ? " – " + item.DateFin.Value.ToString("HH:mm") : "")</strong></span>
+                                                        }
+                                                    </div>
                                                 }
                                             </div>
                                         </div>
@@ -632,10 +645,12 @@
         Model.Matchs.Select(m => new {
             date = m.DateMatch.ToString("yyyy-MM-dd"),
             titre = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire,
-            sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : "Match",
+            sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : (m.EstDomicile ? "Domicile" : "Extérieur"),
             lieu = m.Lieu ?? "",
             heure = m.HeureDebutMatch ?? "",
             heureFin = "",
+            heureArrivee = m.HeureArriveeVestiaire ?? "",
+            heureDepart = m.HeureDepartAutobus ?? "",
             icon = "bi-flag-fill",
             color = m.AResultat ? (m.Resultat == "V" ? "#198754" : m.Resultat == "D" ? "#dc3545" : "#6c757d") : "#6c757d"
         }).Concat(Model.Evenements.Select(ev => new {
@@ -653,6 +668,8 @@
             lieu = ev.Lieu ?? "",
             heure = ev.DateDebut.ToString("HH:mm"),
             heureFin = ev.DateFin.HasValue ? ev.DateFin.Value.ToString("HH:mm") : "",
+            heureArrivee = "",
+            heureDepart = "",
             icon = ev.Type switch {
                 TypeEvenement.Pratique => "bi-stopwatch-fill",
                 TypeEvenement.ReunionParents => "bi-people-fill",
@@ -767,6 +784,23 @@
         position:absolute; bottom:0; left:0; right:0; height:4px;
         background:var(--couleur-secondaire);
     }
+    /* ── Galerie match : animation d'apparition ── */
+    @@keyframes galerieItemIn {
+        from { opacity: 0; transform: translateY(18px) scale(.97); }
+        to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    .galerie-item-anim {
+        opacity: 0;
+        animation: galerieItemIn .38s cubic-bezier(.22,.68,0,1.2) forwards;
+    }
+    .galerie-img {
+        width: 100%; height: 160px; object-fit: cover; cursor: pointer;
+        border-radius: .375rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        transition: transform .2s, box-shadow .2s;
+        display: block;
+    }
+    .galerie-img:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,.28); }
 </style>
 
 @* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@
@@ -904,19 +938,22 @@
         galeriePhotosActuelles = photos;
 
         var photoHtml = photos.map(function(p, i) {
-            return '<div class="col-6 col-md-3">'
-                 + '<img src="' + p.chemin + '" alt="' + p.description + '" class="img-fluid rounded shadow-sm galerie-photo"'
-                 + ' data-index="' + i + '"'
-                 + ' style="width:100%;height:160px;object-fit:cover;cursor:pointer;" />'
+            var delay = (i * 55) + 'ms';
+            return '<div class="col-6 col-md-3 galerie-item-anim" style="animation-delay:' + delay + ';">'
+                 + '<img src="' + p.chemin + '" alt="' + p.description + '" loading="lazy"'
+                 + ' class="galerie-img galerie-photo" data-index="' + i + '" />'
                  + '</div>';
         }).join('');
 
         var videoHtml = '';
         if (videos.length > 0) {
-            videoHtml = '<div class="col-12 mt-2"><div class="small text-muted mb-2 fw-semibold">'
+            var baseDelay = photos.length * 55;
+            videoHtml = '<div class="col-12 mt-2 galerie-item-anim" style="animation-delay:' + baseDelay + 'ms;">'
+                + '<div class="small text-muted mb-2 fw-semibold">'
                 + '<i class="bi bi-camera-video me-1"></i>Vidéos (' + videos.length + ')</div></div>'
-                + videos.map(function(v) {
-                    return '<div class="col-12 col-md-6">'
+                + videos.map(function(v, vi) {
+                    var vDelay = (baseDelay + (vi + 1) * 55) + 'ms';
+                    return '<div class="col-12 col-md-6 galerie-item-anim" style="animation-delay:' + vDelay + ';">'
                         + '<video src="' + v.chemin + '" controls preload="metadata"'
                         + ' class="w-100 rounded shadow-sm" style="max-height:280px;background:#000;">'
                         + '</video>'
@@ -1016,9 +1053,18 @@
         }).join('') : '';
 
         if (!currentCardPhotos.length) {
-            track.innerHTML = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
-                + '<span style="font-size:7rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
-                + document.getElementById('cardFrontNumero').textContent + '</span></div>';
+            var noPhotoInner = '';
+            if (logoEcole) {
+                noPhotoInner = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">'
+                    + '<img src="' + logoEcole + '" alt="" style="width:140px;height:140px;object-fit:contain;opacity:.55;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4));">'
+                    + '<span style="font-size:4rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
+                    + document.getElementById('cardFrontNumero').textContent + '</span></div>';
+            } else {
+                noPhotoInner = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
+                    + '<span style="font-size:7rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
+                    + document.getElementById('cardFrontNumero').textContent + '</span></div>';
+            }
+            track.innerHTML = noPhotoInner;
             _carouselInitialized = false;
             return;
         }
@@ -1209,13 +1255,22 @@
             var isToday = dateD.getTime() === aujourd.getTime();
             var evts = evtDuMois[d] || [];
             var cellBg = isToday ? 'background:rgba(var(--bs-primary-rgb),.07);outline:2px solid var(--couleur-primaire);' : 'background:#f8f9fa;';
-            html += '<div style="min-height:80px;border-radius:6px;padding:4px;' + cellBg + '">';
-            html += '<div class="fw-bold small mb-1 ' + (isToday ? 'text-primary' : 'text-muted') + '">' + d + '</div>';
+            html += '<div style="min-height:130px;border-radius:8px;padding:6px;' + cellBg + '">';
+            html += '<div class="fw-bold mb-1 ' + (isToday ? 'text-primary' : 'text-muted') + '" style="font-size:.8rem;">' + d + '</div>';
             evts.forEach(function(ev) {
-                html += '<div style="background:' + ev.color + '18;border-left:3px solid ' + ev.color + ';border-radius:3px;padding:2px 4px;margin-bottom:2px;font-size:.65rem;line-height:1.3;cursor:default;" title="' + ev.titre + (ev.heure ? ' \u2014 ' + ev.heure : '') + (ev.lieu ? '\n' + ev.lieu : '') + '">'
-                    + '<i class="bi ' + ev.icon + '" style="color:' + ev.color + ';font-size:.6rem;"></i> '
-                    + '<span class="fw-semibold">' + ev.titre.substring(0, 18) + (ev.titre.length > 18 ? '\u2026' : '') + '</span>';
-                if (ev.heure) html += '<br><span style="color:#666;">' + ev.heure + (ev.heureFin ? '\u2013' + ev.heureFin : '') + '</span>';
+                // Tooltip
+                var tip = ev.titre;
+                if (ev.lieu)         tip += '\nLieu : '             + ev.lieu;
+                if (ev.heureArrivee) tip += '\nVestiaire : '        + ev.heureArrivee;
+                if (ev.heureDepart)  tip += '\nAutobus : '          + ev.heureDepart;
+                if (ev.heure)        tip += '\nD\u00e9but du match : ' + ev.heure + (ev.heureFin ? '\u2013' + ev.heureFin : '');
+
+                html += '<div style="background:' + ev.color + '14;border-left:3px solid ' + ev.color + ';border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:.72rem;line-height:1.4;" title="' + tip.replace(/"/g, '&quot;') + '">'
+                    + '<div class="fw-semibold">' + ev.titre.substring(0, 22) + (ev.titre.length > 22 ? '\u2026' : '') + '</div>';
+                if (ev.lieu)         html += '<div class="text-muted"><i class="bi bi-geo-alt me-1"></i>' + ev.lieu + '</div>';
+                if (ev.heureArrivee) html += '<div class="text-muted"><i class="bi bi-door-open me-1"></i>Vestiaire ' + ev.heureArrivee + '</div>';
+                if (ev.heureDepart)  html += '<div class="text-muted"><i class="bi bi-bus-front me-1"></i>Autobus ' + ev.heureDepart + '</div>';
+                if (ev.heure)        html += '<div class="text-muted"><i class="bi bi-play-circle me-1"></i>D\u00e9but ' + ev.heure + (ev.heureFin ? '\u2013' + ev.heureFin : '') + '</div>';
                 html += '</div>';
             });
             html += '</div>';

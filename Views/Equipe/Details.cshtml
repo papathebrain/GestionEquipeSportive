@@ -231,6 +231,9 @@
                 <button type="button" class="btn btn-sm btn-outline-primary" id="btnImporterExistant">
                     <i class="bi bi-person-check me-1"></i>Importer joueur existant
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#importerExcelModal">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Importer Excel
+                </button>
                 <a asp-controller="Joueur" asp-action="Create" asp-route-equipeId="@Model.Id"
                    class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>Nouveau joueur
@@ -243,87 +246,119 @@
         }
         else
         {
-            @foreach (var groupe in joueurs.GroupBy(j => j.Position).OrderBy(g => g.Key))
-            {
-                <div class="mb-4">
-                    <div class="fw-bold text-uppercase small text-muted border-bottom pb-1 mb-2">
-                        @groupe.Key
-                        <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
-                    </div>
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:48px">#</th>
-                                <th>Nom</th>
-                                <th class="d-none d-sm-table-cell">Position spécifique</th>
-                                <th class="d-none d-md-table-cell">Fiche</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var j in groupe.OrderBy(j => j.Numero))
-                            {
-                                <tr>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(j.PhotoPath))
-                                        {
-                                            <img src="@j.PhotoPath" class="rounded-circle"
-                                                 style="width:32px;height:32px;object-fit:cover;" />
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-dark">#@j.Numero</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="fw-semibold">@j.Prenom @j.Nom</span>
-                                        @if (!string.IsNullOrEmpty(j.PhotoPath))
-                                        {
-                                            <span class="text-muted small ms-1">#@j.Numero</span>
-                                        }
-                                    </td>
-                                    <td class="d-none d-sm-table-cell">
-                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
-                                        {
-                                            <span class="badge bg-primary">@j.PositionSpecifique</span>
-                                        }
-                                    </td>
-                                    <td class="text-muted small d-none d-md-table-cell">@j.NoFiche</td>
-                                    <td class="text-end text-nowrap">
-                                        <a asp-controller="Joueur" asp-action="Details" asp-route-id="@j.Id"
-                                           class="btn btn-sm btn-outline-info py-0 px-1" title="Détails">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        @if (peutModifier)
-                                        {
-                                            <a asp-controller="Joueur" asp-action="Edit" asp-route-id="@j.Id"
-                                               class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            @if (equipesEcole.Any())
-                                            {
-                                                <button type="button"
-                                                        class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1"
-                                                        data-deplacer-joueur-id="@j.Id"
-                                                        data-deplacer-joueur-nom="@j.Prenom @j.Nom"
-                                                        title="Déplacer vers une autre équipe">
-                                                    <i class="bi bi-arrow-left-right"></i>
-                                                </button>
-                                            }
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
-                                                    onclick="confirmDeleteJoueur(@j.Id, '@Html.Raw(j.Prenom.Replace("'","\\'")) @Html.Raw(j.Nom.Replace("'","\\'"))', @Model.Id)"
-                                                    title="Supprimer">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+            var groupesJoueurs = joueurs.GroupBy(j => j.Position).OrderBy(g => g.Key).ToList();
+            <table class="table table-sm table-hover align-middle mb-0">
+                <colgroup>
+                    <col style="width:48px" />
+                    <col />
+                    <col class="d-none d-sm-table-cell" style="width:130px" />
+                    <col class="d-none d-md-table-cell" style="width:90px" />
+                    <col style="width:60px" />
+                    <col style="width:60px" />
+                    <col style="width:1px" />
+                </colgroup>
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Nom</th>
+                        <th class="d-none d-sm-table-cell">Position spécifique</th>
+                        <th class="d-none d-md-table-cell">Fiche</th>
+                        <th class="text-center" title="Actif"><i class="bi bi-person-check"></i></th>
+                        <th class="text-center" title="Photo permise"><i class="bi bi-camera"></i></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var groupe in groupesJoueurs)
+                {
+                    <tr class="table-secondary">
+                        <td colspan="7" class="fw-bold text-uppercase small text-muted py-1">
+                            @groupe.Key
+                            <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
+                        </td>
+                    </tr>
+                    @foreach (var j in groupe.OrderBy(j => j.Numero))
+                    {
+                        <tr class="@(!j.Actif ? "opacity-50" : "")">
+                            <td>
+                                @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                {
+                                    <img src="@j.PhotoPath" class="rounded-circle"
+                                         style="width:32px;height:32px;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <span class="badge bg-dark">#@j.Numero</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-semibold">@j.Prenom @j.Nom</span>
+                                @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                {
+                                    <span class="text-muted small ms-1">#@j.Numero</span>
+                                }
+                            </td>
+                            <td class="d-none d-sm-table-cell">
+                                @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                {
+                                    <span class="badge bg-primary">@j.PositionSpecifique</span>
+                                }
+                            </td>
+                            <td class="text-muted small d-none d-md-table-cell">@j.NoFiche</td>
+                            <td class="text-center">
+                                @if (j.Actif)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success" title="Actif"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger" title="Inactif"></i>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (j.ConsentementPhoto)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success" title="Photo permise"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger" title="Photo non permise"></i>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a asp-controller="Joueur" asp-action="Details" asp-route-id="@j.Id"
+                                   class="btn btn-sm btn-outline-info py-0 px-1" title="Détails">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (peutModifier)
+                                {
+                                    <a asp-controller="Joueur" asp-action="Edit" asp-route-id="@j.Id"
+                                       class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if (equipesEcole.Any())
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1"
+                                                data-deplacer-joueur-id="@j.Id"
+                                                data-deplacer-joueur-nom="@j.Prenom @j.Nom"
+                                                title="Déplacer vers une autre équipe">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                        </button>
+                                    }
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                            onclick="confirmDeleteJoueur(@j.Id, '@Html.Raw(j.Prenom.Replace("'","\\'")) @Html.Raw(j.Nom.Replace("'","\\'"))', @Model.Id)"
+                                            title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
         }
     </div>
 
@@ -331,7 +366,10 @@
     <div class="tab-pane fade" id="tab-calendrier">
         @if (peutModifier)
         {
-            <div class="d-flex justify-content-end mb-3">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#importerCalendrierModal">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Importer calendrier Excel
+                </button>
                 <a asp-controller="Evenement" asp-action="Create" asp-route-equipeId="@Model.Id"
                    class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>Ajouter un événement
@@ -571,6 +609,41 @@
     </div>
 </div>
 
+@* ── Modal : Importer Excel ───────────────────────────────────────────────── *@
+<div class="modal fade" id="importerExcelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Importer joueurs depuis Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-controller="Joueur" asp-action="ImporterExcel" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="equipeId" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="/Equipe/Details/@Model.Id?tab=joueurs" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fichier Excel (.xlsx)</label>
+                        <input type="file" name="fichierExcel" class="form-control" accept=".xlsx" required />
+                    </div>
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Colonnes attendues : <strong>No Fiche</strong>, <strong>Nom</strong>, <strong>Prénom</strong>,
+                        <strong>Numéro chandail</strong>, <strong>Position</strong>, <strong>Position spécifique</strong>.<br />
+                        Si un joueur avec le même No de fiche existe déjà dans l'équipe, ses données seront mises à jour.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @* ── Modal : Déplacer joueur ─────────────────────────────────────────────── *@
 <div class="modal fade" id="deplacerModal" tabindex="-1">
     <div class="modal-dialog">
@@ -602,6 +675,42 @@
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal : Importer calendrier Excel ───────────────────────────────────── *@
+<div class="modal fade" id="importerCalendrierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Importer le calendrier depuis Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-controller="Match" asp-action="ImporterCalendrier" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="equipeId" value="@Model.Id" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fichier Excel (.xlsx)</label>
+                        <input type="file" name="fichierExcel" class="form-control" accept=".xlsx" required />
+                    </div>
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Colonnes obligatoires : <strong>Date</strong>, <strong>Adversaire</strong>.<br />
+                        Colonnes optionnelles : <strong>Domicile</strong> (Oui/Non), <strong>Lieu</strong>,
+                        <strong>Heure début</strong>, <strong>Heure arrivée vestiaire</strong>,
+                        <strong>Heure départ autobus</strong>, <strong>Notes</strong>.<br />
+                        Chaque ligne crée un nouveau match. Les matchs existants ne sont pas modifiés.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
