@@ -81,6 +81,31 @@
     .jg-col-actions { text-align: right; white-space: nowrap; }
     .jg-col-actif, .jg-col-photo { white-space: nowrap; }
 
+    /* ── Grille staff admin ───────────────────────────────────────────────── */
+    .staff-admin-grid { border:1px solid #dee2e6; border-radius:8px; overflow:hidden; font-size:.875rem; }
+    .staff-admin-header,
+    .staff-admin-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 130px 1fr 90px;
+        align-items: center; column-gap: 12px; padding: 6px 12px;
+    }
+    @@media (max-width: 767px) {
+        .staff-admin-header,
+        .staff-admin-row { grid-template-columns: 48px 1fr 110px 80px; }
+        .sa-col-respo { display: none; }
+    }
+    .staff-admin-header {
+        background:#f8f9fa; border-bottom:2px solid #dee2e6;
+        font-weight:600; font-size:.78rem; text-transform:uppercase;
+        color:#6c757d; letter-spacing:.03em; white-space:nowrap;
+    }
+    /* Header : masquer visuellement la colonne avatar sans la retirer du grid */
+    .staff-admin-header .sa-col-avatar { visibility:hidden; }
+    .staff-admin-row { border-bottom:1px solid #f0f0f0; transition:background .12s; }
+    .staff-admin-row:last-child { border-bottom:none; }
+    .staff-admin-row:hover { background:#f8f9fb; }
+    .sa-col-actions { text-align:right; white-space:nowrap; }
+
     /* ── Grille matchs ───────────────────────────────────────────────────── */
     /* Colonnes : date+heures | adversaire | lieu | résultat | actions */
     .matchs-grid {
@@ -615,56 +640,54 @@
         }
         else
         {
-            <table class="table table-sm table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:48px"></th>
-                        <th>Nom</th>
-                        <th>Titre</th>
-                        <th class="d-none d-md-table-cell">Responsable de</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var s in staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
-                    {
-                        <tr>
-                            <td>
-                                @if (!string.IsNullOrEmpty(s.PhotoPath))
-                                {
-                                    <img src="@s.PhotoPath" class="rounded-circle"
-                                         style="width:36px;height:36px;object-fit:cover;" />
-                                }
-                                else
-                                {
-                                    <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center"
-                                         style="width:36px;height:36px;color:#fff;">
-                                        <i class="bi bi-person-fill" style="font-size:.85rem;"></i>
-                                    </div>
-                                }
-                            </td>
-                            <td class="fw-semibold">@s.Prenom @s.Nom</td>
-                            <td><span class="badge bg-info text-dark">@s.Titre</span></td>
-                            <td class="text-muted small d-none d-md-table-cell">@s.ResponsableDe</td>
-                            <td class="text-end text-nowrap">
-                                @if (peutModifier)
-                                {
-                                    <a asp-controller="Staff" asp-action="Edit" asp-route-id="@s.Id"
-                                       class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
-                                            onclick="confirmDeleteStaff(@s.Id, '@Html.Raw(s.Prenom.Replace("'","\\'")) @Html.Raw(s.Nom.Replace("'","\\'"))', @Model.Id)"
-                                            title="Supprimer">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="staff-admin-grid">
+                <div class="staff-admin-header">
+                    <div class="sa-col-avatar"></div>
+                    <div class="sa-col-nom">Nom</div>
+                    <div class="sa-col-titre">Titre</div>
+                    <div class="sa-col-respo">Responsable de</div>
+                    <div class="sa-col-actions">Actions</div>
+                </div>
+                @foreach (var s in staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
+                {
+                    <div class="staff-admin-row">
+                        <div class="sa-col-avatar">
+                            @if (!string.IsNullOrEmpty(s.PhotoPath))
+                            {
+                                <img src="@s.PhotoPath" class="rounded-circle"
+                                     style="width:36px;height:36px;object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center"
+                                     style="width:36px;height:36px;color:#fff;">
+                                    <i class="bi bi-person-fill" style="font-size:.85rem;"></i>
+                                </div>
+                            }
+                        </div>
+                        <div class="sa-col-nom fw-semibold">@s.Prenom @s.Nom</div>
+                        <div class="sa-col-titre">
+                            <span class="badge bg-info text-dark">@s.Titre</span>
+                        </div>
+                        <div class="sa-col-respo text-muted small">@s.ResponsableDe</div>
+                        <div class="sa-col-actions">
+                            @if (peutModifier)
+                            {
+                                <a asp-controller="Staff" asp-action="Edit" asp-route-id="@s.Id"
+                                   class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                        onclick="confirmDeleteStaff(@s.Id, '@Html.Raw(s.Prenom.Replace("'","\\'")) @Html.Raw(s.Nom.Replace("'","\\'"))', @Model.Id)"
+                                        title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
         }
     </div>
 

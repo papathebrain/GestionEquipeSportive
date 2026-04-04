@@ -1,7 +1,13 @@
 using GestionEquipeSportive.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
+using Microsoft.AspNetCore.DataProtection;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys")));
 
 builder.Services.AddControllersWithViews();
 

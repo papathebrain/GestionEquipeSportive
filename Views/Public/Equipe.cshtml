@@ -473,48 +473,42 @@
         @if (Model.Staff.Any())
         {
             <div class="tab-pane fade" id="tab-coachs">
-                <div class="staff-grid">
-                    <div class="staff-grid-header">
-                        <div class="sg-col-photo"></div>
-                        <div class="sg-col-nom">Nom</div>
-                        <div class="sg-col-titre">Titre</div>
-                        <div class="sg-col-respo">Responsable de</div>
-                        <div class="sg-col-actions">Actions</div>
-                    </div>
+                <div class="row g-3">
                     @foreach (var s in Model.Staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
                     {
-                        <div class="staff-grid-row staff-card"
-                             data-fullnom="@s.Prenom @s.Nom"
-                             data-photo="@s.PhotoPath"
-                             data-titre="@s.Titre"
-                             data-responsable="@s.ResponsableDe">
-                            <div class="sg-col-photo">
-                                @if (!string.IsNullOrEmpty(s.PhotoPath))
-                                {
-                                    <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom"
-                                         class="rounded-circle" style="width:36px;height:36px;object-fit:cover;" />
-                                }
-                                else
-                                {
-                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
-                                         style="width:36px;height:36px;background:var(--couleur-primaire);">
-                                        <i class="bi bi-person-fill text-white" style="font-size:1.1rem;"></i>
-                                    </div>
-                                }
-                            </div>
-                            <div class="sg-col-nom fw-semibold">@s.Prenom @s.Nom</div>
-                            <div class="sg-col-titre">
-                                @if (!string.IsNullOrEmpty(s.Titre))
-                                {
-                                    <span class="badge" style="background-color:var(--couleur-secondaire);font-size:.72rem;">@s.Titre</span>
-                                }
-                            </div>
-                            <div class="sg-col-respo text-muted small">@s.ResponsableDe</div>
-                            <div class="sg-col-actions">
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-2" title="Voir la carte"
-                                        onclick="ouvrirStaff(this.closest('.staff-card'))">
-                                    <i class="bi bi-eye"></i>
-                                </button>
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                            <div class="staff-pub-card staff-card"
+                                 data-fullnom="@s.Prenom @s.Nom"
+                                 data-photo="@s.PhotoPath"
+                                 data-titre="@s.Titre"
+                                 data-responsable="@s.ResponsableDe">
+                                <!-- Photo -->
+                                <div class="staff-pub-photo">
+                                    @if (!string.IsNullOrEmpty(s.PhotoPath))
+                                    {
+                                        <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" />
+                                    }
+                                    else
+                                    {
+                                        <div class="staff-pub-nophoto">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                    }
+                                </div>
+                                <!-- Infos -->
+                                <div class="staff-pub-info">
+                                    <div class="staff-pub-nom">@s.Prenom @s.Nom</div>
+                                    @if (!string.IsNullOrEmpty(s.Titre))
+                                    {
+                                        <div class="staff-pub-titre">@s.Titre</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(s.ResponsableDe))
+                                    {
+                                        <div class="staff-pub-respo">@s.ResponsableDe</div>
+                                    }
+                                </div>
+                                <!-- Bande couleur -->
+                                <div class="staff-pub-bande"></div>
                             </div>
                         </div>
                     }
@@ -884,35 +878,36 @@
         display: block;
     }
     .galerie-img:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,.28); }
-    /* ── Grille entraineurs ─────────────────────────────────────────────── */
-    .staff-grid {
-        border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: .875rem;
+    /* ── Cartes staff (page publique) ───────────────────────────────────── */
+    .staff-pub-card {
+        border-radius: 12px; overflow: hidden; cursor: pointer;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0,0,0,.13);
+        transition: transform .18s, box-shadow .18s;
+        display: flex; flex-direction: column;
     }
-    .staff-grid-header,
-    .staff-grid-row {
-        display: grid;
-        grid-template-columns: 44px 1fr 120px 1fr 70px;
-        align-items: center;
-        column-gap: 12px;
-        padding: 6px 12px;
+    .staff-pub-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,.2); }
+    .staff-pub-photo {
+        width: 100%; aspect-ratio: 1/1; overflow: hidden;
+        background: var(--couleur-primaire);
+        display: flex; align-items: center; justify-content: center;
     }
-    @@media (max-width: 767px) {
-        .staff-grid-header,
-        .staff-grid-row { grid-template-columns: 44px 1fr 100px 60px; }
-        .sg-col-respo { display: none; }
+    .staff-pub-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .staff-pub-nophoto { font-size: 3.5rem; color: rgba(255,255,255,.3); }
+    .staff-pub-info { padding: 10px 12px 8px; flex: 1; }
+    .staff-pub-nom {
+        font-weight: 700; font-size: .9rem; color: #212529;
+        line-height: 1.2; margin-bottom: 4px;
     }
-    .staff-grid-header {
-        background: #f8f9fa; border-bottom: 2px solid #dee2e6;
-        font-weight: 600; font-size: .78rem; text-transform: uppercase;
-        color: #6c757d; letter-spacing: .03em; white-space: nowrap;
+    .staff-pub-titre {
+        display: inline-block;
+        font-size: .68rem; font-weight: 600; color: #fff;
+        background: var(--couleur-secondaire);
+        padding: 2px 7px; border-radius: 20px;
+        margin-bottom: 3px;
     }
-    .staff-grid-header .sg-col-actions { text-align: right; }
-    .staff-grid-row {
-        border-bottom: 1px solid #f0f0f0; transition: background .12s; cursor: pointer;
-    }
-    .staff-grid-row:last-child { border-bottom: none; }
-    .staff-grid-row:hover { background: #f8f9fb; }
-    .sg-col-actions { text-align: right; white-space: nowrap; }
+    .staff-pub-respo { font-size: .72rem; color: #6c757d; margin-top: 2px; }
+    .staff-pub-bande { height: 5px; background: var(--couleur-primaire); flex-shrink: 0; }
 </style>
 
 @* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@

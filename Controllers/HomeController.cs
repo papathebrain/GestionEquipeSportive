@@ -27,10 +27,10 @@ public class HomeController : Controller
                               .ToHashSet();
         var ecoles = toutes.Where(e => visibles.Contains(e.Id)).ToList();
 
-        // Redirection automatique si 1 seule école accessible
-        if (ecoles.Count == 1)
+        // Redirection automatique si 1 seule école accessible (pas pour le super admin)
+        if (ecoles.Count == 1 && !User.IsInRole(Roles.Admin))
         {
-            if (User.IsInRole(Roles.AdminEcole) && !User.IsInRole(Roles.Admin))
+            if (User.IsInRole(Roles.AdminEcole))
                 return RedirectToAction("Index", "Equipe", new { ecoleId = ecoles[0].Id });
             return RedirectToAction("Details", "Ecole", new { id = ecoles[0].Id });
         }
