@@ -565,7 +565,9 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 4).Value = "Prenom";
             ws.Cell(1, 5).Value = "Titre";
             ws.Cell(1, 6).Value = "ResponsableDe";
-            ws.Cell(1, 7).Value = "PhotoPath";
+            ws.Cell(1, 7).Value = "Description";
+            ws.Cell(1, 8).Value = "PhotoPath";
+            ws.Cell(1, 9).Value = "NoFiche";
             wb.SaveAs(StaffFile);
         }
     }
@@ -590,7 +592,9 @@ public class ExcelRepository : IExcelRepository
                     Prenom = ws.Cell(row, 4).GetString(),
                     Titre = ws.Cell(row, 5).GetString(),
                     ResponsableDe = ws.Cell(row, 6).GetString() is string r && r.Length > 0 ? r : null,
-                    PhotoPath = ws.Cell(row, 7).GetString() is string p && p.Length > 0 ? p : null
+                    Description = ws.Cell(row, 7).GetString() is string d && d.Length > 0 ? d : null,
+                    PhotoPath = ws.Cell(row, 8).GetString() is string p && p.Length > 0 ? p : null,
+                    NoFiche = ws.Cell(row, 9).GetString() is string nf && nf.Length > 0 ? nf : null
                 });
             }
             return list;
@@ -602,6 +606,9 @@ public class ExcelRepository : IExcelRepository
 
     public Staff? GetStaffById(int id)
         => GetAllStaff().FirstOrDefault(s => s.Id == id);
+
+    public List<Staff> GetStaffByNoFiche(string noFiche)
+        => GetAllStaff().Where(s => s.NoFiche == noFiche).ToList();
 
     public Staff AddStaff(Staff staff)
     {
@@ -666,7 +673,9 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 4).Value = staff.Prenom;
         ws.Cell(row, 5).Value = staff.Titre;
         ws.Cell(row, 6).Value = staff.ResponsableDe ?? string.Empty;
-        ws.Cell(row, 7).Value = staff.PhotoPath ?? string.Empty;
+        ws.Cell(row, 7).Value = staff.Description ?? string.Empty;
+        ws.Cell(row, 8).Value = staff.PhotoPath ?? string.Empty;
+        ws.Cell(row, 9).Value = staff.NoFiche ?? string.Empty;
     }
 
     // ==================== MATCHS ====================

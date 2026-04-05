@@ -14,13 +14,25 @@ public class StaffService : IStaffService
 
     public List<Staff> GetStaffByEquipe(int equipeId) => _repo.GetStaffByEquipe(equipeId);
     public Staff? GetStaffById(int id) => _repo.GetStaffById(id);
+    public List<Staff> GetStaffByNoFiche(string noFiche) => _repo.GetStaffByNoFiche(noFiche);
 
     public void CopierVersEquipe(IEnumerable<int> staffIds, int nouvelleEquipeId)
     {
+        var destStaff = _repo.GetStaffByEquipe(nouvelleEquipeId);
         foreach (var id in staffIds)
         {
             var source = _repo.GetStaffById(id);
             if (source == null) continue;
+            // Ne pas dupliquer si même NoFiche déjà présent dans l'équipe destination
+            if (!string.IsNullOrEmpty(source.NoFiche) &&
+                destStaff.Any(s => s.NoFiche == source.NoFiche))
+                continue;
+            // Assurer que la source a un NoFiche (migration des anciens enregistrements)
+            if (string.IsNullOrEmpty(source.NoFiche))
+            {
+                source.NoFiche = Guid.NewGuid().ToString("N");
+                _repo.UpdateStaff(source);
+            }
             _repo.AddStaff(new Staff
             {
                 EquipeId = nouvelleEquipeId,
@@ -28,7 +40,9 @@ public class StaffService : IStaffService
                 Prenom = source.Prenom,
                 Titre = source.Titre,
                 ResponsableDe = source.ResponsableDe,
-                PhotoPath = source.PhotoPath
+                Description = source.Description,
+                PhotoPath = source.PhotoPath,
+                NoFiche = source.NoFiche
             });
         }
     }
@@ -41,7 +55,9 @@ public class StaffService : IStaffService
             Nom = vm.Nom.Trim(),
             Prenom = vm.Prenom.Trim(),
             Titre = vm.Titre.Trim(),
-            ResponsableDe = string.IsNullOrWhiteSpace(vm.ResponsableDe) ? null : vm.ResponsableDe.Trim()
+            ResponsableDe = string.IsNullOrWhiteSpace(vm.ResponsableDe) ? null : vm.ResponsableDe.Trim(),
+            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
+            NoFiche = Guid.NewGuid().ToString("N")
         };
         if (photoFile != null && photoFile.Length > 0)
             staff.PhotoPath = SavePhoto(photoFile, webRootPath);
@@ -57,6 +73,7 @@ public class StaffService : IStaffService
         staff.Prenom = vm.Prenom.Trim();
         staff.Titre = vm.Titre.Trim();
         staff.ResponsableDe = string.IsNullOrWhiteSpace(vm.ResponsableDe) ? null : vm.ResponsableDe.Trim();
+        staff.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
 
         if (photoFile != null && photoFile.Length > 0)
         {
@@ -89,7 +106,9 @@ public class StaffService : IStaffService
         Prenom = staff.Prenom,
         Titre = staff.Titre,
         ResponsableDe = staff.ResponsableDe,
-        PhotoPathActuelle = staff.PhotoPath
+        Description = staff.Description,
+        PhotoPathActuelle = staff.PhotoPath,
+        NoFiche = staff.NoFiche
     };
 
     private static string SavePhoto(IFormFile file, string webRootPath)

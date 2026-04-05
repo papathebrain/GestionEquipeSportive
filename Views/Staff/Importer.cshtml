@@ -1,0 +1,158 @@
+@{
+    var equipe = ViewBag.Equipe as GestionEquipeSportive.Models.Equipe;
+    var ecole = ViewBag.Ecole as GestionEquipeSportive.Models.Ecole;
+    var autresEquipes = ViewBag.AutresEquipes as List<GestionEquipeSportive.Models.Equipe> ?? new();
+    ViewData["Title"] = "Importer du staff";
+}
+
+@section BannerContent {
+    <div class="d-flex align-items-center gap-3">
+        @if (!string.IsNullOrEmpty(ecole?.LogoPath))
+        {
+            <img src="@ecole.LogoPath" alt="Logo" class="school-logo" />
+        }
+        <div>
+            <small class="text-white opacity-75">@ecole?.Nom</small>
+            <h2 class="text-white mb-0 fw-bold">@equipe?.Nom</h2>
+        </div>
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@equipe?.EcoleId">@ecole?.Nom</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Details" asp-route-id="@equipe?.Id">@equipe?.Nom</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Staff" asp-action="Index" asp-route-equipeId="@equipe?.Id">Staff</a></li>
+            <li class="breadcrumb-item active">Importer</li>
+        </ol>
+    </nav>
+</div>
+
+@section Scripts {
+<script>
+    const selectEquipe = document.getElementById('selectEquipeSource');
+    const container = document.getElementById('staffSourceContainer');
+    const listEl = document.getElementById('staffSourceList');
+    const emptyEl = document.getElementById('staffSourceEmpty');
+    const hiddenInputs = document.getElementById('hiddenInputs');
+    const btnImporter = document.getElementById('btnImporter');
+
+    selectEquipe?.addEventListener('change', async function () {
+        const equipeId = this.value;
+        listEl.innerHTML = '';
+        hiddenInputs.innerHTML = '';
+        container.classList.add('d-none');
+        emptyEl.classList.add('d-none');
+        btnImporter.disabled = true;
+
+        if (!equipeId) return;
+
+        const resp = await fetch(`/Staff/StaffSourceEquipe?sourceEquipeId=${equipeId}`);
+        const staff = await resp.json();
+
+        if (!staff.length) {
+            emptyEl.classList.remove('d-none');
+            return;
+        }
+
+        container.classList.remove('d-none');
+        staff.forEach(s => {
+            const col = document.createElement('div');
+            col.className = 'col-sm-6 col-md-4 col-lg-3';
+            const photoHtml = s.photoPath
+                ? `<img src="${s.photoPath}" alt="${s.prenom} ${s.nom}" class="rounded-circle mb-2" style="width:70px;height:70px;object-fit:cover;">`
+                : `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-2" style="width:70px;height:70px;"><i class="bi bi-person-fill text-white fs-3"></i></div>`;
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center py-3">
+                        ${photoHtml}
+                        <div class="fw-bold small">${s.prenom} ${s.nom}</div>
+                        <div class="text-muted small">${s.titre}</div>
+                        ${s.responsableDe ? `<span class="badge bg-light text-dark border mt-1 small">${s.responsableDe}</span>` : ''}
+                    </div>
+                    <div class="card-footer bg-transparent text-center py-2">
+                        <div class="form-check form-switch d-inline-flex align-items-center gap-2">
+                            <input class="form-check-input staff-check" type="checkbox" role="switch"
+                                   id="chk${s.id}" data-id="${s.id}" style="width:2.5em;height:1.3em;">
+                            <label class="form-check-label small" for="chk${s.id}">Importer</label>
+                        </div>
+                    </div>
+                </div>`;
+            listEl.appendChild(col);
+        });
+
+        listEl.querySelectorAll('.staff-check').forEach(chk => {
+            chk.addEventListener('change', updateSelection);
+        });
+    });
+
+    function updateSelection() {
+        hiddenInputs.innerHTML = '';
+        const checked = listEl.querySelectorAll('.staff-check:checked');
+        checked.forEach(chk => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'staffIds';
+            inp.value = chk.dataset.id;
+            hiddenInputs.appendChild(inp);
+        });
+        btnImporter.disabled = checked.length === 0;
+        btnImporter.innerHTML = checked.length > 0
+            ? `<i class="bi bi-arrow-down-circle me-2"></i>Importer ${checked.length} membre(s)`
+            : `<i class="bi bi-arrow-down-circle me-2"></i>Importer la sélection`;
+    }
+</script>
+}
+
+@if (!autresEquipes.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Aucune autre équipe disponible dans cette école pour l'importation.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-arrow-down-circle me-2"></i>Importer des membres du staff</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                Sélectionnez une équipe source, puis choisissez les membres à importer vers <strong>@equipe?.Nom</strong>.
+                Les membres déjà présents (même identifiant) ne seront pas dupliqués.
+            </p>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Équipe source</label>
+                <select id="selectEquipeSource" class="form-select" style="max-width:400px">
+                    <option value="">— Choisir une équipe —</option>
+                    @foreach (var eq in autresEquipes)
+                    {
+                        <option value="@eq.Id">@eq.AnneeScolaire — @eq.Nom</option>
+                    }
+                </select>
+            </div>
+
+            <div id="staffSourceContainer" class="d-none">
+                <h6 class="fw-semibold mb-3">Staff disponible</h6>
+                <div id="staffSourceList" class="row g-3 mb-4"></div>
+
+                <form method="post" asp-action="Importer" asp-route-equipeId="@equipe?.Id" id="importForm">
+                    @Html.AntiForgeryToken()
+                    <div id="hiddenInputs"></div>
+                    <button type="submit" class="btn btn-primary" id="btnImporter" disabled>
+                        <i class="bi bi-arrow-down-circle me-2"></i>Importer la sélection
+                    </button>
+                    <a asp-action="Index" asp-route-equipeId="@equipe?.Id" class="btn btn-secondary ms-2">Annuler</a>
+                </form>
+            </div>
+
+            <div id="staffSourceEmpty" class="d-none text-muted">
+                <i class="bi bi-people me-2"></i>Aucun membre dans cette équipe.
+            </div>
+        </div>
+    </div>
+}

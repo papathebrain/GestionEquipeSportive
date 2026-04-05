@@ -130,6 +130,29 @@ public class PublicController : Controller
                 photoBanniere = photosSeules[Random.Shared.Next(photosSeules.Count)];
         }
 
+        // Fallback bannière : photo aléatoire d'une autre équipe publique du même sport
+        if (photoBanniere == null)
+        {
+            var autresEquipesMémeSport = _equipeService.GetAllEquipes()
+                .Where(e => e.Id != equipe.Id && e.AfficherPublic && e.TypeSport == typeSport)
+                .OrderBy(_ => Random.Shared.Next())
+                .ToList();
+
+            foreach (var autreEquipe in autresEquipesMémeSport)
+            {
+                var autresPhotos = _matchService.GetMatchsByEquipe(autreEquipe.Id)
+                    .Where(m => m.AResultat)
+                    .SelectMany(m => _matchService.GetMediasByMatch(m.Id))
+                    .Where(mm => mm.TypeMedia == TypeMedia.Photo)
+                    .ToList();
+                if (autresPhotos.Any())
+                {
+                    photoBanniere = autresPhotos[Random.Shared.Next(autresPhotos.Count)];
+                    break;
+                }
+            }
+        }
+
         var now = DateTime.Now;
         var prochain = matchs
             .Where(m => !m.AResultat && m.DateMatch >= now && m.DateMatch <= now.AddDays(7))

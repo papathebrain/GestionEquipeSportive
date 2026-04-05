@@ -39,6 +39,7 @@ public interface IExcelRepository
     List<Staff> GetAllStaff();
     List<Staff> GetStaffByEquipe(int equipeId);
     Staff? GetStaffById(int id);
+    List<Staff> GetStaffByNoFiche(string noFiche);
     Staff AddStaff(Staff staff);
     Staff UpdateStaff(Staff staff);
     bool DeleteStaff(int id);

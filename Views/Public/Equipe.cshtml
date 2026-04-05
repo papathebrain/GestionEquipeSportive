@@ -481,7 +481,8 @@
                                  data-fullnom="@s.Prenom @s.Nom"
                                  data-photo="@s.PhotoPath"
                                  data-titre="@s.Titre"
-                                 data-responsable="@s.ResponsableDe">
+                                 data-responsable="@s.ResponsableDe"
+                                 data-description="@s.Description">
                                 @if (!string.IsNullOrEmpty(s.PhotoPath))
                                 {
                                     <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" class="mini-photo" />
@@ -995,6 +996,8 @@
     /* ── Modal staff MUT ─────────────────────────────────────────────────── */
     #modalStaff .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
     #modalStaff .modal-dialog { max-width: 320px; width: 100%; margin-left: auto; margin-right: auto; }
+    #staffMutCard { position: relative !important; inset: auto !important; width: 300px; height: auto !important; }
+    .staff-card-wrapper { display: inline-block; }
 </style>
 
 @* ── Modal joueur (carte MUT) ─────────────────────────────────────────────── *@
@@ -1069,28 +1072,31 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-body p-0 d-flex flex-column align-items-center">
+                <!-- Bouton fermer -->
                 <div class="d-flex justify-content-end w-100 mb-2 px-1" style="max-width:310px;">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"
                             style="background-color:rgba(0,0,0,.5);border-radius:50%;padding:8px;opacity:1;"></button>
                 </div>
-                <div class="mut-card" id="staffMutCard">
-                    <!-- Photo -->
-                    <div class="mut-image-container" id="staffImageContainer">
-                        <div class="mut-overlay"></div>
-                    </div>
-                    <!-- Infos -->
-                    <div class="mut-info">
-                        <div class="mut-name-row">
-                            <div class="mut-name" id="staffMutName"></div>
-                            <div id="staffMutLogo"></div>
+                <div class="staff-card-wrapper">
+                    <div class="mut-card" id="staffMutCard">
+                        <!-- Photo -->
+                        <div class="mut-image-container" id="staffImageContainer">
+                            <div class="mut-overlay"></div>
                         </div>
-                        <div class="mut-position" id="staffMutTitre"></div>
-                        <div id="staffMutRespoWrap" style="display:none;">
-                            <hr style="border-color:rgba(255,255,255,.15);margin:8px 0 6px;">
-                            <p class="mut-back-desc" id="staffMutRespo"></p>
+                        <!-- Infos -->
+                        <div class="mut-info">
+                            <div class="mut-name-row">
+                                <div class="mut-name" id="staffMutName"></div>
+                                <div id="staffMutLogo"></div>
+                            </div>
+                            <div class="mut-position" id="staffMutTitre"></div>
+                            <div id="staffMutRespoWrap" style="display:none;">
+                                <hr style="border-color:rgba(255,255,255,.15);margin:8px 0 6px;">
+                                <p class="mut-back-desc" id="staffMutRespo"></p>
+                            </div>
                         </div>
+                        <div class="mut-bande"></div>
                     </div>
-                    <div class="mut-bande"></div>
                 </div>
             </div>
         </div>
@@ -1100,6 +1106,11 @@
 @* ── Lightbox galerie ─────────────────────────────────────────────────────── *@
 <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;touch-action:pan-y;">
     <button id="lbClose" style="position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:2;">&#x2715;</button>
+    @if (!string.IsNullOrEmpty(Model.Ecole.LogoPath))
+    {
+        <img src="@Model.Ecole.LogoPath" alt="Logo"
+             style="position:absolute;top:14px;right:65px;height:100px;object-fit:contain;opacity:.85;pointer-events:none;z-index:2;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7));" />
+    }
     <button id="lbPrev" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2.5rem;width:48px;height:64px;border-radius:8px;cursor:pointer;">&#8249;</button>
     <button id="lbNext" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2.5rem;width:48px;height:64px;border-radius:8px;cursor:pointer;">&#8250;</button>
     <img id="lbImg" src="" alt="" style="max-width:92vw;max-height:88vh;border-radius:6px;object-fit:contain;user-select:none;display:block;" />
@@ -1231,7 +1242,7 @@
             if (logoSrc) {
                 var logoImg = document.createElement('img');
                 logoImg.src = logoSrc;
-                logoImg.style.cssText = 'width:80px;height:80px;object-fit:contain;opacity:.75;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5));';
+                logoImg.style.cssText = 'width:180px;height:180px;object-fit:contain;opacity:.85;pointer-events:none;user-select:none;';
                 ph.appendChild(logoImg);
             }
             container.insertBefore(ph, overlay);
@@ -1370,6 +1381,7 @@
         var photo = el.dataset.photo       || '';
         var titre = el.dataset.titre       || '';
         var respo = el.dataset.responsable || '';
+        var desc  = el.dataset.description || '';
 
         // Zone photo
         var container = document.getElementById('staffImageContainer');
@@ -1400,13 +1412,15 @@
             logoEl.innerHTML = '<div class="mut-name-logo-placeholder"><i class="bi bi-shield-fill"></i></div>';
         }
 
-        // Titre
-        document.getElementById('staffMutTitre').textContent = titre;
+        // Titre + responsable de
+        var titreLabel = titre;
+        if (respo) titreLabel += ' — ' + respo;
+        document.getElementById('staffMutTitre').textContent = titreLabel;
 
-        // Description (ResponsableDe)
+        // Description
         var respoWrap = document.getElementById('staffMutRespoWrap');
-        if (respo) {
-            document.getElementById('staffMutRespo').textContent = respo;
+        if (desc) {
+            document.getElementById('staffMutRespo').textContent = desc;
             respoWrap.style.display = '';
         } else {
             respoWrap.style.display = 'none';

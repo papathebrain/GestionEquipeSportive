@@ -34,6 +34,12 @@
                placeholder="Ex: Attaque, Défense, Gardiens..." />
         <span asp-validation-for="ResponsableDe" class="text-danger small"></span>
     </div>
+    <div class="col-12">
+        <label asp-for="Description" class="form-label fw-semibold"></label>
+        <textarea asp-for="Description" class="form-control" rows="4"
+                  placeholder="Bio, expérience, parcours... (peut être différent selon l'année ou l'équipe)"></textarea>
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
 </div>
 
 <div class="mt-3">

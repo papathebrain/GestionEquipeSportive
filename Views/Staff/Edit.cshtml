@@ -1,6 +1,9 @@
 @model GestionEquipeSportive.ViewModels.StaffViewModel
+@using GestionEquipeSportive.ViewModels
+@using GestionEquipeSportive.Models
 @{
     ViewData["Title"] = "Modifier un membre du staff";
+    var historique = ViewBag.Historique as List<StaffHistoriqueEntry>;
 }
 
 <div class="mb-4">
@@ -14,14 +17,23 @@
     <h1 class="h3"><i class="bi bi-person-gear me-2 text-primary"></i>Modifier — @Model.Prenom @Model.Nom</h1>
 </div>
 
-<div class="row justify-content-center">
+<div class="row g-4 justify-content-center">
     <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(Model.NoFiche))
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded bg-light border">
+                        <i class="bi bi-fingerprint text-secondary"></i>
+                        <span class="small text-muted">ID unique :</span>
+                        <code class="small text-secondary user-select-all">@Model.NoFiche</code>
+                    </div>
+                }
                 <form asp-action="Edit" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <input asp-for="Id" type="hidden" />
                     <input asp-for="EquipeId" type="hidden" />
+                    <input asp-for="NoFiche" type="hidden" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                     @await Html.PartialAsync("_StaffForm", Model)
@@ -36,4 +48,56 @@
             </div>
         </div>
     </div>
+
+    @if (historique != null && historique.Any())
+    {
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    <span class="fw-semibold">Historique</span>
+                    <span class="badge bg-secondary ms-auto">@historique.Count saison@(historique.Count > 1 ? "s" : "")</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var entry in historique)
+                        {
+                            bool estCourant = entry.StaffEntry.EquipeId == Model.EquipeId;
+                            string sportLabel = entry.Equipe.TypeSport switch {
+                                TypeSport.FootballAmericain => "Football",
+                                TypeSport.FlagFootball => "Flag Football",
+                                TypeSport.Soccer => "Soccer",
+                                TypeSport.Volleyball => "Volleyball",
+                                TypeSport.Hockey => "Hockey",
+                                _ => entry.Equipe.TypeSport.ToString()
+                            };
+                            <li class="list-group-item @(estCourant ? "list-group-item-primary" : "")">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-semibold small">@entry.Equipe.AnneeScolaire</div>
+                                        <div class="text-muted small">@entry.Equipe.Nom</div>
+                                        <div class="small">
+                                            <span class="badge bg-light text-dark border me-1">@sportLabel</span>
+                                            <span class="badge bg-light text-dark border">@entry.Equipe.Niveau</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small fw-semibold">@entry.StaffEntry.Titre</div>
+                                        @if (!string.IsNullOrEmpty(entry.StaffEntry.ResponsableDe))
+                                        {
+                                            <div class="text-muted small">@entry.StaffEntry.ResponsableDe</div>
+                                        }
+                                        @if (estCourant)
+                                        {
+                                            <span class="badge bg-primary mt-1">En cours</span>
+                                        }
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
 </div>

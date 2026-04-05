@@ -1,7 +1,14 @@
+using GestionEquipeSportive.Models;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace GestionEquipeSportive.ViewModels;
+
+public class StaffHistoriqueEntry
+{
+    public Staff StaffEntry { get; set; } = null!;
+    public Equipe Equipe { get; set; } = null!;
+}
 
 public class StaffViewModel
 {
@@ -25,8 +32,13 @@ public class StaffViewModel
     [Display(Name = "Responsable de")]
     public string? ResponsableDe { get; set; }
 
+    [Display(Name = "Description")]
+    public string? Description { get; set; }
+
     [Display(Name = "Photo actuelle")]
     public string? PhotoPathActuelle { get; set; }
+
+    public string? NoFiche { get; set; }
 
     [Display(Name = "Photo")]
     public IFormFile? PhotoFile { get; set; }
