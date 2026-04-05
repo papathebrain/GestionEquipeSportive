@@ -473,42 +473,33 @@
         @if (Model.Staff.Any())
         {
             <div class="tab-pane fade" id="tab-coachs">
-                <div class="row g-3">
+                <div class="row g-2">
                     @foreach (var s in Model.Staff.OrderBy(s => s.Titre).ThenBy(s => s.Nom))
                     {
                         <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="staff-pub-card staff-card"
+                            <div class="mini-staff-card staff-card"
                                  data-fullnom="@s.Prenom @s.Nom"
                                  data-photo="@s.PhotoPath"
                                  data-titre="@s.Titre"
                                  data-responsable="@s.ResponsableDe">
-                                <!-- Photo -->
-                                <div class="staff-pub-photo">
-                                    @if (!string.IsNullOrEmpty(s.PhotoPath))
-                                    {
-                                        <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" />
-                                    }
-                                    else
-                                    {
-                                        <div class="staff-pub-nophoto">
-                                            <i class="bi bi-person-fill"></i>
-                                        </div>
-                                    }
+                                @if (!string.IsNullOrEmpty(s.PhotoPath))
+                                {
+                                    <img src="@s.PhotoPath" alt="@s.Prenom @s.Nom" class="mini-photo" />
+                                }
+                                else
+                                {
+                                    <div class="mini-no-photo">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                }
+                                <div class="mini-gradient"></div>
+                                <div class="mini-info">
+                                    <div class="mini-nom">@s.Prenom @s.Nom</div>
+                                    <div class="mini-pos">
+                                        @s.Titre@(!string.IsNullOrEmpty(s.ResponsableDe) ? " — " + s.ResponsableDe : "")
+                                    </div>
                                 </div>
-                                <!-- Infos -->
-                                <div class="staff-pub-info">
-                                    <div class="staff-pub-nom">@s.Prenom @s.Nom</div>
-                                    @if (!string.IsNullOrEmpty(s.Titre))
-                                    {
-                                        <div class="staff-pub-titre">@s.Titre</div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(s.ResponsableDe))
-                                    {
-                                        <div class="staff-pub-respo">@s.ResponsableDe</div>
-                                    }
-                                </div>
-                                <!-- Bande couleur -->
-                                <div class="staff-pub-bande"></div>
+                                <div class="mini-bande"></div>
                             </div>
                         </div>
                     }
@@ -718,6 +709,7 @@
     .mut-card {
         position: absolute; inset: 0;
         width: 300px;
+        height: 470px;
         border-radius: 20px;
         overflow: hidden;
         background: linear-gradient(145deg, var(--couleur-primaire), color-mix(in srgb, var(--couleur-primaire) 60%, #000));
@@ -964,36 +956,45 @@
         display: block;
     }
     .galerie-img:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,.28); }
-    /* ── Cartes staff (page publique) ───────────────────────────────────── */
-    .staff-pub-card {
-        border-radius: 12px; overflow: hidden; cursor: pointer;
-        background: #fff;
-        box-shadow: 0 4px 14px rgba(0,0,0,.13);
-        transition: transform .18s, box-shadow .18s;
-        display: flex; flex-direction: column;
+    /* ── Mini cartes staff (style identique aux joueurs) ────────────────── */
+    .mini-staff-card {
+        border-radius: 10px; overflow: hidden; cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+        box-shadow: 0 4px 12px rgba(0,0,0,.2);
+        position: relative; aspect-ratio: 2/3;
     }
-    .staff-pub-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,.2); }
-    .staff-pub-photo {
-        width: 100%; aspect-ratio: 1/1; overflow: hidden;
-        background: var(--couleur-primaire);
-        display: flex; align-items: center; justify-content: center;
+    .mini-staff-card:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+    .mini-staff-card .mini-photo { width:100%; height:100%; object-fit:cover; display:block; }
+    .mini-staff-card .mini-no-photo {
+        width:100%; height:100%; background:var(--couleur-primaire);
+        display:flex; align-items:center; justify-content:center;
+        font-size:3rem; color:rgba(255,255,255,.2);
     }
-    .staff-pub-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .staff-pub-nophoto { font-size: 3.5rem; color: rgba(255,255,255,.3); }
-    .staff-pub-info { padding: 10px 12px 8px; flex: 1; }
-    .staff-pub-nom {
-        font-weight: 700; font-size: .9rem; color: #212529;
-        line-height: 1.2; margin-bottom: 4px;
+    .mini-staff-card .mini-gradient {
+        position:absolute; bottom:0; left:0; right:0; height:50%;
+        background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.5) 55%,transparent 100%);
     }
-    .staff-pub-titre {
-        display: inline-block;
-        font-size: .68rem; font-weight: 600; color: #fff;
-        background: var(--couleur-secondaire);
-        padding: 2px 7px; border-radius: 20px;
-        margin-bottom: 3px;
+    .mini-staff-card .mini-info {
+        position:absolute; bottom:0; left:0; right:0;
+        padding:6px 8px 4px;
+        background: linear-gradient(to top, var(--couleur-primaire) 60%, transparent 100%);
     }
-    .staff-pub-respo { font-size: .72rem; color: #6c757d; margin-top: 2px; }
-    .staff-pub-bande { height: 5px; background: var(--couleur-primaire); flex-shrink: 0; }
+    .mini-staff-card .mini-nom {
+        font-size:.72rem; font-weight:800; color:#fff;
+        line-height:1.2; text-transform:uppercase; letter-spacing:.02em;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .mini-staff-card .mini-pos {
+        font-size:.58rem; color:rgba(255,255,255,.72); margin-top:1px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .mini-staff-card .mini-bande {
+        position:absolute; bottom:0; left:0; right:0; height:3px;
+        background:var(--couleur-secondaire);
+    }
+    /* ── Modal staff MUT ─────────────────────────────────────────────────── */
+    #modalStaff .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
+    #modalStaff .modal-dialog { max-width: 320px; width: 100%; margin-left: auto; margin-right: auto; }
 </style>
 
 @* ── Modal joueur (carte MUT) ─────────────────────────────────────────────── *@
@@ -1063,26 +1064,33 @@
     </div>
 </div>
 
-@* ── Modal entraineur ─────────────────────────────────────────────────────── *@
+@* ── Modal entraineur (carte MUT, pas de flip) ───────────────────────────── *@
 <div class="modal fade" id="modalStaff" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-body p-0 d-flex flex-column align-items-center">
-                <div class="d-flex justify-content-end w-100 mb-2 px-2">
+                <div class="d-flex justify-content-end w-100 mb-2 px-1" style="max-width:310px;">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"
-                            style="background-color:rgba(0,0,0,.45);border-radius:50%;padding:8px;opacity:1;"></button>
+                            style="background-color:rgba(0,0,0,.5);border-radius:50%;padding:8px;opacity:1;"></button>
                 </div>
-                <div class="trading-card-wrapper">
-                    <div class="card-face card-front" style="border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.55);position:relative;width:100%;height:100%;">
-                        <div id="staffPhotoTrack" style="position:absolute;inset:0;"></div>
-                        <div style="position:absolute;bottom:0;left:0;right:0;height:58%;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.45) 55%,transparent 100%);z-index:2;border-radius:0 0 16px 16px;"></div>
-                        <div id="staffFrontBadge" style="position:absolute;top:14px;right:14px;z-index:3;"></div>
-                        <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background-color:var(--couleur-secondaire);z-index:3;"></div>
-                        <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;padding:0 14px;z-index:3;">
-                            <div id="staffFrontNom" style="font-size:1.15rem;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.9);letter-spacing:.03em;line-height:1.2;"></div>
-                            <div id="staffFrontTitre" style="font-size:.8rem;color:rgba(255,255,255,.7);margin-top:3px;"></div>
+                <div class="mut-card" id="staffMutCard">
+                    <!-- Photo -->
+                    <div class="mut-image-container" id="staffImageContainer">
+                        <div class="mut-overlay"></div>
+                    </div>
+                    <!-- Infos -->
+                    <div class="mut-info">
+                        <div class="mut-name-row">
+                            <div class="mut-name" id="staffMutName"></div>
+                            <div id="staffMutLogo"></div>
+                        </div>
+                        <div class="mut-position" id="staffMutTitre"></div>
+                        <div id="staffMutRespoWrap" style="display:none;">
+                            <hr style="border-color:rgba(255,255,255,.15);margin:8px 0 6px;">
+                            <p class="mut-back-desc" id="staffMutRespo"></p>
                         </div>
                     </div>
+                    <div class="mut-bande"></div>
                 </div>
             </div>
         </div>
@@ -1356,24 +1364,53 @@
         document.getElementById('mutFlipInner').classList.remove('flipped');
     });
 
-    // ── Carte entraineur ──────────────────────────────────────────────────────
+    // ── Carte entraineur (MUT, pas de flip) ──────────────────────────────────
     function ouvrirStaff(el) {
-        var nom    = el.dataset.fullnom     || '';
-        var photo  = el.dataset.photo       || '';
-        var titre  = el.dataset.titre       || '';
-        var respo  = el.dataset.responsable || '';
+        var nom   = el.dataset.fullnom     || '';
+        var photo = el.dataset.photo       || '';
+        var titre = el.dataset.titre       || '';
+        var respo = el.dataset.responsable || '';
 
-        var track = document.getElementById('staffPhotoTrack');
+        // Zone photo
+        var container = document.getElementById('staffImageContainer');
+        container.querySelectorAll('img.mut-photo-img, .mut-no-photo').forEach(function(n){ n.remove(); });
+        var overlay = container.querySelector('.mut-overlay');
         if (photo) {
-            track.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">';
+            var img = document.createElement('img');
+            img.src = photo; img.className = 'mut-photo-img active';
+            container.insertBefore(img, overlay);
         } else {
-            track.innerHTML = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
-                + '<i class="bi bi-person-fill" style="font-size:6rem;color:rgba(255,255,255,.18);"></i></div>';
+            var ph = document.createElement('div');
+            ph.className = 'mut-no-photo';
+            if (logoEcole) {
+                var li = document.createElement('img');
+                li.src = logoEcole;
+                li.style.cssText = 'width:80px;height:80px;object-fit:contain;opacity:.75;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5));';
+                ph.appendChild(li);
+            }
+            container.insertBefore(ph, overlay);
         }
-        document.getElementById('staffFrontNom').textContent   = nom;
-        document.getElementById('staffFrontTitre').textContent = respo || titre;
-        document.getElementById('staffFrontBadge').innerHTML   = titre
-            ? '<span class="badge" style="background-color:var(--couleur-secondaire);font-size:.75rem;">' + titre + '</span>' : '';
+
+        // Nom + logo
+        document.getElementById('staffMutName').textContent = nom;
+        var logoEl = document.getElementById('staffMutLogo');
+        if (logoEcole) {
+            logoEl.innerHTML = '<img class="mut-name-logo" src="' + logoEcole + '" alt="">';
+        } else {
+            logoEl.innerHTML = '<div class="mut-name-logo-placeholder"><i class="bi bi-shield-fill"></i></div>';
+        }
+
+        // Titre
+        document.getElementById('staffMutTitre').textContent = titre;
+
+        // Description (ResponsableDe)
+        var respoWrap = document.getElementById('staffMutRespoWrap');
+        if (respo) {
+            document.getElementById('staffMutRespo').textContent = respo;
+            respoWrap.style.display = '';
+        } else {
+            respoWrap.style.display = 'none';
+        }
 
         new bootstrap.Modal(document.getElementById('modalStaff')).show();
     }
