@@ -576,15 +576,11 @@
                                         }
                                         <div class="mini-gradient"></div>
                                         <div class="mini-numero">#@j.Numero</div>
-                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
-                                        {
-                                            <div class="mini-badge">
-                                                <span class="badge" style="font-size:.55rem;background-color:var(--couleur-secondaire);">@j.PositionSpecifique</span>
-                                            </div>
-                                        }
                                         <div class="mini-info">
                                             <div class="mini-nom">@j.Prenom @j.Nom</div>
-                                            <div class="mini-pos">@j.Position</div>
+                                            <div class="mini-pos">
+                                                @j.Position@(!string.IsNullOrEmpty(j.PositionSpecifique) ? " — " + j.PositionSpecifique : "")
+                                            </div>
                                         </div>
                                         <div class="mini-bande"></div>
                                     </div>
@@ -701,122 +697,209 @@
 
 @* ── Styles carte de trading ──────────────────────────────────────────────── *@
 <style>
-    /* ── Carte de trading ──────────────────────────────────────────────────── */
-    .trading-card-wrapper { perspective: 1400px; width: 340px; height: 500px; }
-    .trading-card {
+    /* ── Carte MUT joueur ───────────────────────────────────────────────────── */
+    #modalJoueur .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
+    #modalJoueur .modal-dialog { max-width: 320px; width: 100%; margin-left: auto; margin-right: auto; }
+
+    /* ── Flip wrapper ── */
+    .mut-flip-scene {
+        width: 300px; height: 470px;
+        perspective: 1200px;
+    }
+    .mut-flip-inner {
         width: 100%; height: 100%; position: relative;
         transform-style: preserve-3d;
         transition: transform 0.65s cubic-bezier(.4,.2,.2,1);
     }
-    .trading-card.flipped { transform: rotateY(180deg); }
-    .card-face {
-        position: absolute; width: 100%; height: 100%;
-        backface-visibility: hidden; -webkit-backface-visibility: hidden;
-        border-radius: 16px; overflow: hidden;
-        box-shadow: 0 28px 72px rgba(0,0,0,.6);
+    .mut-flip-inner.flipped { transform: rotateY(180deg); }
+    /* Le verso est un flex column qui remplit la hauteur */
+    .mut-card-back { overflow: hidden; }
+
+    .mut-card {
+        position: absolute; inset: 0;
+        width: 300px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: linear-gradient(145deg, var(--couleur-primaire), color-mix(in srgb, var(--couleur-primaire) 60%, #000));
+        box-shadow:
+            0 0 20px color-mix(in srgb, var(--couleur-secondaire) 60%, transparent),
+            0 0 60px color-mix(in srgb, var(--couleur-secondaire) 25%, transparent),
+            inset 0 0 20px rgba(255,255,255,.05);
+        color: #fff;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
-    .card-back {
+    /* Verso */
+    .mut-card-back {
         transform: rotateY(180deg);
-        background: #fff;
         display: flex; flex-direction: column;
+        background: linear-gradient(160deg, color-mix(in srgb, var(--couleur-primaire) 85%, #000), color-mix(in srgb, var(--couleur-primaire) 50%, #000));
     }
-    /* card-flip-btn défini plus bas avec les styles bandes */
-    .carousel-nav-btn {
-        position: absolute; top: 42%; transform: translateY(-50%);
-        width: 34px; height: 34px; border-radius: 50%;
-        border: none; background: rgba(0,0,0,.45); color: #fff;
-        font-size: 1.4rem; line-height: 1; cursor: pointer; z-index: 8;
+    /* Bouton flip */
+    .mut-flip-btn {
+        position: absolute; bottom: 9px; right: 12px;
+        width: 36px; height: 36px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.5);
+        background: rgba(0,0,0,.35); color: #fff;
+        font-size: 1rem; cursor: pointer; z-index: 10;
         display: flex; align-items: center; justify-content: center;
+        transition: background .2s, transform .15s;
+        backdrop-filter: blur(4px);
     }
-    .carousel-nav-btn:hover { background: rgba(0,0,0,.7); }
-    .card-photo-img { transition: opacity 0.35s ease; }
-    #modalJoueur .modal-content { background: transparent !important; border: none !important; box-shadow: none !important; }
-    #modalJoueur .modal-dialog { max-width: 380px; width: 100%; margin-left: auto; margin-right: auto; }
-    .card-back-scroll { flex: 1; overflow-y: auto; padding: 14px 18px; }
-    /* ── Cadre par-dessus la photo ── */
-    .card-border-frame {
-        position: absolute; inset: 0; z-index: 6; pointer-events: none;
-        border: 12px solid var(--couleur-primaire);
-        border-radius: 16px;
-        box-shadow: inset 0 0 0 2px rgba(255,255,255,.3), 0 0 0 2px rgba(255,255,255,.12);
+    .mut-flip-btn:hover { background: rgba(0,0,0,.6); transform: scale(1.1) rotate(20deg); }
+    /* Verso — en-tête */
+    .mut-back-header {
+        padding: 20px 18px 14px; text-align: center; flex-shrink: 0;
+        background: rgba(0,0,0,.25); position: relative;
     }
-    /* Ligne décorative intérieure */
-    .card-border-frame::after {
-        content: '';
-        position: absolute; inset: 4px;
-        border: 2px solid rgba(255,255,255,.2);
-        border-radius: 8px;
+    .mut-back-avatar {
+        width: 72px; height: 72px; border-radius: 50%;
+        object-fit: cover; border: 3px solid rgba(255,255,255,.3);
+        display: block; margin: 0 auto 10px;
+    }
+    .mut-back-avatar-ph {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: rgba(255,255,255,.12);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 10px; font-size: 1.8rem;
+    }
+    .mut-back-nom {
+        font-size: 1rem; font-weight: 800; line-height: 1.2;
+        text-transform: uppercase; letter-spacing: .04em;
+    }
+    .mut-back-badges {
+        display: flex; flex-wrap: wrap; gap: 4px;
+        justify-content: center; margin-top: 6px;
+    }
+    /* Verso — corps scrollable */
+    .mut-back-body {
+        flex: 1; overflow-y: auto; padding: 14px 18px 10px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,.2) transparent;
+    }
+    .mut-back-body::-webkit-scrollbar { width: 4px; }
+    .mut-back-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 2px; }
+    .mut-back-desc {
+        font-size: .82rem; line-height: 1.7;
+        color: rgba(255,255,255,.85); margin-top: 4px;
+    }
+    .mut-back-stats-table {
+        width: 100%; font-size: .78rem;
+        border-collapse: collapse; margin-bottom: 8px;
+        display:none;
+    }
+    .mut-back-stats-table td { padding: 3px 0; }
+    .mut-back-stats-table td:first-child { color: rgba(255,255,255,.55); padding-right: 12px; }
+    .mut-back-stats-table td:last-child { font-weight: 700; text-align: right; color: var(--couleur-secondaire); }
+    /* Numéro haut gauche — masqué */
+    .mut-rating { display: none; }
+    /* Logo école en haut à droite */
+    .mut-logo {
+        position: absolute; top: 10px; right: 12px;
+        width: 44px; height: 44px; object-fit: contain;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+        z-index: 4;
+    }
+    .mut-logo-placeholder {
+        position: absolute; top: 10px; right: 12px;
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(255,255,255,.15);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; color: rgba(255,255,255,.5);
+        z-index: 4;
+    }
+    /* Zone photo */
+    .mut-image-container {
+        position: relative; height: 210px; overflow: hidden;
+    }
+    .mut-image-container img {
+        width: 100%; height: 100%; object-fit: cover;
+        display: none;
+    }
+    .mut-image-container img.active { display: block; }
+    .mut-no-photo {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        background: color-mix(in srgb, var(--couleur-primaire) 80%, #000);
+        font-size: 5rem; font-weight: 900;
+        color: rgba(255,255,255,.15);
+        font-family: Impact, Arial Black, sans-serif;
+    }
+    /* Dégradé overlay bas de photo */
+    .mut-overlay {
+        position: absolute; bottom: 0; height: 80px; width: 100%;
+        background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
         pointer-events: none;
     }
-    /* ── Photo centrée entre les deux bandes ── */
-    #cardPhotoTrack img, #cardPhotoTrack > div {
-        position: absolute; inset: 0;
-        /* Laisser de l'espace pour les bandes haut (44px) et bas (~80px) */        
+    /* Boutons navigation photo */
+    .mut-arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        background: rgba(0,0,0,.45); border: none; color: #fff;
+        font-size: 1.2rem; width: 30px; height: 30px;
+        border-radius: 50%; cursor: pointer; z-index: 5;
+        display: flex; align-items: center; justify-content: center;
+        transition: background .2s;
     }
-    /* ── Numéro flottant à gauche ── */
-    .card-numero-left {
-        position: absolute; top: 52px; left: 14px;
-        z-index: 8; pointer-events: none;
-        font-size: 2.8rem; font-weight: 900;
-        color: #fff;
-        font-family: 'Segoe UI', Arial Black, sans-serif;
-        text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 20px rgba(0,0,0,.5);
+    .mut-arrow:hover { background: rgba(0,0,0,.75); }
+    .mut-arrow.left  { left: 8px; }
+    .mut-arrow.right { right: 8px; }
+    /* Infos bas de carte */
+    .mut-info { padding: 16px 18px 18px; }
+    .mut-name-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .mut-name {
+        font-size: 1.25rem; font-weight: 800; line-height: 1.1;
+        text-transform: uppercase; letter-spacing: .04em;
+        flex: 1; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mut-name-logo {
+        flex-shrink: 0; width: 36px; height: 36px; object-fit: contain;
+        filter: drop-shadow(0 1px 4px rgba(0,0,0,.4));
+    }
+    .mut-name-logo-placeholder {
+        flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+        background: rgba(255,255,255,.15);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; color: rgba(255,255,255,.5);
+    }
+    .mut-position {
+        font-size: .8rem; opacity: .7; margin-top: 2px;
+    }
+    .mut-number {
+        font-size: 2.4rem; font-weight: 900; margin-top: 6px;
+        color: var(--couleur-secondaire);
+        font-family: Impact, Arial Black, sans-serif;
         line-height: 1;
     }
-    /* ── Bande HAUTE horizontale — nom équipe ── */
-    .card-ribbon-top {
-        position: absolute; top: 0; left: 0; right: 0;
-        height: 44px; z-index: 7; pointer-events: none;
-        display: flex; align-items: center; justify-content: center;
-        background: var(--couleur-secondaire);
-        box-shadow: 0 3px 12px rgba(0,0,0,.4);
+    /* Stats bas */
+    .mut-stats {
+        margin-top: 12px;
+        display: flex; justify-content: space-around;
+        font-size: .7rem; text-transform: uppercase;
+        letter-spacing: .06em;
+        border-top: 1px solid rgba(255,255,255,.12);
+        padding-top: 10px;
     }
-    .card-ribbon-top-text {
-        font-size: .85rem; font-weight: 700; color: #fff;
-        text-transform: uppercase; letter-spacing: .15em;
-        text-shadow: 0 1px 3px rgba(0,0,0,.6);
-        font-family: 'Segoe UI', Arial, sans-serif;
+    .mut-stat { text-align: center; }
+    .mut-stat span {
+        display: block;
+        font-size: 1.1rem; font-weight: 800;
+        color: var(--couleur-secondaire);
     }
-    /* ── Bande BASSE horizontale — nom + position ── */
-    .card-ribbon-bot {
-        position: absolute; bottom: 0; left: 0; right: 0;
-        z-index: 7; pointer-events: none;
-        display: flex; flex-direction: column;
-        background: var(--couleur-secondaire);
-        box-shadow: 0 -3px 12px rgba(0,0,0,.4);
-        padding: 8px 14px 10px;
+    /* Description */
+    .mut-desc {
+        font-size: .75rem; opacity: .7; margin-top: 8px;
+        line-height: 1.5;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
     }
-    .card-ribbon-bot-nom {
-        font-size: 1.1rem; font-weight: 700; color: #fff;
-        text-transform: uppercase; letter-spacing: .06em;
-        text-shadow: 0 1px 4px rgba(0,0,0,.6);
-        font-family: 'Segoe UI', Arial, sans-serif;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .card-ribbon-bot-pos {
-        font-size: .78rem; color: rgba(255,255,255,.85);
-        font-family: 'Segoe UI', Arial, sans-serif;
-        letter-spacing: .04em;
-        margin-top: 3px;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    /* ── Bouton flip plus visible ── */
-    .card-flip-btn {
-        position: absolute; bottom: 14px; right: 14px;
-        width: 42px; height: 42px; border-radius: 50%;
-        border: 2px solid rgba(255,255,255,.7);
-        background: var(--couleur-primaire); color: #fff;
-        font-size: 1.1rem; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: background .2s, transform .15s; z-index: 10;
-        box-shadow: 0 4px 12px rgba(0,0,0,.5);
-    }
-    .card-flip-btn:hover { transform: scale(1.1); }
-    .card-flip-btn-back { background: #fff; color: var(--couleur-primaire); border-color: var(--couleur-primaire); }
-    .card-flip-btn-back:hover { background: #f0f0f0; }
-    /* Empêche la face cachée d'intercepter les clics */
-    .trading-card:not(.flipped) .card-back { pointer-events: none; }
-    .trading-card.flipped .card-front { pointer-events: none; }
+    /* Bande couleur bas */
+    .mut-bande { height: 5px; background: var(--couleur-secondaire); }
+
+    /* Empêche double-tap zoom mobile */
+    .mut-arrow { touch-action: manipulation; }
     /* Mini cartes de collection */
     .mini-trading-card {
         border-radius: 10px; overflow: hidden; cursor: pointer;
@@ -833,8 +916,8 @@
         font-family:Impact,Arial Black,sans-serif;
     }
     .mini-trading-card .mini-gradient {
-        position:absolute; bottom:0; left:0; right:0; height:55%;
-        background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.3) 60%,transparent 100%);
+        position:absolute; bottom:0; left:0; right:0; height:50%;
+        background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.5) 55%,transparent 100%);
     }
     .mini-trading-card .mini-numero {
         position:absolute; top:6px; left:8px;
@@ -845,20 +928,23 @@
     .mini-trading-card .mini-badge {
         position:absolute; top:6px; right:6px;
     }
+    /* Bande bas style popup MUT */
     .mini-trading-card .mini-info {
         position:absolute; bottom:0; left:0; right:0;
-        padding:4px 7px 6px; text-align:center;
+        padding:6px 8px 4px;
+        background: linear-gradient(to top, var(--couleur-primaire) 60%, transparent 100%);
     }
     .mini-trading-card .mini-nom {
         font-size:.72rem; font-weight:800; color:#fff;
-        text-shadow:0 1px 3px rgba(0,0,0,.9); line-height:1.2;
+        line-height:1.2; text-transform:uppercase; letter-spacing:.02em;
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .mini-trading-card .mini-pos {
-        font-size:.6rem; color:rgba(255,255,255,.65); margin-top:1px;
+        font-size:.58rem; color:rgba(255,255,255,.72); margin-top:1px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .mini-trading-card .mini-bande {
-        position:absolute; bottom:0; left:0; right:0; height:4px;
+        position:absolute; bottom:0; left:0; right:0; height:3px;
         background:var(--couleur-secondaire);
     }
     /* ── Galerie match : animation d'apparition ── */
@@ -910,69 +996,63 @@
     .staff-pub-bande { height: 5px; background: var(--couleur-primaire); flex-shrink: 0; }
 </style>
 
-@* ── Modal joueur (carte de trading) ─────────────────────────────────────── *@
+@* ── Modal joueur (carte MUT) ─────────────────────────────────────────────── *@
 <div class="modal fade" id="modalJoueur" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;width:100%;padding:0 12px;">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-body p-0 d-flex flex-column align-items-center">
-                <!-- Bouton fermer au-dessus -->
-                <div class="d-flex justify-content-end w-100 mb-2 px-2">
+                <!-- Bouton fermer -->
+                <div class="d-flex justify-content-end w-100 mb-2 px-1" style="max-width:310px;">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"
-                            style="background-color:rgba(0,0,0,.45);border-radius:50%;padding:8px;opacity:1;"></button>
+                            style="background-color:rgba(0,0,0,.5);border-radius:50%;padding:8px;opacity:1;"></button>
                 </div>
-                <!-- Carte -->
-                <div class="trading-card-wrapper">
-                    <div class="trading-card" id="tradingCard">
+                <!-- Flip scene -->
+                <div class="mut-flip-scene">
+                    <div class="mut-flip-inner" id="mutFlipInner">
 
-                        <!-- ── Face avant ── -->
-                        <div class="card-face card-front">
-                            <!-- Photo / Carousel (fond) -->
-                            <div id="cardPhotoTrack" style="position:absolute;inset:0;z-index:1;"></div>
-                            <!-- Boutons carousel -->
-                            <button id="carouselPrev" class="carousel-nav-btn" style="left:8px;display:none;">&#8249;</button>
-                            <button id="carouselNext" class="carousel-nav-btn" style="right:8px;display:none;">&#8250;</button>
-                            <div id="carouselDots" style="position:absolute;bottom:110px;width:100%;text-align:center;z-index:8;"></div>
-                            <!-- Cadre bordure par-dessus la photo -->
-                            <div class="card-border-frame"></div>
-                            <!-- Bande haute horizontale : nom équipe -->
-                            <div class="card-ribbon-top">
-                                <div class="card-ribbon-top-text" id="cardFrontEquipe"></div>
+                        <!-- ── RECTO ── -->
+                        <div class="mut-card">
+                            <div class="mut-rating" id="mutRating"></div>
+                            <div id="mutLogoWrap"></div>
+                            <div class="mut-image-container" id="mutImageContainer">
+                                <div class="mut-overlay"></div>
+                                <button class="mut-arrow left" id="mutPrev" style="display:none;" onclick="mutNavPhoto(-1)">&#8249;</button>
+                                <button class="mut-arrow right" id="mutNext" style="display:none;" onclick="mutNavPhoto(1)">&#8250;</button>
                             </div>
-                            <!-- Numéro flottant à gauche -->
-                            <div class="card-numero-left" id="cardFrontNumero"></div>
-                            <!-- Bande basse horizontale : nom + position -->
-                            <div class="card-ribbon-bot">
-                                <div class="card-ribbon-bot-nom" id="cardFrontNom"></div>
-                                <div class="card-ribbon-bot-pos" id="cardFrontPos"></div>
+                            <div class="mut-info">
+                                <div class="mut-name-row">
+                                    <div class="mut-name" id="mutName"></div>
+                                    <div id="mutNameLogo"></div>
+                                </div>
+                                <div class="mut-position" id="mutPosition"></div>
+                                <div class="mut-number" id="mutNumber"></div>
+                                <div class="mut-stats" id="mutStats"></div>
                             </div>
-                            <!-- Flip btn -->
-                            <button id="btnFlip" class="card-flip-btn" title="Voir les infos">
+                            <div class="mut-bande"></div>
+                            <!-- Bouton flip verso -->
+                            <button class="mut-flip-btn" id="mutBtnFlip" title="Voir les détails">
                                 <i class="bi bi-arrow-repeat"></i>
                             </button>
                         </div>
 
-                        <!-- ── Face arrière ── -->
-                        <div class="card-face card-back">
-                            <!-- En-tête couleur primaire -->
-                            <div id="cardBackHeader" style="padding:22px 18px 14px;text-align:center;background-color:var(--couleur-primaire);position:relative;flex-shrink:0;">
-                                <div id="cardBackNumeroWm" style="position:absolute;top:8px;right:14px;font-size:4.5rem;font-weight:900;color:rgba(255,255,255,.12);font-family:Impact,Arial Black,sans-serif;line-height:1;pointer-events:none;"></div>
-                                <div id="cardBackAvatar" class="mb-2"></div>
-                                <div id="cardBackNom" style="font-size:1rem;font-weight:800;color:#fff;line-height:1.2;"></div>
-                                <div id="cardBackBadges" class="mt-2 d-flex gap-1 flex-wrap justify-content-center"></div>
+                        <!-- ── VERSO ── -->
+                        <div class="mut-card mut-card-back">
+                            <div class="mut-back-header">
+                                <div id="mutBackAvatar"></div>
+                                <div class="mut-back-nom" id="mutBackNom"></div>
+                                <div class="mut-back-badges" id="mutBackBadges"></div>
                             </div>
-                            <!-- Corps infos + description -->
-                            <div class="card-back-scroll">
-                                <table class="table table-sm table-borderless mb-0" id="cardBackStats"></table>
-                                <div id="cardBackDescription" style="display:none;">
-                                    <hr class="my-2">
-                                    <p id="cardBackDescriptionText" class="small text-muted mb-0" style="line-height:1.6;"></p>
+                            <div class="mut-back-body" id="mutBackBody">
+                                <table class="mut-back-stats-table" id="mutBackStats"></table>
+                                <div id="mutBackDescWrap" style="display:none;">
+                                    <hr style="border-color:rgba(255,255,255,.15);margin:8px 0;">
+                                    <p class="mut-back-desc" id="mutBackDesc"></p>
                                 </div>
                             </div>
-                            <!-- Bande couleur secondaire en bas -->
-                            <div style="height:6px;background-color:var(--couleur-secondaire);flex-shrink:0;"></div>
-                            <!-- Flip btn -->
-                            <button id="btnFlipBack" class="card-flip-btn card-flip-btn-back" title="Voir la photo" style="bottom:16px;right:14px;">
-                                <i class="bi bi-arrow-repeat"></i>
+                            <div class="mut-bande"></div>
+                            <!-- Bouton flip recto -->
+                            <button class="mut-flip-btn" id="mutBtnUnflip" title="Voir la photo">
+                                <i class="bi bi-arrow-repeat" style="transform:scaleX(-1);display:inline-block;"></i>
                             </button>
                         </div>
 
@@ -1127,142 +1207,154 @@
         if (Math.abs(dx) > 50) lbNaviguer(dx < 0 ? 1 : -1);
     }, { passive: true });
 
-    // ── Carte de trading ──────────────────────────────────────────────────────
-    var currentCardPhotos = [];
-    var currentPhotoIndex = 0;
-    var carouselAutoTimer = null;
+    // ── Carte MUT joueur ──────────────────────────────────────────────────────
+    var mutPhotos = [];
+    var mutPhotoIdx = 0;
 
-    function stopCarouselAuto() {
-        if (carouselAutoTimer) { clearInterval(carouselAutoTimer); carouselAutoTimer = null; }
-    }
-    function startCarouselAuto() {
-        stopCarouselAuto();
-        if (currentCardPhotos.length < 2) return;
-        carouselAutoTimer = setInterval(function() {
-            currentPhotoIndex = (currentPhotoIndex + 1) % currentCardPhotos.length;
-            renderCarousel(true);
-        }, 2500);
-    }
+    function mutRenderPhotos(logoSrc) {
+        var container = document.getElementById('mutImageContainer');
+        container.querySelectorAll('img.mut-photo-img').forEach(function(i){ i.remove(); });
+        container.querySelectorAll('.mut-no-photo').forEach(function(d){ d.remove(); });
+        var overlay = container.querySelector('.mut-overlay');
 
-    var _carouselInitialized = false;
-
-    function renderCarousel(animate) {
-        var track = document.getElementById('cardPhotoTrack');
-        var dots  = document.getElementById('carouselDots');
-        var prev  = document.getElementById('carouselPrev');
-        var next  = document.getElementById('carouselNext');
-
-        // Update dots always
-        var multiple = currentCardPhotos.length > 1;
-        prev.style.display = next.style.display = multiple ? '' : 'none';
-        dots.innerHTML = multiple ? currentCardPhotos.map(function(_, i) {
-            return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 3px;background:'
-                 + (i === currentPhotoIndex ? '#fff' : 'rgba(255,255,255,.4)') + ';transition:background .2s;"></span>';
-        }).join('') : '';
-
-        if (!currentCardPhotos.length) {
-            var noPhotoInner = '';
-            if (logoEcole) {
-                noPhotoInner = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">'
-                    + '<img src="' + logoEcole + '" alt="" style="width:100%;height:100%;object-fit:contain;opacity:.55;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4));">'
-                    + '<span style="font-size:4rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
-                    + document.getElementById('cardFrontNumero').textContent + '</span></div>';
-            } else {
-                noPhotoInner = '<div style="width:100%;height:100%;background:var(--couleur-primaire);display:flex;align-items:center;justify-content:center;">'
-                    + '<span style="font-size:7rem;font-weight:900;color:rgba(255,255,255,.18);font-family:Impact,Arial Black,sans-serif;">'
-                    + document.getElementById('cardFrontNumero').textContent + '</span></div>';
+        if (!mutPhotos.length) {
+            var ph = document.createElement('div');
+            ph.className = 'mut-no-photo';
+            if (logoSrc) {
+                var logoImg = document.createElement('img');
+                logoImg.src = logoSrc;
+                logoImg.style.cssText = 'width:80px;height:80px;object-fit:contain;opacity:.75;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5));';
+                ph.appendChild(logoImg);
             }
-            track.innerHTML = noPhotoInner;
-            _carouselInitialized = false;
+            container.insertBefore(ph, overlay);
+            document.getElementById('mutPrev').style.display = 'none';
+            document.getElementById('mutNext').style.display = 'none';
             return;
         }
 
-        var existingImg = track.querySelector('img.card-photo-img');
-        var newSrc = currentCardPhotos[currentPhotoIndex];
+        mutPhotos.forEach(function(src, i) {
+            var img = document.createElement('img');
+            img.src = src;
+            img.className = 'mut-photo-img' + (i === mutPhotoIdx ? ' active' : '');
+            container.insertBefore(img, overlay);
+        });
+        var multi = mutPhotos.length > 1;
+        document.getElementById('mutPrev').style.display = multi ? '' : 'none';
+        document.getElementById('mutNext').style.display = multi ? '' : 'none';
+    }
 
-        if (!existingImg || !animate) {
-            // First render or no animation
-            track.innerHTML = '<img src="' + newSrc + '" class="card-photo-img" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">';
-            _carouselInitialized = true;
-            return;
-        }
-
-        // Fade out → swap → fade in
-        existingImg.style.opacity = '0';
-        setTimeout(function() {
-            existingImg.src = newSrc;
-            existingImg.style.opacity = '1';
-        }, 200);
+    function mutNavPhoto(delta) {
+        var imgs = document.getElementById('mutImageContainer').querySelectorAll('img.mut-photo-img');
+        if (!imgs.length) return;
+        imgs[mutPhotoIdx].classList.remove('active');
+        mutPhotoIdx = (mutPhotoIdx + delta + imgs.length) % imgs.length;
+        imgs[mutPhotoIdx].classList.add('active');
     }
 
     function ouvrirJoueur(el) {
-        var joueurId    = el.dataset.joueurId || '';
-        var nom         = el.dataset.fullnom  || '';
-        var numero      = el.dataset.numero   || '';
-        var photo       = el.dataset.photo    || '';
-        var position    = el.dataset.position || '';
-        var posSpec     = el.dataset.positionSpecifique || '';
-        var desc        = el.dataset.description || '';
+        var joueurId     = el.dataset.joueurId || '';
+        var nom          = el.dataset.fullnom  || '';
+        var numero       = el.dataset.numero   || '';
+        var photo        = el.dataset.photo    || '';
+        var position     = el.dataset.position || '';
+        var posSpec      = el.dataset.positionSpecifique || '';
+        var desc         = el.dataset.description || '';
         var consentement = el.dataset.consentement !== 'false';
 
+        // Construire la liste de photos
         var extras = joueurPhotos[joueurId] || [];
-        currentCardPhotos = [];
+        mutPhotos = [];
+        mutPhotoIdx = 0;
         if (consentement) {
-            if (photo) currentCardPhotos.push(photo);
-            extras.forEach(function(p) { if (p.chemin) currentCardPhotos.push(p.chemin); });
+            if (photo) mutPhotos.push(photo);
+            extras.forEach(function(p){ if (p.chemin) mutPhotos.push(p.chemin); });
         }
-        currentPhotoIndex = 0;
 
-        // Face avant
-        document.getElementById('cardFrontEquipe').textContent = nomEquipe;
-        document.getElementById('cardFrontNom').textContent    = nom;
-        document.getElementById('cardFrontNumero').textContent = numero;
-        var posLabel = [position, posSpec].filter(Boolean).join(' — ');
-        document.getElementById('cardFrontPos').textContent    = posLabel;
+        // Reset flip → recto
+        document.getElementById('mutFlipInner').classList.remove('flipped');
 
-        // Face arrière — en-tête
-        document.getElementById('cardBackNumeroWm').textContent = '#' + numero;
-        document.getElementById('cardBackNom').textContent = nom;
-        var avatarHtml;
-        if (consentement && currentCardPhotos.length) {
-            avatarHtml = '<img src="' + currentCardPhotos[0] + '" class="rounded-circle" style="width:72px;height:72px;object-fit:cover;border:3px solid rgba(255,255,255,.35);" alt="">';
-        } else if (!consentement && logoEcole) {
-            avatarHtml = '<img src="' + logoEcole + '" class="rounded-circle" style="width:72px;height:72px;object-fit:contain;background:rgba(255,255,255,.15);padding:8px;border:3px solid rgba(255,255,255,.25);" alt="">';
+        // Rating interne
+        document.getElementById('mutRating').textContent = numero;
+
+        // Logo à droite du nom (recto)
+        document.getElementById('mutLogoWrap').innerHTML = '';
+        var nameLogo = document.getElementById('mutNameLogo');
+        if (logoEcole) {
+            nameLogo.innerHTML = '<img class="mut-name-logo" src="' + logoEcole + '" alt="">';
         } else {
-            avatarHtml = '<div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:72px;height:72px;background:rgba(255,255,255,.15);color:#fff;font-size:1.8rem;"><i class="bi bi-person-fill"></i></div>';
+            nameLogo.innerHTML = '<div class="mut-name-logo-placeholder"><i class="bi bi-shield-fill"></i></div>';
         }
-        document.getElementById('cardBackAvatar').innerHTML = avatarHtml;
-        var badges = document.getElementById('cardBackBadges');
-        badges.innerHTML = '';
-        if (position) badges.innerHTML += '<span class="badge bg-light text-dark small">' + position + '</span>';
-        if (posSpec)  badges.innerHTML += '<span class="badge small" style="background-color:var(--couleur-secondaire);">' + posSpec + '</span>';
 
-        // Face arrière — stats joueur
-        var stats = document.getElementById('cardBackStats');
-        stats.innerHTML = '';
-        if (numero)   stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Numéro</td><td class="fw-semibold small py-1">#' + numero + '</td></tr>';
-        if (position) stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Position</td><td class="fw-semibold small py-1">' + position + '</td></tr>';
-        if (posSpec)  stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Spécialité</td><td class="fw-semibold small py-1">' + posSpec + '</td></tr>';
+        // Recto — nom, position, numéro
+        document.getElementById('mutName').textContent     = nom;
+        document.getElementById('mutPosition').textContent = [position, posSpec].filter(Boolean).join(' — ');
+        document.getElementById('mutNumber').textContent   = numero ? '#' + numero : '';
+
+        // Recto — stats
+        var statsEl = document.getElementById('mutStats');
         var sj = statsJoueursData[joueurId];
-        if (sj) {
-            stats.innerHTML += '<tr><td colspan="2"><hr class="my-1"></td></tr>';
-            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Matchs joués</td><td class="fw-semibold small py-1">' + sj.matchsJoues + '</td></tr>';
+        if (sj && sj.matchsJoues > 0) {
             var presences = sj.matchsJoues - sj.absences;
-            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Présences</td><td class="fw-semibold small py-1 text-success">' + presences + '</td></tr>';
-            stats.innerHTML += '<tr><td class="text-muted small py-1 pe-3">Absences</td><td class="fw-semibold small py-1 ' + (sj.absences > 0 ? 'text-danger' : '') + '">' + sj.absences + '</td></tr>';
+            statsEl.innerHTML =
+                '<div class="mut-stat">Joués<span>' + sj.matchsJoues + '</span></div>'
+              + '<div class="mut-stat">Présences<span>' + presences + '</span></div>'
+              + '<div class="mut-stat">Absences<span>' + sj.absences + '</span></div>';
+        } else {
+            statsEl.innerHTML = '';
         }
 
-        // Description
-        var descSection = document.getElementById('cardBackDescription');
-        document.getElementById('cardBackDescriptionText').textContent = desc;
-        descSection.style.display = desc ? '' : 'none';
+        // Verso — avatar
+        var avatarEl = document.getElementById('mutBackAvatar');
+        if (consentement && (photo || mutPhotos.length)) {
+            var avatarSrc = mutPhotos.length ? mutPhotos[0] : photo;
+            avatarEl.innerHTML = '<img class="mut-back-avatar" src="' + avatarSrc + '" alt="">';
+        } else if (logoEcole) {
+            avatarEl.innerHTML = '<img class="mut-back-avatar" src="' + logoEcole + '" alt="" style="object-fit:contain;background:rgba(255,255,255,.1);padding:8px;">';
+        } else {
+            avatarEl.innerHTML = '<div class="mut-back-avatar-ph"><i class="bi bi-person-fill"></i></div>';
+        }
 
-        // Reset flip (toujours face avant à l'ouverture)
-        document.getElementById('tradingCard').classList.remove('flipped');
-        renderCarousel(false);
-        var modal = new bootstrap.Modal(document.getElementById('modalJoueur'));
-        modal.show();
+        // Verso — nom + badges
+        document.getElementById('mutBackNom').textContent = nom;
+        var badgesEl = document.getElementById('mutBackBadges');
+        badgesEl.innerHTML = '';
+        if (position) badgesEl.innerHTML += '<span class="badge bg-light text-dark" style="font-size:.7rem;">' + position + '</span>';
+        if (posSpec)  badgesEl.innerHTML += '<span class="badge" style="background:var(--couleur-secondaire);font-size:.7rem;">' + posSpec + '</span>';
+        if (numero)   badgesEl.innerHTML += '<span class="badge bg-dark" style="font-size:.7rem;">#' + numero + '</span>';
+
+        // Verso — stats tableau
+        var backStats = document.getElementById('mutBackStats');
+        backStats.innerHTML = '';
+        if (sj && sj.matchsJoues > 0) {
+            var pr = sj.matchsJoues - sj.absences;
+            backStats.innerHTML =
+                '<tr><td>Matchs joués</td><td>' + sj.matchsJoues + '</td></tr>'
+              + '<tr><td>Présences</td><td>' + pr + '</td></tr>'
+              + '<tr><td>Absences</td><td>' + sj.absences + '</td></tr>';
+        }
+
+        // Verso — description
+        var descWrap = document.getElementById('mutBackDescWrap');
+        if (desc) {
+            document.getElementById('mutBackDesc').textContent = desc;
+            descWrap.style.display = '';
+        } else {
+            descWrap.style.display = 'none';
+        }
+
+        // Photos recto (passe le logo si pas de consentement)
+        mutRenderPhotos(consentement ? null : logoEcole);
+
+        new bootstrap.Modal(document.getElementById('modalJoueur')).show();
     }
+
+    // ── Flip card handlers ────────────────────────────────────────────────────
+    document.getElementById('mutBtnFlip').addEventListener('click', function() {
+        document.getElementById('mutFlipInner').classList.add('flipped');
+    });
+    document.getElementById('mutBtnUnflip').addEventListener('click', function() {
+        document.getElementById('mutFlipInner').classList.remove('flipped');
+    });
 
     // ── Carte entraineur ──────────────────────────────────────────────────────
     function ouvrirStaff(el) {
@@ -1288,16 +1380,7 @@
 
     // ── Event delegation ──────────────────────────────────────────────────────
     document.addEventListener('click', function(e) {
-        if (e.target.closest('#btnFlip'))     { document.getElementById('tradingCard').classList.add('flipped');    return; }
-        if (e.target.closest('#btnFlipBack')) { document.getElementById('tradingCard').classList.remove('flipped'); return; }
-        if (e.target.closest('#carouselPrev')) {
-            currentPhotoIndex = (currentPhotoIndex - 1 + currentCardPhotos.length) % currentCardPhotos.length;
-            renderCarousel(true); return;
-        }
-        if (e.target.closest('#carouselNext')) {
-            currentPhotoIndex = (currentPhotoIndex + 1) % currentCardPhotos.length;
-            renderCarousel(true); return;
-        }
+        if (e.target.closest('#mutPrev') || e.target.closest('#mutNext')) return; // géré en inline
         var lbTrigger = e.target.closest('.galerie-photo');
         if (lbTrigger) { ouvrirLightbox(galeriePhotosActuelles, parseInt(lbTrigger.dataset.index, 10)); return; }
         var joueurCard = e.target.closest('.joueur-card');

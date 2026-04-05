@@ -13,7 +13,7 @@
                     <h1 class="display-5 fw-bold mb-2">
                         <i class="bi bi-trophy-fill me-3"></i>Gestion des Équipes Sportives
                     </h1>
-                    <p class="lead mb-0">Centre de service scolaire — Gérez vos écoles, équipes et joueurs</p>
+                    <p class="lead mb-0">Centre de services scolaire — Gérez vos écoles, équipes et joueurs</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <i class="bi bi-shield-fill" style="font-size: 6rem; opacity: 0.3;"></i>
@@ -58,7 +58,7 @@ else
         @foreach (var ecole in Model)
         {
             <div class="col">
-                <div class="card h-100 school-card shadow-sm" style="border-top: 4px solid @ecole.CouleurPrimaire;">
+                <div class="card h-100 school-card shadow-sm" >
                     <div class="card-header text-white py-3" style="background-color: @ecole.CouleurPrimaire;">
                         <div class="d-flex align-items-center">
                             @if (!string.IsNullOrEmpty(ecole.LogoPath))

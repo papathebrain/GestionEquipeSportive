@@ -73,6 +73,11 @@ Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "Data"))
 app.Services.GetRequiredService<IUserService>();
 
 app.MapControllerRoute(
+    name: "public-joueur2",
+    pattern: "p/{ecoleSlug}/{annee}/{sport}/{niveau}/joueurs2",
+    defaults: new { controller = "Public", action = "Joueur2" });
+
+app.MapControllerRoute(
     name: "public-equipe",
     pattern: "p/{ecoleSlug}/{annee}/{sport}/{niveau}",
     defaults: new { controller = "Public", action = "Equipe" });

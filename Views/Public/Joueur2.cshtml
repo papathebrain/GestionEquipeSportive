@@ -1,0 +1,452 @@
+@model GestionEquipeSportive.ViewModels.PublicEquipeViewModel
+@using GestionEquipeSportive.Models
+@{
+    Layout = "_LayoutPublic";
+    ViewData["Title"] = $"Joueurs — {Model.SportDisplay} {Model.NiveauDisplay} {Model.Equipe.AnneeScolaire}";
+    ViewBag.NomEcole = Model.Ecole.Nom;
+    ViewBag.CouleurPrimaire = Model.Ecole.CouleurPrimaire;
+    ViewBag.CouleurSecondaire = Model.Ecole.CouleurSecondaire;
+    ViewBag.LogoPath = Model.Ecole.LogoPath;
+
+    var equipeUrl = $"/p/{Ecole.ToSlug(Model.Ecole.Nom)}/{Model.Equipe.AnneeScolaire}/{Model.Equipe.TypeSport.ToString().ToLower()}/{Model.Equipe.Niveau.ToString().ToLower()}";
+}
+
+@section HeaderRight {
+    <a href="@equipeUrl"
+       class="switcher-btn" style="text-decoration:none;">
+        <i class="bi bi-arrow-left me-1"></i>Retour à l'équipe
+    </a>
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Oswald:wght@400;600;700&display=swap');
+
+    /* ── Reset ciblé ─────────────────────────────────────────────────────── */
+    .j2-page * { box-sizing: border-box; }
+    .j2-page { font-family: "Lato", sans-serif; font-weight: 200; }
+
+    /* ── Grille ──────────────────────────────────────────────────────────── */
+    .fc-wrapper { width: 92%; margin: 0 auto; max-width: 1200px; padding: 2rem 0; }
+    .fc-cols    { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+    .fc-col     { width: calc(25% - 2rem); margin: 1rem; min-width: 220px; }
+
+    @@media (max-width: 1024px) { .fc-col { width: calc(33.333% - 2rem); } }
+    @@media (max-width: 768px)  { .fc-col { width: calc(50% - 2rem); } }
+    @@media (max-width: 480px)  { .fc-col { width: calc(100% - 2rem); } }
+
+    /* ── Flip container ──────────────────────────────────────────────────── */
+    .flip-card {
+        transform-style: preserve-3d;
+        perspective: 1000px;
+        position: relative;
+    }
+    .flip-front,
+    .flip-back {
+        box-shadow: 0 4px 8px 0 rgba(0,0,0,.25);
+        transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        text-align: center;
+        height: 450px;
+        border-radius: 14px;
+        color: #fff;
+        font-size: 1rem;
+        position: relative;
+    }
+
+    /* Front – fond couleur école + motif rayures */
+    .flip-front {
+        background-color: var(--couleur-primaire);
+    }
+    .flip-front::after {
+        content: "";
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        border-radius: 14px;
+        background-color: var(--couleur-primaire);
+        background-image: repeating-linear-gradient(
+            135deg,
+            transparent, transparent 12px,
+            rgba(255,255,255,.05) 12px, rgba(255,255,255,.05) 24px
+        );
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        z-index: 1;
+    }
+
+    /* Back */
+    .flip-back {
+        background: var(--couleur-primaire);
+        position: absolute; top: 0; left: 0; width: 100%;
+        transform: rotateY(180deg);
+    }
+
+    /* Hover / touch flip */
+    .flip-card:hover .flip-front,
+    .fc-col.hover  .flip-front { transform: rotateY(-180deg); }
+    .flip-card:hover .flip-back,
+    .fc-col.hover  .flip-back  { transform: rotateY(0deg); }
+
+    /* ── Coins position / numéro ─────────────────────────────────────────── */
+    .player-style {
+        position: relative;
+        display: inline-block;
+        height: 60px; width: 60px;
+        border-radius: 14px 0 70px 0;
+        background-color: rgba(0,0,0,.25);
+        box-shadow: 3px 3px 45px -10px rgba(0,0,0,.5);
+        z-index: 3;
+    }
+    .player-position {
+        float: right;
+        position: relative;
+        top: -60px;
+        height: 60px; width: 60px;
+        border-radius: 0 14px 0 70px;
+        background-color: var(--couleur-secondaire);
+        box-shadow: 3px 3px 45px -10px rgba(0,0,0,.5);
+        z-index: 3;
+    }
+    .corner-text {
+        display: block;
+        position: relative; top: 14px;
+        color: #fff; font-weight: 700; font-size: 1rem;
+        text-align: center; line-height: 1;
+    }
+    .corner-text-sm {
+        display: block;
+        position: relative; top: 10px;
+        color: #fff; font-weight: 700; font-size: .7rem;
+        text-align: center; line-height: 1.1; padding: 0 4px;
+        text-transform: uppercase;
+    }
+
+    /* ── Intérieur de la carte ───────────────────────────────────────────── */
+    .fc-inner {
+        transform: translateY(-50%) translateZ(60px) scale(0.94);
+        top: 30%;
+        position: absolute;
+        width: 100%;
+        padding: 1rem;
+        z-index: 2;
+        perspective: inherit;
+        outline: 1px solid transparent;
+    }
+    .fc-top { height: 200px; position: relative; width: 100%; }
+
+    .j2-player-photo {
+        display: block;
+        margin: 0 auto;
+        width: auto; height: 100%;
+        filter: drop-shadow(10px 10px 24px #000);
+        object-fit: contain;
+    }
+    .j2-profile-photo {
+        position: relative; bottom: -1px;
+        display: block;
+        margin: 0 auto;
+        width: 100%; max-width: 180px;
+        filter: drop-shadow(10px 10px 24px #000);
+        border-radius: 50%;
+        object-fit: cover; aspect-ratio: 1/1;
+    }
+    .j2-no-photo {
+        color: rgba(255,255,255,.25);
+        font-size: 3.5rem; font-weight: 700;
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%,-50%);
+    }
+
+    /* ── Section bas ─────────────────────────────────────────────────────── */
+    .fc-bottom {
+        background: rgba(0,0,0,.3);
+        position: absolute; bottom: 0; width: 100%;
+        padding: 1rem 1.5rem .4rem;
+        border-radius: 0 0 14px 14px;
+        z-index: 999;
+        height: 220px;
+    }
+    .flip-back .fc-bottom {
+        text-align: left;
+        padding: .5rem 1rem 1rem;
+        height: auto; min-height: 220px;
+        overflow: hidden;
+    }
+
+    /* ── Typographie carte ───────────────────────────────────────────────── */
+    .j2-page .j2-h1 {
+        font-size: 1.8rem;
+        font-family: "Oswald", "Futura", sans-serif;
+        font-weight: 600; color: #fff;
+        text-align: center; text-transform: uppercase;
+        word-break: normal; line-height: 1; margin: 0;
+    }
+    .j2-page .j2-h2 {
+        font-family: "Oswald", sans-serif;
+        font-weight: 600; color: #fff;
+        text-align: center; padding-bottom: 8px;
+        font-size: 1rem; display: inline-block; margin: 0;
+    }
+    .j2-page .j2-h5 {
+        font-size: .8rem; font-family: "Lato", sans-serif;
+        font-weight: 200; color: #fff; text-align: left;
+        margin: 0 0 2px;
+    }
+    .j2-page .j2-h6 {
+        font-size: .5rem; font-family: "Lato", sans-serif;
+        font-weight: 200; color: rgba(255,255,255,.6);
+        text-align: center; position: relative; bottom: -8px;
+        margin: 0;
+    }
+    .j2-page .j2-p {
+        font-family: "Lato", sans-serif;
+        font-weight: 200; font-size: .78rem;
+        color: rgba(255,255,255,.85);
+        margin: 4px 0 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .title { font-weight: 600; }
+
+    /* ── Logo club ───────────────────────────────────────────────────────── */
+    .j2-club-logo {
+        display: block; margin: 6px auto; height: 70px;
+        object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,.4));
+    }
+
+    /* ── Détails joueur (verso) ──────────────────────────────────────────── */
+    .j2-player-details { width: 100%; height: auto; text-transform: lowercase; }
+    .j2-player-dates {
+        display: inline-block; height: auto; width: 100%;
+        padding: 0 0 6px; word-break: break-word; opacity: .75;
+    }
+
+    /* ── Snackbars ───────────────────────────────────────────────────────── */
+    .j2-snack {
+        visibility: hidden;
+        width: 100%;
+        background-color: rgba(0,0,0,.85);
+        color: #fff;
+        text-align: left;
+        padding: .75rem 1rem;
+        position: absolute;
+        z-index: 9999;
+        left: 0; bottom: 0;
+        font-family: "Lato", sans-serif;
+        font-weight: 200; font-size: .8rem;
+        text-transform: lowercase;
+        border-radius: 0 0 14px 14px;
+    }
+    .j2-snack.show {
+        visibility: visible;
+        animation: j2-fadein .4s, j2-fadeout .4s 4s forwards;
+    }
+    @@keyframes j2-fadein  { from { opacity:0; } to { opacity:1; } }
+    @@keyframes j2-fadeout { from { opacity:1; } to { opacity:0; } }
+
+    /* ── Titre de section ─────────────────────────────────────────────────── */
+    .j2-section-title {
+        border-left: 4px solid var(--couleur-secondaire);
+        padding-left: .75rem; margin-bottom: 1.25rem;
+    }
+
+    /* ── Badge absent (pas de consentement) ──────────────────────────────── */
+    .j2-no-consent {
+        opacity: .45; filter: grayscale(1);
+    }
+</style>
+
+@* ── Bannière minimaliste ───────────────────────────────────────────────── *@
+<div style="background-color:@Model.Ecole.CouleurPrimaire; color:#fff; padding: 1.5rem 0;">
+    <div class="container d-flex align-items-center gap-3 flex-wrap">
+        @if (!string.IsNullOrEmpty(Model.Ecole.LogoPath))
+        {
+            <img src="@Model.Ecole.LogoPath" alt="@Model.Ecole.Nom"
+                 style="height:48px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));" />
+        }
+        <div>
+            <div class="fw-bold fs-4">@Model.Equipe.Nom</div>
+            <div class="opacity-75 small">@Model.SportDisplay — @Model.NiveauDisplay — @Model.Equipe.AnneeScolaire</div>
+        </div>
+        <div class="ms-auto">
+            <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.15);font-size:.85rem;">
+                <i class="bi bi-people-fill me-1"></i>@Model.Joueurs.Count joueur@(Model.Joueurs.Count > 1 ? "s" : "")
+            </span>
+        </div>
+    </div>
+</div>
+
+@* ── Grille de cartes ───────────────────────────────────────────────────── *@
+<div class="j2-page">
+    @if (!Model.Joueurs.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-people" style="font-size:3rem;"></i>
+            <p class="mt-2">Aucun joueur enregistré.</p>
+        </div>
+    }
+    else
+    {
+        @* Grouper par position *@
+        @foreach (var groupe in Model.Joueurs.GroupBy(j => j.Position).OrderBy(g => g.Key))
+        {
+            <div class="container">
+                <h2 class="h5 j2-section-title mt-4">
+                    @groupe.Key
+                    <span class="badge bg-secondary ms-1 fw-normal" style="font-size:.75rem;">@groupe.Count()</span>
+                </h2>
+            </div>
+            <div class="fc-wrapper" style="padding-top:0;">
+                <div class="fc-cols">
+                    @foreach (var j in groupe.OrderBy(j => j.Numero))
+                    {
+                        (int MatchsJoues, int Absences) sj = Model.StatsJoueurs.TryGetValue(j.Id, out var st) ? st : (0, 0);
+                        var presences = sj.MatchsJoues - sj.Absences;
+                        var posAbreg = string.IsNullOrEmpty(j.PositionSpecifique)
+                            ? (j.Position.Length > 4 ? j.Position[..3] : j.Position)
+                            : j.PositionSpecifique;
+                        var snackPosId   = $"snack-pos-{j.Id}";
+                        var snackSpecId  = $"snack-spec-{j.Id}";
+                        var hasPhoto     = !string.IsNullOrEmpty(j.PhotoPath) && j.ConsentementPhoto;
+                        var hasLogo      = !string.IsNullOrEmpty(Model.Ecole.LogoPath);
+
+                        <div class="fc-col" ontouchstart="this.classList.toggle('hover');">
+                            <div class="flip-card">
+
+                                @* ─ FACE AVANT ─────────────────────────────── *@
+                                <div class="flip-front">
+                                    <div class="player-style">
+                                        <span class="corner-text">#@j.Numero</span>
+                                    </div>
+                                    <div class="player-position">
+                                        <span class="corner-text-sm">@posAbreg</span>
+                                    </div>
+
+                                    <div class="fc-inner">
+                                        <div class="fc-top">
+                                            @if (hasPhoto)
+                                            {
+                                                <img class="j2-player-photo" src="@j.PhotoPath" alt="@j.Prenom @j.Nom" />
+                                            }
+                                            else if (hasLogo)
+                                            {
+                                                <img class="j2-player-photo j2-no-consent"
+                                                     src="@Model.Ecole.LogoPath" alt="@Model.Ecole.Nom"
+                                                     style="padding:20px;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="j2-no-photo">#@j.Numero</div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="fc-bottom">
+                                        <p class="j2-h1">@j.Nom.ToUpper()</p>
+                                        @if (hasLogo)
+                                        {
+                                            <img class="j2-club-logo" src="@Model.Ecole.LogoPath" alt="@Model.Ecole.Nom" />
+                                        }
+                                        <p class="j2-h6">@Model.Ecole.Nom &mdash; @Model.Equipe.AnneeScolaire</p>
+                                    </div>
+                                </div>
+
+                                @* ─ FACE ARRIÈRE ────────────────────────────── *@
+                                <div class="flip-back">
+                                    <div class="player-style">
+                                        <a onclick="showJ2Snack('@snackPosId')" style="cursor:pointer;">
+                                            <span class="corner-text">#@j.Numero</span>
+                                        </a>
+                                    </div>
+                                    <div class="player-position">
+                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                        {
+                                            <a onclick="showJ2Snack('@snackSpecId')" style="cursor:pointer;">
+                                                <span class="corner-text-sm">@posAbreg</span>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="corner-text-sm">@posAbreg</span>
+                                        }
+                                    </div>
+
+                                    <div class="fc-inner">
+                                        <div class="fc-top">
+                                            @if (hasPhoto)
+                                            {
+                                                <img class="j2-profile-photo" src="@j.PhotoPath" alt="@j.Prenom @j.Nom" />
+                                            }
+                                            else if (hasLogo)
+                                            {
+                                                <img class="j2-club-logo j2-no-consent"
+                                                     src="@Model.Ecole.LogoPath" alt="@Model.Ecole.Nom"
+                                                     style="height:90px;display:block;margin:auto;" />
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="fc-bottom">
+                                        <div class="j2-player-details">
+                                            <div class="j2-player-dates">
+                                                @if (sj.MatchsJoues > 0)
+                                                {
+                                                    <p class="j2-h5">
+                                                        <span class="title">Présences </span>@presences / @sj.MatchsJoues
+                                                    </p>
+                                                }
+                                                <p class="j2-h5">
+                                                    <span class="title">Position </span>@j.Position
+                                                </p>
+                                                @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                                {
+                                                    <p class="j2-h5">
+                                                        <span class="title">Rôle </span>@j.PositionSpecifique
+                                                    </p>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p class="j2-h2">@j.Prenom @j.Nom</p>
+                                            @if (!string.IsNullOrEmpty(j.Description))
+                                            {
+                                                <p class="j2-p">@j.Description</p>
+                                            }
+                                        </div>
+
+                                        @* Snackbars *@
+                                        <div class="j2-snack" id="@snackPosId">
+                                            <span class="title">Position </span>@j.Position
+                                            @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                            { <span> · @j.PositionSpecifique</span> }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(j.PositionSpecifique))
+                                        {
+                                            <div class="j2-snack" id="@snackSpecId">
+                                                <span class="title">Rôle </span>@j.PositionSpecifique
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+<script>
+    function showJ2Snack(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'j2-snack show';
+        setTimeout(function () { el.className = 'j2-snack'; }, 4500);
+    }
+</script>
+}
