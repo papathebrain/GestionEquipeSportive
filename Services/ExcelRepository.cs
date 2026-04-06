@@ -18,6 +18,7 @@ public class ExcelRepository : IExcelRepository
     private string JoueurMediasFile => Path.Combine(_dataPath, "joueur_medias.xlsx");
     private string AbsencesFile => Path.Combine(_dataPath, "absences_match.xlsx");
     private string EvenementsFile => Path.Combine(_dataPath, "evenements.xlsx");
+    private string DictionnaireFile => Path.Combine(_dataPath, "dictionnaires.xlsx");
 
     public ExcelRepository(IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -38,6 +39,7 @@ public class ExcelRepository : IExcelRepository
         InitJoueurMediasFile();
         InitAbsencesFile();
         InitEvenementsFile();
+        InitDictionnaireFile();
     }
 
     private void InitEcolesFile()
@@ -349,10 +351,10 @@ public class ExcelRepository : IExcelRepository
                     Nom = ws.Cell(row, 3).GetString(),
                     Prenom = ws.Cell(row, 4).GetString(),
                     Numero = ws.Cell(row, 5).GetString(),
-                    Position = ws.Cell(row, 6).GetString(),
+                    Position = System.Net.WebUtility.HtmlDecode(ws.Cell(row, 6).GetString()),
                     PhotoPath = ws.Cell(row, 7).GetString() is string p && p.Length > 0 ? p : null,
                     NoFiche = ws.Cell(row, 8).GetString() is string nf && nf.Length > 0 ? nf : null,
-                    PositionSpecifique = ws.Cell(row, 9).GetString() is string ps && ps.Length > 0 ? ps : null,
+                    PositionSpecifique = ws.Cell(row, 9).GetString() is string ps && ps.Length > 0 ? System.Net.WebUtility.HtmlDecode(ps) : null,
                     Description = ws.Cell(row, 10).GetString() is string desc && desc.Length > 0 ? desc : null,
                     ConsentementPhoto = ws.Cell(row, 11).Value.IsBlank || ws.Cell(row, 11).GetString().ToLowerInvariant() != "false",
                     Actif = ws.Cell(row, 12).Value.IsBlank || ws.Cell(row, 12).GetString().ToLowerInvariant() != "false"
@@ -591,7 +593,6 @@ public class ExcelRepository : IExcelRepository
                     Nom = ws.Cell(row, 3).GetString(),
                     Prenom = ws.Cell(row, 4).GetString(),
                     Titre = ws.Cell(row, 5).GetString(),
-                    ResponsableDe = ws.Cell(row, 6).GetString() is string r && r.Length > 0 ? r : null,
                     Description = ws.Cell(row, 7).GetString() is string d && d.Length > 0 ? d : null,
                     PhotoPath = ws.Cell(row, 8).GetString() is string p && p.Length > 0 ? p : null,
                     NoFiche = ws.Cell(row, 9).GetString() is string nf && nf.Length > 0 ? nf : null
@@ -672,7 +673,7 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 3).Value = staff.Nom;
         ws.Cell(row, 4).Value = staff.Prenom;
         ws.Cell(row, 5).Value = staff.Titre;
-        ws.Cell(row, 6).Value = staff.ResponsableDe ?? string.Empty;
+        ws.Cell(row, 6).Value = string.Empty; // ancien champ Role (conservé pour compatibilité colonne)
         ws.Cell(row, 7).Value = staff.Description ?? string.Empty;
         ws.Cell(row, 8).Value = staff.PhotoPath ?? string.Empty;
         ws.Cell(row, 9).Value = staff.NoFiche ?? string.Empty;
@@ -1263,5 +1264,127 @@ public class ExcelRepository : IExcelRepository
             if (found) wb.Save();
             return found;
         }
+    }
+
+    // ==================== DICTIONNAIRES ====================
+
+    private void InitDictionnaireFile()
+    {
+        if (!File.Exists(DictionnaireFile))
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Dictionnaires");
+            ws.Cell(1, 1).Value = "Id";
+            ws.Cell(1, 2).Value = "Categorie";
+            ws.Cell(1, 3).Value = "Sport";
+            ws.Cell(1, 4).Value = "Valeur";
+            ws.Cell(1, 5).Value = "Label";
+            ws.Cell(1, 6).Value = "Acronyme";
+            ws.Cell(1, 7).Value = "Description";
+            ws.Cell(1, 8).Value = "Ordre";
+            wb.SaveAs(DictionnaireFile);
+        }
+    }
+
+    public List<DictionnaireEntree> GetAllDictionnaire()
+    {
+        lock (_lock)
+        {
+            var list = new List<DictionnaireEntree>();
+            using var wb = new XLWorkbook(DictionnaireFile);
+            var ws = wb.Worksheet("Dictionnaires");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (ws.Cell(row, 1).Value.IsBlank) continue;
+                list.Add(new DictionnaireEntree
+                {
+                    Id = (int)ws.Cell(row, 1).GetDouble(),
+                    Categorie = ws.Cell(row, 2).GetString(),
+                    Sport = ws.Cell(row, 3).GetString(),
+                    Valeur = ws.Cell(row, 4).GetString(),
+                    Label = ws.Cell(row, 5).GetString(),
+                    Acronyme = ws.Cell(row, 6).GetString(),
+                    Description = ws.Cell(row, 7).GetString(),
+                    Ordre = (int)ws.Cell(row, 8).GetDouble(),
+                    ParentValeur = ws.Cell(row, 9).GetString(),
+                    Actif = ws.Cell(row, 10).GetString() is not "false"
+                });
+            }
+            return list;
+        }
+    }
+
+    public DictionnaireEntree AddDictionnaire(DictionnaireEntree entree)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(DictionnaireFile);
+            var ws = wb.Worksheet("Dictionnaires");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var list = GetAllDictionnaire();
+            entree.Id = list.Count > 0 ? list.Max(e => e.Id) + 1 : 1;
+            if (entree.Ordre == 0)
+                entree.Ordre = list.Count(e => e.Categorie == entree.Categorie && e.Sport == entree.Sport) + 1;
+            WriteDictionnaireRow(ws, lastRow + 1, entree);
+            wb.Save();
+            return entree;
+        }
+    }
+
+    public bool DeleteDictionnaire(int id)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(DictionnaireFile);
+            var ws = wb.Worksheet("Dictionnaires");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == id)
+                {
+                    ws.Row(row).Delete();
+                    wb.Save();
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public DictionnaireEntree UpdateDictionnaire(DictionnaireEntree entree)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(DictionnaireFile);
+            var ws = wb.Worksheet("Dictionnaires");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == entree.Id)
+                {
+                    WriteDictionnaireRow(ws, row, entree);
+                    break;
+                }
+            }
+            wb.Save();
+            return entree;
+        }
+    }
+
+    private static void WriteDictionnaireRow(IXLWorksheet ws, int row, DictionnaireEntree entree)
+    {
+        ws.Cell(row, 1).Value = entree.Id;
+        ws.Cell(row, 2).Value = entree.Categorie;
+        ws.Cell(row, 3).Value = entree.Sport;
+        ws.Cell(row, 4).Value = entree.Valeur;
+        ws.Cell(row, 5).Value = entree.Label;
+        ws.Cell(row, 6).Value = entree.Acronyme;
+        ws.Cell(row, 7).Value = entree.Description;
+        ws.Cell(row, 8).Value = entree.Ordre;
+        ws.Cell(row, 9).Value = entree.ParentValeur;
+        ws.Cell(row, 10).Value = entree.Actif ? "true" : "false";
     }
 }

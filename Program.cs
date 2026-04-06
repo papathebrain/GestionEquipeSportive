@@ -37,6 +37,7 @@ builder.Services.AddScoped<IGalerieService, GalerieService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IEvenementService, EvenementService>();
+builder.Services.AddScoped<IDictionnaireService, DictionnaireService>();
 
 var app = builder.Build();
 

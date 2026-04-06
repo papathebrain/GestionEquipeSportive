@@ -14,15 +14,18 @@ public class StaffController : Controller
     private readonly IEcoleService _ecoleService;
     private readonly IEcoleAccessService _access;
     private readonly IWebHostEnvironment _env;
+    private readonly IDictionnaireService _dictionnaireService;
 
     public StaffController(IStaffService staffService, IEquipeService equipeService,
-        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env)
+        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env,
+        IDictionnaireService dictionnaireService)
     {
         _staffService = staffService;
         _equipeService = equipeService;
         _ecoleService = ecoleService;
         _access = access;
         _env = env;
+        _dictionnaireService = dictionnaireService;
     }
 
     // ─── Index ────────────────────────────────────────────────────────────────
@@ -56,11 +59,13 @@ public class StaffController : Controller
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
         if (ecole != null) SetTheme(ecole);
 
+        var sport = equipe.TypeSport.ToString();
         return View(new StaffViewModel
         {
             EquipeId = equipeId,
             EcoleId = equipe.EcoleId,
-            NomEquipe = equipe.Nom
+            NomEquipe = equipe.Nom,
+            TitresDisponibles = _dictionnaireService.GetTitresStaff(sport)
         });
     }
 
@@ -78,6 +83,8 @@ public class StaffController : Controller
             if (ecole2 != null) SetTheme(ecole2);
             vm.NomEquipe = equipe.Nom;
             vm.EcoleId = equipe.EcoleId;
+            var sport0 = equipe.TypeSport.ToString();
+            vm.TitresDisponibles = _dictionnaireService.GetTitresStaff(sport0);
             return View(vm);
         }
 
@@ -104,6 +111,8 @@ public class StaffController : Controller
         var vm = _staffService.ToViewModel(staff);
         vm.NomEquipe = equipe.Nom;
         vm.EcoleId = equipe.EcoleId;
+        var sportEdit = equipe.TypeSport.ToString();
+        vm.TitresDisponibles = _dictionnaireService.GetTitresStaff(sportEdit);
 
         // Historique : toutes les présences de ce membre (même NoFiche)
         if (!string.IsNullOrEmpty(staff.NoFiche))
@@ -137,6 +146,8 @@ public class StaffController : Controller
             if (ecole2 != null) SetTheme(ecole2);
             vm.NomEquipe = equipe.Nom;
             vm.EcoleId = equipe.EcoleId;
+            var sportPost = equipe.TypeSport.ToString();
+            vm.TitresDisponibles = _dictionnaireService.GetTitresStaff(sportPost);
             return View(vm);
         }
 
@@ -176,7 +187,7 @@ public class StaffController : Controller
         var staff = _staffService.GetStaffByEquipe(sourceEquipeId)
             .OrderBy(s => s.Titre).ThenBy(s => s.Nom).ToList();
         return Json(staff.Select(s => new {
-            s.Id, s.Nom, s.Prenom, s.Titre, s.ResponsableDe, s.PhotoPath, s.NoFiche
+            s.Id, s.Nom, s.Prenom, s.Titre, s.PhotoPath, s.NoFiche
         }));
     }
 

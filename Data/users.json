@@ -7,7 +7,7 @@
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-04-05T19:26:36.6596645Z",
+    "DerniereConnexion": "2026-04-06T14:05:06.6895107Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [],
     "EquipesIds": []
@@ -20,7 +20,7 @@
     "Role": "AdminEcole",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": "2026-04-01T00:06:10.4144932Z",
+    "DerniereConnexion": "2026-04-06T01:12:58.8186352Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [
       1
@@ -49,10 +49,10 @@
     "EstActif": true,
     "DateCreation": "2026-04-01T00:07:04.4265399Z",
     "DerniereConnexion": "2026-04-01T00:08:30.7708463Z",
-    "ChangerMotDePasse": false,
-    "EcolesIds": [
-      1
-    ],
-    "EquipesIds": []
+    "ChangerMotDePasse": true,
+    "EcolesIds": [],
+    "EquipesIds": [
+      12
+    ]
   }
 ]

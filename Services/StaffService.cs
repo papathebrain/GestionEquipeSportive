@@ -39,7 +39,6 @@ public class StaffService : IStaffService
                 Nom = source.Nom,
                 Prenom = source.Prenom,
                 Titre = source.Titre,
-                ResponsableDe = source.ResponsableDe,
                 Description = source.Description,
                 PhotoPath = source.PhotoPath,
                 NoFiche = source.NoFiche
@@ -55,7 +54,6 @@ public class StaffService : IStaffService
             Nom = vm.Nom.Trim(),
             Prenom = vm.Prenom.Trim(),
             Titre = vm.Titre.Trim(),
-            ResponsableDe = string.IsNullOrWhiteSpace(vm.ResponsableDe) ? null : vm.ResponsableDe.Trim(),
             Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
             NoFiche = Guid.NewGuid().ToString("N")
         };
@@ -72,7 +70,6 @@ public class StaffService : IStaffService
         staff.Nom = vm.Nom.Trim();
         staff.Prenom = vm.Prenom.Trim();
         staff.Titre = vm.Titre.Trim();
-        staff.ResponsableDe = string.IsNullOrWhiteSpace(vm.ResponsableDe) ? null : vm.ResponsableDe.Trim();
         staff.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
 
         if (photoFile != null && photoFile.Length > 0)
@@ -105,7 +102,6 @@ public class StaffService : IStaffService
         Nom = staff.Nom,
         Prenom = staff.Prenom,
         Titre = staff.Titre,
-        ResponsableDe = staff.ResponsableDe,
         Description = staff.Description,
         PhotoPathActuelle = staff.PhotoPath,
         NoFiche = staff.NoFiche

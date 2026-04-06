@@ -88,15 +88,11 @@
             fetch('/Equipe/GetNiveaux?sport=' + encodeURIComponent(sport))
                 .then(r => r.json())
                 .then(niveaux => {
-                    const displayNames = {
-                        'Benjamin': 'Benjamin', 'Cadet': 'Cadet', 'Juvenil': 'Juvénile',
-                        'Atome': 'Atome', 'PeeWee': 'Pee-Wee', 'Bantam': 'Bantam'
-                    };
                     niveaux.forEach(n => {
                         const opt = document.createElement('option');
-                        opt.value = n;
-                        opt.textContent = displayNames[n] || n;
-                        if (n === (selectedNiveau || currentNiveau)) opt.selected = true;
+                        opt.value = n.value;
+                        opt.textContent = n.text;
+                        if (n.value === (selectedNiveau || currentNiveau)) opt.selected = true;
                         niveauSelect.appendChild(opt);
                     });
                 });

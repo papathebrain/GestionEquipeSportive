@@ -26,11 +26,8 @@ public class StaffViewModel
     public string Prenom { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Le titre est obligatoire")]
-    [Display(Name = "Titre / Rôle")]
+    [Display(Name = "Titre")]
     public string Titre { get; set; } = string.Empty;
-
-    [Display(Name = "Responsable de")]
-    public string? ResponsableDe { get; set; }
 
     [Display(Name = "Description")]
     public string? Description { get; set; }
@@ -46,4 +43,7 @@ public class StaffViewModel
     // Navigation
     public string? NomEquipe { get; set; }
     public int EcoleId { get; set; }
+
+    // Suggestions pour datalist
+    public List<string> TitresDisponibles { get; set; } = new();
 }

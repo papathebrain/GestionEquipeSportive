@@ -17,11 +17,12 @@ public class EquipeController : Controller
     private readonly IStaffService _staffService;
     private readonly IMatchService _matchService;
     private readonly IEvenementService _evenementService;
+    private readonly IDictionnaireService _dictionnaireService;
 
     public EquipeController(IEquipeService equipeService, IEcoleService ecoleService,
         IEcoleAccessService access, IJoueurService joueurService,
         IStaffService staffService, IMatchService matchService,
-        IEvenementService evenementService)
+        IEvenementService evenementService, IDictionnaireService dictionnaireService)
     {
         _equipeService = equipeService;
         _ecoleService = ecoleService;
@@ -30,6 +31,7 @@ public class EquipeController : Controller
         _staffService = staffService;
         _matchService = matchService;
         _evenementService = evenementService;
+        _dictionnaireService = dictionnaireService;
     }
 
     public IActionResult Index(int ecoleId)
@@ -236,11 +238,8 @@ public class EquipeController : Controller
     [HttpGet]
     public JsonResult GetNiveaux(string sport)
     {
-        if (!Enum.TryParse<TypeSport>(sport, out var typeSport))
-            return Json(new List<string>());
-
-        var niveaux = _equipeService.GetNiveauxPourSport(typeSport);
-        return Json(niveaux);
+        var niveaux = _dictionnaireService.GetNiveaux(sport);
+        return Json(niveaux.Select(n => new { value = n, text = GetNiveauDisplayName(n) }));
     }
 
     private EquipeViewModel BuildViewModel(int ecoleId)
@@ -252,14 +251,15 @@ public class EquipeController : Controller
 
     private void RebuildLists(EquipeViewModel vm)
     {
-        vm.SportsList = Enum.GetValues<TypeSport>().Select(s => new SelectListItem
+        var sports = _dictionnaireService.GetSports();
+        vm.SportsList = sports.Select(s => new SelectListItem
         {
-            Value = s.ToString(),
-            Text = GetSportDisplayName(s),
-            Selected = s == vm.TypeSport
+            Value = s.Key,
+            Text = s.Label,
+            Selected = s.Key == vm.TypeSport.ToString()
         }).ToList();
 
-        var niveaux = _equipeService.GetNiveauxPourSport(vm.TypeSport);
+        var niveaux = _dictionnaireService.GetNiveaux(vm.TypeSport.ToString());
         vm.NiveauxList = niveaux.Select(n => new SelectListItem
         {
             Value = n,

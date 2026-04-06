@@ -481,7 +481,6 @@
                                  data-fullnom="@s.Prenom @s.Nom"
                                  data-photo="@s.PhotoPath"
                                  data-titre="@s.Titre"
-                                 data-responsable="@s.ResponsableDe"
                                  data-description="@s.Description">
                                 @if (!string.IsNullOrEmpty(s.PhotoPath))
                                 {
@@ -496,9 +495,7 @@
                                 <div class="mini-gradient"></div>
                                 <div class="mini-info">
                                     <div class="mini-nom">@s.Prenom @s.Nom</div>
-                                    <div class="mini-pos">
-                                        @s.Titre@(!string.IsNullOrEmpty(s.ResponsableDe) ? " — " + s.ResponsableDe : "")
-                                    </div>
+                                    <div class="mini-pos">@s.Titre</div>
                                 </div>
                                 <div class="mini-bande"></div>
                             </div>
@@ -523,11 +520,12 @@
                     </div>
                 </div>
 
-                @* Joueurs groupés par position *@
+                @* Joueurs groupés par position principale — chaque joueur apparaît une seule fois *@
                 @{
                     var groupesPosition = Model.Joueurs
                         .GroupBy(j => j.Position)
                         .OrderBy(g => g.Key)
+                        .Select(g => new { Key = g.Key, Items = g.OrderBy(j => j.Numero).ToList() })
                         .ToList();
                 }
                 @foreach (var groupe in groupesPosition)
@@ -535,10 +533,10 @@
                     <div class="position-group mb-4" data-position="@groupe.Key.ToLower()">
                         <h3 class="h6 section-title text-uppercase fw-bold mb-3">
                             @groupe.Key
-                            <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Count()</span>
+                            <span class="badge bg-secondary ms-1 text-lowercase fw-normal">@groupe.Items.Count</span>
                         </h3>
                         <div class="row g-2">
-                            @foreach (var j in groupe.OrderBy(j => j.Numero))
+                            @foreach (var j in groupe.Items)
                             {
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 joueur-card"
                                      data-nom="@j.Nom.ToLower()"
@@ -547,7 +545,7 @@
                                      data-fullnom="@j.Prenom @j.Nom"
                                      data-photo="@j.PhotoPath"
                                      data-position="@j.Position"
-                                     data-position-specifique="@j.PositionSpecifique"
+                                     data-pairs="@j.PositionSpecifique"
                                      data-description="@j.Description"
                                      data-joueur-id="@j.Id"
                                      data-nofiche="@j.NoFiche"
@@ -571,7 +569,19 @@
                                         <div class="mini-info">
                                             <div class="mini-nom">@j.Prenom @j.Nom</div>
                                             <div class="mini-pos">
-                                                @j.Position@(!string.IsNullOrEmpty(j.PositionSpecifique) ? " — " + j.PositionSpecifique : "")
+                                                @{
+                                                    var firstPair = j.PositionPairs.FirstOrDefault();
+                                                    var labelPos = firstPair != default ? (string.IsNullOrEmpty(firstPair.Spec) ? firstPair.Pos : firstPair.Spec) : j.Position;
+                                                    var extraCount = j.PositionPairs.Count - 1;
+                                                }
+                                                @if (!string.IsNullOrEmpty(labelPos))
+                                                {
+                                                    <span class="mini-pos-badge">@labelPos</span>
+                                                }
+                                                @if (extraCount > 0)
+                                                {
+                                                    <span class="mini-pos-more">+@extraCount</span>
+                                                }
                                             </div>
                                         </div>
                                         <div class="mini-bande"></div>
@@ -806,7 +816,7 @@
         position: relative; height: 210px; overflow: hidden;
     }
     .mut-image-container img {
-        width: 100%; height: 100%; object-fit: cover;
+        width: 100%; object-fit: cover;
         display: none;
     }
     .mut-image-container img.active { display: block; }
@@ -858,7 +868,18 @@
         font-size: 1rem; color: rgba(255,255,255,.5);
     }
     .mut-position {
-        font-size: .8rem; opacity: .7; margin-top: 2px;
+        margin-top: 6px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    }
+    .mut-pos-pill {
+        font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+        background: var(--couleur-secondaire); color: #fff;
+        padding: 2px 8px; border-radius: 4px;
+    }
+    .mut-pos-more {
+        font-size: .65rem; font-weight: 700;
+        color: rgba(255,255,255,.55);
+        background: rgba(255,255,255,.12);
+        border-radius: 4px; padding: 2px 6px;
     }
     .mut-number {
         font-size: 2.4rem; font-weight: 900; margin-top: 6px;
@@ -933,8 +954,18 @@
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .mini-trading-card .mini-pos {
-        font-size:.58rem; color:rgba(255,255,255,.72); margin-top:1px;
-        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        display: inline-flex; align-items: center; gap: 4px; margin-top: 3px;
+    }
+    .mini-pos-badge {
+        font-size: .52rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        background: var(--couleur-secondaire); color: #fff;
+        padding: 1px 5px; border-radius: 3px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
+    }
+    .mini-pos-more {
+        font-size: .5rem; font-weight: 800; color: rgba(255,255,255,.6);
+        background: rgba(255,255,255,.18); border-radius: 3px; padding: 1px 4px;
+        white-space: nowrap;
     }
     .mini-trading-card .mini-bande {
         position:absolute; bottom:0; left:0; right:0; height:3px;
@@ -1048,6 +1079,10 @@
                             </div>
                             <div class="mut-back-body" id="mutBackBody">
                                 <table class="mut-back-stats-table" id="mutBackStats"></table>
+                                <div id="mutBackPositionsWrap" style="display:none;">
+                                    <hr style="border-color:rgba(255,255,255,.15);margin:8px 0;">
+                                    <div id="mutBackPositions" style="font-size:.75rem;"></div>
+                                </div>
                                 <div id="mutBackDescWrap" style="display:none;">
                                     <hr style="border-color:rgba(255,255,255,.15);margin:8px 0;">
                                     <p class="mut-back-desc" id="mutBackDesc"></p>
@@ -1270,15 +1305,25 @@
         imgs[mutPhotoIdx].classList.add('active');
     }
 
+    function parsePairs(raw) {
+        // "Attaque|QB,Défense|Defensive Tackle" → [{pos,spec}, ...]
+        if (!raw) return [];
+        return raw.split(',').map(function(p) {
+            var parts = p.split('|');
+            return { pos: parts[0] ? parts[0].trim() : '', spec: parts[1] ? parts[1].trim() : '' };
+        }).filter(function(p){ return p.pos; });
+    }
+
     function ouvrirJoueur(el) {
         var joueurId     = el.dataset.joueurId || '';
         var nom          = el.dataset.fullnom  || '';
         var numero       = el.dataset.numero   || '';
         var photo        = el.dataset.photo    || '';
         var position     = el.dataset.position || '';
-        var posSpec      = el.dataset.positionSpecifique || '';
+        var pairsRaw     = el.dataset.pairs    || '';
         var desc         = el.dataset.description || '';
         var consentement = el.dataset.consentement !== 'false';
+        var pairs        = parsePairs(pairsRaw);
 
         // Construire la liste de photos
         var extras = joueurPhotos[joueurId] || [];
@@ -1304,10 +1349,25 @@
             nameLogo.innerHTML = '<div class="mut-name-logo-placeholder"><i class="bi bi-shield-fill"></i></div>';
         }
 
-        // Recto — nom, position, numéro
-        document.getElementById('mutName').textContent     = nom;
-        document.getElementById('mutPosition').textContent = [position, posSpec].filter(Boolean).join(' — ');
-        document.getElementById('mutNumber').textContent   = numero ? '#' + numero : '';
+        // Recto — nom, position principale + indicateur, numéro
+        document.getElementById('mutName').textContent = nom;
+        var posEl = document.getElementById('mutPosition');
+        posEl.innerHTML = '';
+        var firstPair = pairs.length ? pairs[0] : null;
+        var mainLabel = firstPair ? (firstPair.spec || firstPair.pos) : position;
+        if (mainLabel) {
+            var pill = document.createElement('span');
+            pill.className = 'mut-pos-pill';
+            pill.textContent = mainLabel;
+            posEl.appendChild(pill);
+        }
+        if (pairs.length > 1) {
+            var more = document.createElement('span');
+            more.className = 'mut-pos-more';
+            more.textContent = '+' + (pairs.length - 1);
+            posEl.appendChild(more);
+        }
+        document.getElementById('mutNumber').textContent = numero ? '#' + numero : '';
 
         // Recto — stats
         var statsEl = document.getElementById('mutStats');
@@ -1337,9 +1397,33 @@
         document.getElementById('mutBackNom').textContent = nom;
         var badgesEl = document.getElementById('mutBackBadges');
         badgesEl.innerHTML = '';
-        if (position) badgesEl.innerHTML += '<span class="badge bg-light text-dark" style="font-size:.7rem;">' + position + '</span>';
-        if (posSpec)  badgesEl.innerHTML += '<span class="badge" style="background:var(--couleur-secondaire);font-size:.7rem;">' + posSpec + '</span>';
-        if (numero)   badgesEl.innerHTML += '<span class="badge bg-dark" style="font-size:.7rem;">#' + numero + '</span>';
+        if (numero) badgesEl.innerHTML += '<span class="badge bg-dark" style="font-size:.7rem;">#' + numero + '</span>';
+
+        // Verso — liste complète des positions
+        var posWrap = document.getElementById('mutBackPositionsWrap');
+        var posListEl = document.getElementById('mutBackPositions');
+        if (pairs.length) {
+            // Grouper par position parente
+            var grouped = {};
+            pairs.forEach(function(p) {
+                if (!grouped[p.pos]) grouped[p.pos] = [];
+                if (p.spec) grouped[p.pos].push(p.spec);
+            });
+            var html = '';
+            Object.keys(grouped).forEach(function(pos) {
+                html += '<div style="color:rgba(255,255,255,.9);font-weight:700;margin-bottom:2px;">' + pos + '</div>';
+                grouped[pos].forEach(function(spec) {
+                    html += '<div style="color:rgba(255,255,255,.6);padding-left:10px;margin-bottom:1px;">— ' + spec + '</div>';
+                });
+            });
+            posListEl.innerHTML = html;
+            posWrap.style.display = '';
+        } else if (position) {
+            posListEl.innerHTML = '<div style="color:rgba(255,255,255,.9);font-weight:700;">' + position + '</div>';
+            posWrap.style.display = '';
+        } else {
+            posWrap.style.display = 'none';
+        }
 
         // Verso — stats tableau
         var backStats = document.getElementById('mutBackStats');
@@ -1380,7 +1464,6 @@
         var nom   = el.dataset.fullnom     || '';
         var photo = el.dataset.photo       || '';
         var titre = el.dataset.titre       || '';
-        var respo = el.dataset.responsable || '';
         var desc  = el.dataset.description || '';
 
         // Zone photo
@@ -1412,10 +1495,8 @@
             logoEl.innerHTML = '<div class="mut-name-logo-placeholder"><i class="bi bi-shield-fill"></i></div>';
         }
 
-        // Titre + responsable de
-        var titreLabel = titre;
-        if (respo) titreLabel += ' — ' + respo;
-        document.getElementById('staffMutTitre').textContent = titreLabel;
+        // Titre
+        document.getElementById('staffMutTitre').textContent = titre;
 
         // Description
         var respoWrap = document.getElementById('staffMutRespoWrap');

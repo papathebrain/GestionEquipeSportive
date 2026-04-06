@@ -7,7 +7,6 @@ public class Staff
     public string Nom { get; set; } = string.Empty;
     public string Prenom { get; set; } = string.Empty;
     public string Titre { get; set; } = string.Empty;       // Ex: Entraîneur chef, Physio, ...
-    public string? ResponsableDe { get; set; }              // Ex: Attaque, Défense, ...
     public string? Description { get; set; }               // Bio / description (peut changer par année)
     public string? PhotoPath { get; set; }
     public string? NoFiche { get; set; }  // Identifiant permanent du staff entre les années

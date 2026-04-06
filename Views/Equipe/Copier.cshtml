@@ -161,7 +161,6 @@
                                             </td>
                                             <td class="fw-semibold">@s.Prenom @s.Nom</td>
                                             <td><span class="badge bg-info text-dark">@s.Titre</span></td>
-                                            <td class="text-muted small">@s.ResponsableDe</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -204,12 +203,10 @@
         fetch('/Equipe/GetNiveaux?sport=' + encodeURIComponent(sport))
             .then(r => r.json())
             .then(niveaux => {
-                const labels = { 'Benjamin': 'Benjamin', 'Cadet': 'Cadet', 'Juvenil': 'Juvénile',
-                                 'Atome': 'Atome', 'PeeWee': 'Pee-Wee', 'Bantam': 'Bantam' };
                 niveaux.forEach(n => {
                     const opt = document.createElement('option');
-                    opt.value = n;
-                    opt.textContent = labels[n] || n;
+                    opt.value = n.value;
+                    opt.textContent = n.text;
                     niveauSelect.appendChild(opt);
                 });
             });

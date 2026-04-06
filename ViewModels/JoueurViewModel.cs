@@ -22,12 +22,13 @@ public class JoueurViewModel
     [Display(Name = "Numéro")]
     public string Numero { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "La position est obligatoire")]
-    [Display(Name = "Position (groupe)")]
-    public string Position { get; set; } = string.Empty;
+    // Position principale (pour le groupement dans les listes)
+    [Display(Name = "Position principale")]
+    public string PositionPrincipale { get; set; } = string.Empty;
 
-    [Display(Name = "Position spécifique")]
-    public string? PositionSpecifique { get; set; }
+    // Toutes les paires encodées "Attaque|QB,Défense|CB" — champ hidden soumis
+    [Display(Name = "Positions")]
+    public string PositionPairsRaw { get; set; } = string.Empty;
 
     [Display(Name = "Numéro de fiche")]
     public string? NoFiche { get; set; }
@@ -50,4 +51,22 @@ public class JoueurViewModel
     // Infos de navigation
     public string? NomEquipe { get; set; }
     public int EcoleId { get; set; }
+
+    // Listes pour les combobox
+    public List<string> PositionsDisponibles { get; set; } = new();
+    public List<string> PositionsSpecifiquesDisponibles { get; set; } = new();
+    public Dictionary<string, List<string>> PositionsSpecifiquesParGroupe { get; set; } = new();
+
+    // Helper : paires parsées depuis PositionPairsRaw
+    public List<(string Pos, string Spec)> PositionPairs
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(PositionPairsRaw)) return new();
+            return PositionPairsRaw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(p => { var parts = p.Split('|'); return (parts[0].Trim(), parts.Length > 1 ? parts[1].Trim() : ""); })
+                .ToList();
+        }
+    }
 }

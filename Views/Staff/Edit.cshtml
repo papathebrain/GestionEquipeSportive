@@ -83,10 +83,6 @@
                                     </div>
                                     <div class="text-end">
                                         <div class="small fw-semibold">@entry.StaffEntry.Titre</div>
-                                        @if (!string.IsNullOrEmpty(entry.StaffEntry.ResponsableDe))
-                                        {
-                                            <div class="text-muted small">@entry.StaffEntry.ResponsableDe</div>
-                                        }
                                         @if (estCourant)
                                         {
                                             <span class="badge bg-primary mt-1">En cours</span>

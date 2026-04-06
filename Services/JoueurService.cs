@@ -82,8 +82,8 @@ public class JoueurService : IJoueurService
             Nom = vm.Nom,
             Prenom = vm.Prenom,
             Numero = vm.Numero,
-            Position = vm.Position,
-            PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim(),
+            Position = vm.PositionPrincipale.Trim(),
+            PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim(),
             NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim(),
             Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
             ConsentementPhoto = vm.ConsentementPhoto,
@@ -104,8 +104,8 @@ public class JoueurService : IJoueurService
         joueur.Nom = vm.Nom;
         joueur.Prenom = vm.Prenom;
         joueur.Numero = vm.Numero;
-        joueur.Position = vm.Position;
-        joueur.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionSpecifique) ? null : vm.PositionSpecifique.Trim();
+        joueur.Position = vm.PositionPrincipale.Trim();
+        joueur.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim();
         joueur.NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim();
         joueur.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
         joueur.ConsentementPhoto = vm.ConsentementPhoto;
@@ -142,8 +142,8 @@ public class JoueurService : IJoueurService
         Nom = joueur.Nom,
         Prenom = joueur.Prenom,
         Numero = joueur.Numero,
-        Position = joueur.Position,
-        PositionSpecifique = joueur.PositionSpecifique,
+        PositionPrincipale = joueur.Position,
+        PositionPairsRaw = joueur.PositionSpecifique ?? string.Empty,
         NoFiche = joueur.NoFiche,
         Description = joueur.Description,
         PhotoPathActuelle = joueur.PhotoPath,

@@ -79,4 +79,10 @@ public interface IExcelRepository
     Evenement AddEvenement(Evenement ev);
     Evenement UpdateEvenement(Evenement ev);
     bool DeleteEvenement(int id);
+
+    // Dictionnaires
+    List<DictionnaireEntree> GetAllDictionnaire();
+    DictionnaireEntree AddDictionnaire(DictionnaireEntree entree);
+    DictionnaireEntree UpdateDictionnaire(DictionnaireEntree entree);
+    bool DeleteDictionnaire(int id);
 }

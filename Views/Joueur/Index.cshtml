@@ -4,7 +4,9 @@
     ViewData["Title"] = "Joueurs";
     var equipe = ViewBag.Equipe as Equipe;
     var ecole = equipe?.Ecole;
-    var groupes = Model.GroupBy(j => j.Position).OrderBy(g => g.Key).ToList();
+    // Grouper par position principale — un joueur apparaît une seule fois
+    var groupes = Model.GroupBy(j => j.Position).OrderBy(g => g.Key)
+        .Select(g => new { Key = g.Key, Joueurs = g.OrderBy(j => j.Numero).ToList() }).ToList();
     var peutModifier = ViewBag.PeutModifier as bool? ?? false;
     var equipesEcole = ViewBag.EquipesEcole as List<Equipe> ?? new List<Equipe>();
 }
@@ -67,10 +69,10 @@ else
             <h2 class="h5 fw-bold text-uppercase mb-3 d-flex align-items-center gap-2">
                 <span class="badge rounded-pill fs-6 fw-bold px-3"
                       style="background-color:var(--couleur-primaire, #1a3a5c);">@groupe.Key</span>
-                <span class="badge bg-secondary fw-normal text-lowercase">@groupe.Count() joueur@(groupe.Count() > 1 ? "s" : "")</span>
+                <span class="badge bg-secondary fw-normal text-lowercase">@groupe.Joueurs.Count joueur@(groupe.Joueurs.Count > 1 ? "s" : "")</span>
             </h2>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                @foreach (var joueur in groupe.OrderBy(j => j.Numero))
+                @foreach (var joueur in groupe.Joueurs.OrderBy(j => j.Numero))
                 {
                     <div class="col">
                         <div class="card h-100 shadow-sm player-card" style="@(!joueur.Actif ? "opacity:.5;" : "")">
@@ -111,10 +113,18 @@ else
                             </div>
                             <div class="card-body text-center pt-2">
                                 <h6 class="card-title mb-0 fw-bold">@joueur.Prenom @joueur.Nom</h6>
-                                <span class="badge bg-secondary mt-1">@joueur.Position</span>
-                                @if (!string.IsNullOrEmpty(joueur.PositionSpecifique))
+                                @if (joueur.PositionPairs.Any())
                                 {
-                                    <span class="badge bg-primary mt-1 ms-1">@joueur.PositionSpecifique</span>
+                                    foreach (var pair in joueur.PositionPairs)
+                                    {
+                                        <span class="badge bg-secondary mt-1 me-1">
+                                            @pair.Pos@(!string.IsNullOrEmpty(pair.Spec) ? " — " + pair.Spec : "")
+                                        </span>
+                                    }
+                                }
+                                else if (!string.IsNullOrEmpty(joueur.Position))
+                                {
+                                    <span class="badge bg-secondary mt-1">@joueur.Position</span>
                                 }
                                 @if (!string.IsNullOrEmpty(joueur.NoFiche))
                                 {

@@ -13,26 +13,21 @@
     </div>
     <div class="col-md-6">
         <label asp-for="Titre" class="form-label fw-semibold"></label>
-        <input asp-for="Titre" class="form-control" list="titresSuggestion"
-               placeholder="Ex: Entraîneur chef, Physio, Gérant..." />
-        <datalist id="titresSuggestion">
-            <option value="Entraîneur chef" />
-            <option value="Entraîneur adjoint" />
-            <option value="Entraîneur spécialisé" />
-            <option value="Physiothérapeute" />
-            <option value="Médecin" />
-            <option value="Gérant d'équipement" />
-            <option value="Statisticien" />
-            <option value="Vidéaste" />
-            <option value="Bénévole" />
-        </datalist>
+        @if (Model.TitresDisponibles.Any())
+        {
+            <select asp-for="Titre" class="form-select">
+                <option value="">— Choisir —</option>
+                @foreach (var t in Model.TitresDisponibles)
+                {
+                    <option value="@t" selected="@(Model.Titre == t)">@t</option>
+                }
+            </select>
+        }
+        else
+        {
+            <input asp-for="Titre" class="form-control" placeholder="Ex: Entraîneur chef, Physio, Gérant..." />
+        }
         <span asp-validation-for="Titre" class="text-danger small"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="ResponsableDe" class="form-label fw-semibold"></label>
-        <input asp-for="ResponsableDe" class="form-control"
-               placeholder="Ex: Attaque, Défense, Gardiens..." />
-        <span asp-validation-for="ResponsableDe" class="text-danger small"></span>
     </div>
     <div class="col-12">
         <label asp-for="Description" class="form-label fw-semibold"></label>

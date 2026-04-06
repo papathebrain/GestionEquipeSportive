@@ -1,0 +1,190 @@
+@model GestionEquipeSportive.ViewModels.JoueurViewModel
+@{
+    var pairesInitiales = Model.PositionPairs; // List<(Pos, Spec)>
+    var posInitiale = Model.PositionPrincipale;
+}
+
+<div class="border rounded p-3 bg-light">
+    <div class="fw-semibold mb-3"><i class="bi bi-list-ul me-1"></i>Positions</div>
+
+    @* Champs cachés soumis *@
+    <input type="hidden" id="positionPairsRaw" name="PositionPairsRaw" value="@Model.PositionPairsRaw" />
+    <input type="hidden" id="positionPrincipale" name="PositionPrincipale" value="@Model.PositionPrincipale" />
+
+    @* ── Grille des paires ajoutées ── *@
+    <div id="pairesContainer" class="mb-3">
+        @if (!pairesInitiales.Any() && string.IsNullOrEmpty(posInitiale))
+        {
+            <p class="text-muted small mb-0" id="emptyMsg">Aucune position ajoutée.</p>
+        }
+    </div>
+
+    @* ── Formulaire d'ajout ── *@
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small mb-1">Position</label>
+            <select id="addPos" class="form-select form-select-sm" onchange="filtrerSpecsAjout(this.value)">
+                <option value="">— Choisir —</option>
+                @foreach (var p in Model.PositionsDisponibles)
+                {
+                    <option value="@p">@p</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small mb-1">Position spécifique</label>
+            <select id="addSpec" class="form-select form-select-sm">
+                <option value="">— Aucune —</option>
+                @foreach (var p in Model.PositionsSpecifiquesDisponibles)
+                {
+                    <option value="@p">@p</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="button" class="btn btn-primary btn-sm w-100" onclick="ajouterPaire()">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const posSpecParGroupe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionsSpecifiquesParGroupe));
+
+    // Paires en mémoire : [{pos, spec}]
+    let paires = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        pairesInitiales.Select(p => new { pos = p.Pos, spec = p.Spec })
+    ));
+
+    // Si aucune paire mais position principale définie (ancien format), créer une paire
+    @if (!pairesInitiales.Any() && !string.IsNullOrEmpty(posInitiale))
+    {
+        <text>
+    if (paires.length === 0 && '@posInitiale') {
+        paires = [{ pos: '@posInitiale', spec: '' }];
+    }
+        </text>
+    }
+
+    let positionPrincipale = '@posInitiale' || '';
+
+    function sauvegarder() {
+        const raw = paires.map(p => p.pos + (p.spec ? '|' + p.spec : '')).join(',');
+        document.getElementById('positionPairsRaw').value = raw;
+        document.getElementById('positionPrincipale').value = positionPrincipale;
+    }
+
+    function rendrePaires() {
+        const container = document.getElementById('pairesContainer');
+        const emptyMsg = document.getElementById('emptyMsg');
+        if (emptyMsg) emptyMsg.remove();
+
+        container.innerHTML = '';
+
+        if (paires.length === 0) {
+            container.innerHTML = '<p class="text-muted small mb-0" id="emptyMsg">Aucune position ajoutée.</p>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'table table-sm align-middle mb-0';
+        table.innerHTML = '<thead class="table-light"><tr><th>Position</th><th>Position spécifique</th><th class="text-center">Principale</th><th></th></tr></thead>';
+        const tbody = document.createElement('tbody');
+
+        paires.forEach((p, i) => {
+            const tr = document.createElement('tr');
+            const estPrincipale = (positionPrincipale === p.pos) || (i === 0 && !positionPrincipale);
+
+            tr.innerHTML = `
+                <td class="fw-semibold">${p.pos}</td>
+                <td class="text-muted">${p.spec || '<span class="text-muted fst-italic">—</span>'}</td>
+                <td class="text-center">
+                    <input type="radio" name="_principaleRadio" class="form-check-input"
+                           ${estPrincipale ? 'checked' : ''}
+                           onchange="setPrincipale('${p.pos}')" />
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2"
+                            onclick="supprimerPaire(${i})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+
+        // Auto-définir principale si pas définie
+        if (!positionPrincipale && paires.length > 0) {
+            positionPrincipale = paires[0].pos;
+        }
+        sauvegarder();
+    }
+
+    window.filtrerSpecsAjout = function(pos) {
+        const sel = document.getElementById('addSpec');
+        const toutesLiees = Object.keys(posSpecParGroupe).filter(k => k !== '');
+        const afficherTout = toutesLiees.length === 0;
+
+        let toAfficher;
+        if (afficherTout || !pos) {
+            toAfficher = Object.values(posSpecParGroupe).flat();
+        } else {
+            toAfficher = [...(posSpecParGroupe[pos] || []), ...(posSpecParGroupe[''] || [])];
+        }
+        toAfficher = [...new Set(toAfficher)].sort();
+
+        sel.innerHTML = '<option value="">— Aucune —</option>';
+        toAfficher.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = v;
+            sel.appendChild(opt);
+        });
+    };
+
+    window.ajouterPaire = function() {
+        const pos  = document.getElementById('addPos').value;
+        const spec = document.getElementById('addSpec').value;
+        if (!pos) { alert('Veuillez choisir une position.'); return; }
+
+        // Éviter doublon exact
+        if (paires.some(p => p.pos === pos && p.spec === spec)) return;
+
+        paires.push({ pos, spec });
+
+        if (!positionPrincipale) positionPrincipale = pos;
+
+        // Réinitialiser selects
+        document.getElementById('addPos').value = '';
+        document.getElementById('addSpec').innerHTML = '<option value="">— Aucune —</option>';
+        @foreach (var p in Model.PositionsSpecifiquesDisponibles)
+        {
+            <text>document.getElementById('addSpec').innerHTML += '<option value="@p">@p</option>';</text>
+        }
+
+        rendrePaires();
+    };
+
+    window.supprimerPaire = function(i) {
+        const supprPos = paires[i].pos;
+        paires.splice(i, 1);
+        if (positionPrincipale === supprPos && paires.length > 0) {
+            positionPrincipale = paires[0].pos;
+        } else if (paires.length === 0) {
+            positionPrincipale = '';
+        }
+        rendrePaires();
+    };
+
+    window.setPrincipale = function(pos) {
+        positionPrincipale = pos;
+        sauvegarder();
+    };
+
+    // Initialiser
+    rendrePaires();
+})();
+</script>

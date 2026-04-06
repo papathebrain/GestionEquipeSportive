@@ -15,15 +15,18 @@ public class JoueurController : Controller
     private readonly IEcoleService _ecoleService;
     private readonly IEcoleAccessService _access;
     private readonly IWebHostEnvironment _env;
+    private readonly IDictionnaireService _dictionnaireService;
 
     public JoueurController(IJoueurService joueurService, IEquipeService equipeService,
-        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env)
+        IEcoleService ecoleService, IEcoleAccessService access, IWebHostEnvironment env,
+        IDictionnaireService dictionnaireService)
     {
         _joueurService = joueurService;
         _equipeService = equipeService;
         _ecoleService = ecoleService;
         _access = access;
         _env = env;
+        _dictionnaireService = dictionnaireService;
     }
 
     public IActionResult Index(int equipeId)
@@ -98,7 +101,7 @@ public class JoueurController : Controller
             nom = j.Nom,
             prenom = j.Prenom,
             numero = j.Numero,
-            position = j.Position,
+            position = j.Position,  // virgule-séparé
             positionSpecifique = j.PositionSpecifique ?? "",
             noFiche = j.NoFiche ?? "",
             equipeActuelle = equipeNoms.TryGetValue(j.EquipeId, out var en) ? en : "",
@@ -196,11 +199,15 @@ public class JoueurController : Controller
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
         if (ecole != null) SetTheme(ecole);
 
+        var sport0 = equipe.TypeSport.ToString();
         var vm = new JoueurViewModel
         {
             EquipeId = equipeId,
             NomEquipe = equipe.Nom,
-            EcoleId = equipe.EcoleId
+            EcoleId = equipe.EcoleId,
+            PositionsDisponibles = _dictionnaireService.GetPositions(sport0),
+            PositionsSpecifiquesDisponibles = _dictionnaireService.GetPositionsSpecifiques(sport0),
+            PositionsSpecifiquesParGroupe = _dictionnaireService.GetPositionsSpecifiquesParGroupe(sport0)
         };
         return View(vm);
     }
@@ -220,6 +227,10 @@ public class JoueurController : Controller
             var ecole2 = _ecoleService.GetEcoleById(equipe.EcoleId);
             if (ecole2 != null) SetTheme(ecole2);
             vm.NomEquipe = equipe.Nom;
+            var sportC = equipe.TypeSport.ToString();
+            vm.PositionsDisponibles = _dictionnaireService.GetPositions(sportC);
+            vm.PositionsSpecifiquesDisponibles = _dictionnaireService.GetPositionsSpecifiques(sportC);
+            vm.PositionsSpecifiquesParGroupe = _dictionnaireService.GetPositionsSpecifiquesParGroupe(sportC);
             return View(vm);
         }
 
@@ -244,6 +255,13 @@ public class JoueurController : Controller
         var vm = _joueurService.ToViewModel(joueur);
         vm.NomEquipe = equipe?.Nom;
         vm.EcoleId = equipe?.EcoleId ?? 0;
+        if (equipe != null)
+        {
+            var sportE = equipe.TypeSport.ToString();
+            vm.PositionsDisponibles = _dictionnaireService.GetPositions(sportE);
+            vm.PositionsSpecifiquesDisponibles = _dictionnaireService.GetPositionsSpecifiques(sportE);
+            vm.PositionsSpecifiquesParGroupe = _dictionnaireService.GetPositionsSpecifiquesParGroupe(sportE);
+        }
         ViewBag.JoueurMedias = _joueurService.GetMediasByJoueur(id);
         return View(vm);
     }
@@ -263,6 +281,13 @@ public class JoueurController : Controller
             var ecole2 = equipe != null ? _ecoleService.GetEcoleById(equipe.EcoleId) : null;
             if (ecole2 != null) SetTheme(ecole2);
             vm.NomEquipe = equipe?.Nom;
+            if (equipe != null)
+            {
+                var sportP = equipe.TypeSport.ToString();
+                vm.PositionsDisponibles = _dictionnaireService.GetPositions(sportP);
+                vm.PositionsSpecifiquesDisponibles = _dictionnaireService.GetPositionsSpecifiques(sportP);
+                vm.PositionsSpecifiquesParGroupe = _dictionnaireService.GetPositionsSpecifiquesParGroupe(sportP);
+            }
             return View(vm);
         }
 
@@ -383,8 +408,8 @@ public class JoueurController : Controller
                 if (!string.IsNullOrWhiteSpace(nom))    vm.Nom    = nom;
                 if (!string.IsNullOrWhiteSpace(prenom)) vm.Prenom = prenom;
                 if (!string.IsNullOrWhiteSpace(numero)) vm.Numero = numero;
-                if (!string.IsNullOrWhiteSpace(position)) vm.Position = position;
-                if (!string.IsNullOrWhiteSpace(posSpec))  vm.PositionSpecifique = posSpec;
+                if (!string.IsNullOrWhiteSpace(position)) vm.PositionPrincipale = position.Trim();
+                if (!string.IsNullOrWhiteSpace(posSpec))  vm.PositionPairsRaw = posSpec.Trim();
                 _joueurService.UpdateJoueur(vm, null, _env.WebRootPath);
                 mis_a_jour++;
             }
@@ -397,8 +422,8 @@ public class JoueurController : Controller
                     Nom                = nom,
                     Prenom             = prenom,
                     Numero             = numero,
-                    Position           = string.IsNullOrWhiteSpace(position) ? "—" : position,
-                    PositionSpecifique = string.IsNullOrWhiteSpace(posSpec) ? null : posSpec,
+                    PositionPrincipale  = string.IsNullOrWhiteSpace(position) ? "" : position.Trim(),
+                    PositionPairsRaw    = string.IsNullOrWhiteSpace(posSpec) ? "" : posSpec.Trim(),
                     NoFiche            = string.IsNullOrWhiteSpace(noFiche) ? null : noFiche,
                     ConsentementPhoto  = true,
                     Actif              = true

@@ -1,0 +1,151 @@
+@model GestionEquipeSportive.ViewModels.DictSectionViewModel
+@{
+    var modalId = "addModal-" + Model.Categorie + "-" + Model.Sport;
+}
+
+<div class="card h-100">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi @Model.Icon me-2"></i>@Model.Titre</span>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-bs-toggle="modal" data-bs-target="#@modalId">
+            <i class="bi bi-plus-lg me-1"></i>Ajouter
+        </button>
+    </div>
+    <div class="card-body">
+        @if (!Model.Entrees.Any())
+        {
+            <p class="text-muted small mb-0">Aucune entrée.</p>
+        }
+        else if (Model.Categorie == "PositionSpecifique")
+        {
+            var parGroupe = Model.Entrees
+                .GroupBy(e => string.IsNullOrEmpty(e.ParentValeur) ? "— Sans parent —" : e.ParentValeur)
+                .OrderBy(g => g.Key)
+                .ToList();
+            foreach (var groupe in parGroupe)
+            {
+                <div class="mb-3">
+                    <div class="text-muted small fw-semibold text-uppercase mb-1 ps-1">
+                        <i class="bi bi-arrow-return-right me-1"></i>@groupe.Key
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var entree in groupe)
+                        {
+                            <li class="list-group-item px-2 py-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="fw-semibold">@entree.Valeur</span>
+                                        @if (!string.IsNullOrEmpty(entree.Acronyme))
+                                        {
+                                            <code class="text-muted small ms-1">@entree.Acronyme</code>
+                                        }
+                                        @if (!string.IsNullOrEmpty(entree.Description))
+                                        {
+                                            <div class="text-muted small fst-italic">@entree.Description</div>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-1 ms-2 flex-shrink-0">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                                onclick="ouvrirModifier(@entree.Id)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form asp-controller="Dictionnaire" asp-action="Supprimer" asp-route-id="@entree.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                                                    onclick="return confirm('Supprimer « @entree.Valeur » ?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+        else
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var entree in Model.Entrees)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>@entree.Valeur</span>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                    onclick="ouvrirModifier(@entree.Id)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form asp-controller="Dictionnaire" asp-action="Supprimer" asp-route-id="@entree.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                                        onclick="return confirm('Supprimer « @entree.Valeur » ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@* ── Modal Ajouter ── *@
+<div class="modal fade" id="@modalId" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2 text-primary"></i>Ajouter — @Model.Titre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-controller="Dictionnaire" asp-action="Ajouter" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="categorie" value="@Model.Categorie" />
+                <input type="hidden" name="sport" value="@Model.Sport" />
+                <div class="modal-body">
+                    @if (Model.Categorie == "PositionSpecifique")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Position parente <span class="text-danger">*</span></label>
+                            <select name="parentValeur" class="form-select" required>
+                                <option value="">— Choisir la position parente —</option>
+                                @foreach (var pos in Model.ParentPositions)
+                                {
+                                    <option value="@pos">@pos</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Valeur <span class="text-danger">*</span></label>
+                            <input type="text" name="valeur" class="form-control" placeholder="@Model.Placeholder" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Acronyme</label>
+                            <input type="text" name="acronyme" class="form-control" placeholder="Ex: QB" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Description</label>
+                            <input type="text" name="description" class="form-control" placeholder="Description de la position" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Valeur <span class="text-danger">*</span></label>
+                            <input type="text" name="valeur" class="form-control" placeholder="@Model.Placeholder" required />
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
