@@ -26,10 +26,14 @@ public class EquipeViewModel
     [Display(Name = "Afficher sur le site public")]
     public bool AfficherPublic { get; set; }
 
+    [Display(Name = "Thème")]
+    public int? ThemeId { get; set; }
+
     // Listes de sélection
     public List<SelectListItem> SportsList { get; set; } = new();
     public List<SelectListItem> NiveauxList { get; set; } = new();
     public List<SelectListItem> AnneesList { get; set; } = new();
+    public List<SelectListItem> ThemesList { get; set; } = new();
 
     // Nom de l'école (affichage)
     public string? NomEcole { get; set; }

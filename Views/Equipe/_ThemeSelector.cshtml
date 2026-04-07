@@ -1,0 +1,106 @@
+@model GestionEquipeSportive.ViewModels.EquipeViewModel
+@using GestionEquipeSportive.Models
+@{
+    var themesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.ThemesList.Select(t => new {
+            id = t.Value,
+            text = t.Text
+        })
+    );
+    // Full theme data passed via ViewBag for previews
+    var themes = ViewBag.ThemesData as List<ThemeEcole> ?? new List<ThemeEcole>();
+    var themesDataJson = System.Text.Json.JsonSerializer.Serialize(
+        themes.Select(t => new {
+            id = t.Id.ToString(),
+            nomEquipe = t.NomEquipe,
+            couleurPrimaire = t.CouleurPrimaire,
+            couleurSecondaire = t.CouleurSecondaire,
+            logoPath = t.LogoPath ?? ""
+        })
+    );
+}
+
+@if (Model.ThemesList.Any())
+{
+    <div class="mb-3">
+        <label asp-for="ThemeId" class="form-label fw-semibold">Thème</label>
+        <select asp-for="ThemeId" id="themeSelect" class="form-select" onchange="updateThemePreview(this.value)">
+            <option value="">— Aucun thème —</option>
+            @foreach (var item in Model.ThemesList)
+            {
+                if (item.Selected)
+                {
+                    <option value="@item.Value" selected>@item.Text</option>
+                }
+                else
+                {
+                    <option value="@item.Value">@item.Text</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div id="themePreviewBox" class="rounded p-2 mb-3 @(Model.ThemeId == null ? "d-none" : "")"
+         style="border:1px solid #dee2e6;">
+        <div id="themePreviewInner" class="rounded p-2 text-white d-flex align-items-center gap-2"
+             style="background-color: #1a3a5c;">
+            <div id="themePreviewLogoWrap" style="display:none;">
+                <img id="themePreviewLogo" src="#" alt="Logo" style="width:36px;height:36px;object-fit:contain;" />
+            </div>
+            <div id="themePreviewLogoPlaceholder"
+                 style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-building-fill"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold" id="themePreviewNom">—</div>
+            </div>
+            <div class="d-flex gap-1" id="themePreviewSwatches"></div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const themesData = @Html.Raw(themesDataJson);
+
+        window.updateThemePreview = function(id) {
+            const box = document.getElementById('themePreviewBox');
+            if (!id) { box.classList.add('d-none'); return; }
+            const t = themesData.find(x => x.id === String(id));
+            if (!t) { box.classList.add('d-none'); return; }
+
+            box.classList.remove('d-none');
+            document.getElementById('themePreviewInner').style.backgroundColor = t.couleurPrimaire;
+            document.getElementById('themePreviewNom').textContent = t.nomEquipe;
+
+            const logoWrap = document.getElementById('themePreviewLogoWrap');
+            const logoPlaceholder = document.getElementById('themePreviewLogoPlaceholder');
+            const logoImg = document.getElementById('themePreviewLogo');
+            if (t.logoPath) {
+                logoImg.src = t.logoPath;
+                logoWrap.style.display = 'block';
+                logoPlaceholder.style.display = 'none';
+            } else {
+                logoWrap.style.display = 'none';
+                logoPlaceholder.style.display = 'flex';
+            }
+
+            const swatches = document.getElementById('themePreviewSwatches');
+            swatches.innerHTML =
+                `<div style="width:14px;height:14px;border-radius:50%;background:${t.couleurPrimaire};border:2px solid rgba(255,255,255,0.5);" title="${t.couleurPrimaire}"></div>`
+              + `<div style="width:14px;height:14px;border-radius:50%;background:${t.couleurSecondaire};border:2px solid rgba(255,255,255,0.5);" title="${t.couleurSecondaire}"></div>`;
+        };
+
+        // Initialiser si thème déjà sélectionné
+        const sel = document.getElementById('themeSelect');
+        if (sel && sel.value) updateThemePreview(sel.value);
+    })();
+    </script>
+}
+else
+{
+    <div class="alert alert-info small py-2">
+        <i class="bi bi-info-circle me-1"></i>
+        Aucun thème défini pour cette école. Vous pouvez en ajouter depuis la
+        <a asp-controller="Ecole" asp-action="Edit" asp-route-id="@Model.EcoleId">page de l'école</a>.
+    </div>
+}

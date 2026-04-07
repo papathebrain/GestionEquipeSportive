@@ -38,4 +38,11 @@ public class PublicEquipeViewModel
     // Navigation inter-équipes / inter-écoles
     public List<(Equipe Equipe, string Url)> AutresEquipesEcole { get; set; } = new();
     public List<(Ecole Ecole, Equipe PremiereEquipe, string Url)> AutresEcoles { get; set; } = new();
+
+    // Thème actif (thème de l'équipe si défini, sinon hérité de l'école)
+    public ThemeEcole? Theme { get; set; }
+    public string CouleurPrimaire   => Theme?.CouleurPrimaire   ?? Ecole.CouleurPrimaire;
+    public string CouleurSecondaire => Theme?.CouleurSecondaire ?? Ecole.CouleurSecondaire;
+    public string? LogoPath         => Theme?.LogoPath          ?? Ecole.LogoPath;
+    public string NomEquipe         => Theme?.NomEquipe         ?? Ecole.NomEquipe;
 }

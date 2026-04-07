@@ -5,9 +5,9 @@
     Layout = "_LayoutPublic";
     ViewData["Title"] = $"{Model.SportDisplay} — {Model.NiveauDisplay} {Model.Equipe.AnneeScolaire}";
     ViewBag.NomEcole = Model.Ecole.Nom;
-    ViewBag.CouleurPrimaire = Model.Ecole.CouleurPrimaire;
-    ViewBag.CouleurSecondaire = Model.Ecole.CouleurSecondaire;
-    ViewBag.LogoPath = Model.Ecole.LogoPath;
+    ViewBag.CouleurPrimaire = Model.CouleurPrimaire;
+    ViewBag.CouleurSecondaire = Model.CouleurSecondaire;
+    ViewBag.LogoPath = Model.LogoPath;
     var frCA = new CultureInfo("fr-CA");
     var now = DateTime.Now;
 }
@@ -93,7 +93,7 @@
 }
 
 @* ── Bannière ─────────────────────────────────────────────────────────────── *@
-<div style="background-color:@Model.Ecole.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
+<div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
     @if (Model.PhotoBanniere != null)
     {
         <div style="position:absolute;inset:0;background:url('@Model.PhotoBanniere.CheminFichier') center/cover no-repeat;opacity:.3;"></div>
@@ -148,7 +148,7 @@
 @* ── Stats ────────────────────────────────────────────────────────────────── *@
 @if (Model.Stats.MatchsJoues > 0)
 {
-    <div style="background-color:@Model.Ecole.CouleurPrimaire;opacity:.9;">
+    <div style="background-color:@Model.CouleurPrimaire;opacity:.9;">
         <div class="container">
             <div class="row g-0 text-white text-center">
                 <div class="col-4 py-2 border-end border-white border-opacity-25">
@@ -556,9 +556,9 @@
                                         {
                                             <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom" class="mini-photo" />
                                         }
-                                        else if (!j.ConsentementPhoto && !string.IsNullOrEmpty(Model.Ecole.LogoPath))
+                                        else if (!j.ConsentementPhoto && !string.IsNullOrEmpty(Model.LogoPath))
                                         {
-                                            <img src="@Model.Ecole.LogoPath" alt="Logo" class="mini-photo" style="opacity:.45;object-fit:contain;padding:12px;" />
+                                            <img src="@Model.LogoPath" alt="Logo" class="mini-photo" style="opacity:.45;object-fit:contain;padding:12px;" />
                                         }
                                         else
                                         {
@@ -1141,9 +1141,9 @@
 @* ── Lightbox galerie ─────────────────────────────────────────────────────── *@
 <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;touch-action:pan-y;">
     <button id="lbClose" style="position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:2;">&#x2715;</button>
-    @if (!string.IsNullOrEmpty(Model.Ecole.LogoPath))
+    @if (!string.IsNullOrEmpty(Model.LogoPath))
     {
-        <img src="@Model.Ecole.LogoPath" alt="Logo"
+        <img src="@Model.LogoPath" alt="Logo"
              style="position:absolute;top:14px;right:65px;height:100px;object-fit:contain;opacity:.85;pointer-events:none;z-index:2;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7));" />
     }
     <button id="lbPrev" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2.5rem;width:48px;height:64px;border-radius:8px;cursor:pointer;">&#8249;</button>
@@ -1160,7 +1160,7 @@
     var joueurPhotos     = JSON.parse(document.getElementById('joueur-photos-json').textContent);
     var statsJoueursData = JSON.parse(document.getElementById('stats-joueurs-json').textContent);
     var dernierMatchPhotosId = JSON.parse(document.getElementById('dernier-match-photos-id').textContent);
-    var logoEcole  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Ecole.LogoPath ?? ""));
+    var logoEcole  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LogoPath ?? ""));
     var nomEquipe  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Equipe.Nom));
 
     // ── Galerie matchs ────────────────────────────────────────────────────────

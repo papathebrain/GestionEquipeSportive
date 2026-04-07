@@ -63,9 +63,11 @@ public class EquipeController : Controller
         if (equipe == null) return NotFound();
 
         var ecole = _ecoleService.GetEcoleById(equipe.EcoleId);
-        if (ecole != null) SetTheme(ecole);
+        ThemeEcole? theme = equipe.ThemeId.HasValue ? _ecoleService.GetThemeById(equipe.ThemeId.Value) : null;
+        if (ecole != null) SetTheme(ecole, theme);
 
         equipe.Ecole = ecole;
+        equipe.Theme = theme;
 
         var joueurs = _joueurService.GetJoueursByEquipe(id);
         var staff = _staffService.GetStaffByEquipe(id);
@@ -249,7 +251,7 @@ public class EquipeController : Controller
         return vm;
     }
 
-    private void RebuildLists(EquipeViewModel vm)
+    private void RebuildLists(EquipeViewModel vm, bool loadThemesData = true)
     {
         var sports = _dictionnaireService.GetSports();
         vm.SportsList = sports.Select(s => new SelectListItem
@@ -273,6 +275,17 @@ public class EquipeController : Controller
             Text = a,
             Selected = a == vm.AnneeScolaire
         }).ToList();
+
+        var themes = _ecoleService.GetThemesByEcole(vm.EcoleId);
+        vm.ThemesList = themes.Select(t => new SelectListItem
+        {
+            Value = t.Id.ToString(),
+            Text = t.NomEquipe,
+            Selected = t.Id == vm.ThemeId
+        }).ToList();
+
+        if (loadThemesData)
+            ViewBag.ThemesData = themes;
     }
 
     private static string GetSportDisplayName(TypeSport sport) => sport switch
@@ -304,10 +317,10 @@ public class EquipeController : Controller
         return annee;
     }
 
-    private void SetTheme(Ecole ecole)
+    private void SetTheme(Ecole ecole, ThemeEcole? theme = null)
     {
-        ViewBag.CouleurPrimaire = ecole.CouleurPrimaire;
-        ViewBag.CouleurSecondaire = ecole.CouleurSecondaire;
+        ViewBag.CouleurPrimaire = theme?.CouleurPrimaire ?? ecole.CouleurPrimaire;
+        ViewBag.CouleurSecondaire = theme?.CouleurSecondaire ?? ecole.CouleurSecondaire;
         ViewBag.EcoleId = ecole.Id;
     }
 }

@@ -2,6 +2,7 @@ using GestionEquipeSportive.Models;
 using GestionEquipeSportive.Services;
 using GestionEquipeSportive.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionEquipeSportive.Controllers;
@@ -101,6 +102,7 @@ public class EcoleController : Controller
     {
         var ecole = _ecoleService.GetEcoleById(id);
         if (ecole == null) return NotFound();
+        ViewBag.Themes = _ecoleService.GetThemesByEcole(id);
         return View(_ecoleService.ToViewModel(ecole));
     }
 
@@ -110,7 +112,11 @@ public class EcoleController : Controller
     public IActionResult Edit(int id, EcoleViewModel vm)
     {
         if (id != vm.Id) return BadRequest();
-        if (!ModelState.IsValid) return View(vm);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Themes = _ecoleService.GetThemesByEcole(id);
+            return View(vm);
+        }
         _ecoleService.UpdateEcole(vm, vm.LogoFile, _env.WebRootPath);
         TempData["Success"] = "École modifiée avec succès.";
         return RedirectToAction(nameof(Index));
@@ -124,6 +130,64 @@ public class EcoleController : Controller
         _ecoleService.DeleteEcole(id);
         TempData["Success"] = "École supprimée avec succès.";
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── Actions Thèmes ────────────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
+    public IActionResult AjouterTheme(ThemeEcoleViewModel vm)
+    {
+        if (ModelState.IsValid)
+        {
+            _ecoleService.CreateTheme(vm, vm.LogoFile, _env.WebRootPath);
+            TempData["Success"] = "Thème ajouté avec succès.";
+        }
+        else
+        {
+            TempData["Error"] = "Données invalides.";
+        }
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
+    public IActionResult ModifierTheme(ThemeEcoleViewModel vm)
+    {
+        if (ModelState.IsValid)
+        {
+            _ecoleService.UpdateTheme(vm, vm.LogoFile, _env.WebRootPath);
+            TempData["Success"] = "Thème modifié avec succès.";
+        }
+        else
+        {
+            TempData["Error"] = "Données invalides.";
+        }
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.Admin)]
+    public IActionResult SupprimerTheme(int id, int ecoleId)
+    {
+        _ecoleService.DeleteTheme(id, _env.WebRootPath);
+        TempData["Success"] = "Thème supprimé avec succès.";
+        return RedirectToAction(nameof(Edit), new { id = ecoleId });
+    }
+
+    [HttpGet]
+    [Authorize(Roles = Roles.Admin)]
+    public IActionResult GetTheme(int id)
+    {
+        var theme = _ecoleService.GetThemeById(id);
+        if (theme == null) return NotFound();
+        return Json(new {
+            theme.Id, theme.EcoleId, theme.NomEquipe,
+            theme.CouleurPrimaire, theme.CouleurSecondaire, theme.LogoPath
+        });
     }
 
     private void SetTheme(Ecole ecole)

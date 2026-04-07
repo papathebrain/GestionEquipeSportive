@@ -44,6 +44,8 @@
                         </div>
                     </div>
 
+                    @await Html.PartialAsync("_ThemeSelector", Model)
+
                     <div class="mb-3">
                         <label asp-for="AnneeScolaire" class="form-label fw-semibold"></label>
                         <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select">

@@ -28,8 +28,9 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau),
-            AfficherPublic = vm.AfficherPublic
+            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
+            AfficherPublic = vm.AfficherPublic,
+            ThemeId = vm.ThemeId
         };
         return _repo.AddEquipe(equipe);
     }
@@ -43,8 +44,9 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau),
-            AfficherPublic = vm.AfficherPublic
+            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
+            AfficherPublic = vm.AfficherPublic,
+            ThemeId = vm.ThemeId
         };
         return _repo.UpdateEquipe(equipe);
     }
@@ -58,13 +60,23 @@ public class EquipeService : IEquipeService
         AnneeScolaire = equipe.AnneeScolaire,
         TypeSport = equipe.TypeSport,
         Niveau = equipe.Niveau,
-        AfficherPublic = equipe.AfficherPublic
+        AfficherPublic = equipe.AfficherPublic,
+        ThemeId = equipe.ThemeId
     };
 
-    private string GenererNom(int ecoleId, TypeSport sport, NiveauEquipe niveau)
+    private string GenererNom(int ecoleId, TypeSport sport, NiveauEquipe niveau, int? themeId)
     {
         var ecole = _ecoleService.GetEcoleById(ecoleId);
-        var nomEquipe = ecole?.NomEquipe ?? "";
+        string nomEquipe;
+        if (themeId.HasValue)
+        {
+            var theme = ecole?.Themes.FirstOrDefault(t => t.Id == themeId.Value);
+            nomEquipe = theme?.NomEquipe ?? ecole?.NomEquipe ?? "";
+        }
+        else
+        {
+            nomEquipe = ecole?.NomEquipe ?? "";
+        }
         var sportDisplay = sport switch
         {
             TypeSport.FootballAmericain => "Football",

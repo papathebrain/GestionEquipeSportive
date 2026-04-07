@@ -10,6 +10,7 @@ public class ExcelRepository : IExcelRepository
 
     private string EcolesFile => Path.Combine(_dataPath, "ecoles.xlsx");
     private string EquipesFile => Path.Combine(_dataPath, "equipes.xlsx");
+    private string ThemesFile => Path.Combine(_dataPath, "themes.xlsx");
     private string JoueursFile => Path.Combine(_dataPath, "joueurs.xlsx");
     private string GalerieFile => Path.Combine(_dataPath, "galerie.xlsx");
     private string StaffFile => Path.Combine(_dataPath, "staff.xlsx");
@@ -31,6 +32,7 @@ public class ExcelRepository : IExcelRepository
     {
         InitEcolesFile();
         InitEquipesFile();
+        InitThemesFile();
         InitJoueursFile();
         InitGalerieFile();
         InitStaffFile();
@@ -72,7 +74,24 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 5).Value = "Niveau";
             ws.Cell(1, 6).Value = "Nom";
             ws.Cell(1, 7).Value = "AfficherPublic";
+            ws.Cell(1, 8).Value = "ThemeId";
             wb.SaveAs(EquipesFile);
+        }
+    }
+
+    private void InitThemesFile()
+    {
+        if (!File.Exists(ThemesFile))
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Themes");
+            ws.Cell(1, 1).Value = "Id";
+            ws.Cell(1, 2).Value = "EcoleId";
+            ws.Cell(1, 3).Value = "NomEquipe";
+            ws.Cell(1, 4).Value = "CouleurPrimaire";
+            ws.Cell(1, 5).Value = "CouleurSecondaire";
+            ws.Cell(1, 6).Value = "LogoPath";
+            wb.SaveAs(ThemesFile);
         }
     }
 
@@ -147,6 +166,10 @@ public class ExcelRepository : IExcelRepository
                     LiensSociaux = liens
                 });
             }
+            // Charger les thèmes dans chaque école
+            var themes = GetAllThemes();
+            foreach (var ecole in ecoles)
+                ecole.Themes = themes.Where(t => t.EcoleId == ecole.Id).ToList();
             return ecoles;
         }
     }
@@ -240,6 +263,7 @@ public class ExcelRepository : IExcelRepository
             {
                 if (ws.Cell(row, 1).Value.IsBlank) continue;
 
+                var themeIdStr = ws.Cell(row, 8).GetString();
                 equipes.Add(new Equipe
                 {
                     Id = (int)ws.Cell(row, 1).GetDouble(),
@@ -248,7 +272,8 @@ public class ExcelRepository : IExcelRepository
                     TypeSport = Enum.Parse<TypeSport>(ws.Cell(row, 4).GetString()),
                     Niveau = Enum.Parse<NiveauEquipe>(ws.Cell(row, 5).GetString()),
                     Nom = ws.Cell(row, 6).GetString(),
-                    AfficherPublic = ws.Cell(row, 7).GetString().Equals("true", StringComparison.OrdinalIgnoreCase)
+                    AfficherPublic = ws.Cell(row, 7).GetString().Equals("true", StringComparison.OrdinalIgnoreCase),
+                    ThemeId = int.TryParse(themeIdStr, out var tid) ? tid : null
                 });
             }
             return equipes;
@@ -327,6 +352,106 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 5).Value = equipe.Niveau.ToString();
         ws.Cell(row, 6).Value = equipe.Nom;
         ws.Cell(row, 7).Value = equipe.AfficherPublic.ToString().ToLower();
+        ws.Cell(row, 8).Value = equipe.ThemeId.HasValue ? equipe.ThemeId.Value.ToString() : string.Empty;
+    }
+
+    // ==================== THÈMES ====================
+
+    public List<ThemeEcole> GetAllThemes()
+    {
+        lock (_lock)
+        {
+            var themes = new List<ThemeEcole>();
+            using var wb = new XLWorkbook(ThemesFile);
+            var ws = wb.Worksheet("Themes");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (ws.Cell(row, 1).Value.IsBlank) continue;
+                themes.Add(new ThemeEcole
+                {
+                    Id = (int)ws.Cell(row, 1).GetDouble(),
+                    EcoleId = (int)ws.Cell(row, 2).GetDouble(),
+                    NomEquipe = ws.Cell(row, 3).GetString(),
+                    CouleurPrimaire = ws.Cell(row, 4).GetString() is string cp && cp.Length > 0 ? cp : "#1a3a5c",
+                    CouleurSecondaire = ws.Cell(row, 5).GetString() is string cs && cs.Length > 0 ? cs : "#e8a020",
+                    LogoPath = ws.Cell(row, 6).GetString() is string lp && lp.Length > 0 ? lp : null
+                });
+            }
+            return themes;
+        }
+    }
+
+    public List<ThemeEcole> GetThemesByEcole(int ecoleId)
+        => GetAllThemes().Where(t => t.EcoleId == ecoleId).ToList();
+
+    public ThemeEcole? GetThemeById(int id)
+        => GetAllThemes().FirstOrDefault(t => t.Id == id);
+
+    public ThemeEcole AddTheme(ThemeEcole theme)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(ThemesFile);
+            var ws = wb.Worksheet("Themes");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var all = GetAllThemes();
+            theme.Id = all.Count > 0 ? all.Max(t => t.Id) + 1 : 1;
+            WriteThemeRow(ws, lastRow + 1, theme);
+            wb.Save();
+            return theme;
+        }
+    }
+
+    public ThemeEcole UpdateTheme(ThemeEcole theme)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(ThemesFile);
+            var ws = wb.Worksheet("Themes");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == theme.Id)
+                {
+                    WriteThemeRow(ws, row, theme);
+                    break;
+                }
+            }
+            wb.Save();
+            return theme;
+        }
+    }
+
+    public bool DeleteTheme(int id)
+    {
+        lock (_lock)
+        {
+            using var wb = new XLWorkbook(ThemesFile);
+            var ws = wb.Worksheet("Themes");
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            for (int row = 2; row <= lastRow; row++)
+            {
+                if (!ws.Cell(row, 1).Value.IsBlank && (int)ws.Cell(row, 1).GetDouble() == id)
+                {
+                    ws.Row(row).Delete();
+                    wb.Save();
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static void WriteThemeRow(IXLWorksheet ws, int row, ThemeEcole theme)
+    {
+        ws.Cell(row, 1).Value = theme.Id;
+        ws.Cell(row, 2).Value = theme.EcoleId;
+        ws.Cell(row, 3).Value = theme.NomEquipe;
+        ws.Cell(row, 4).Value = theme.CouleurPrimaire;
+        ws.Cell(row, 5).Value = theme.CouleurSecondaire;
+        ws.Cell(row, 6).Value = theme.LogoPath ?? string.Empty;
     }
 
     // ==================== JOUEURS ====================

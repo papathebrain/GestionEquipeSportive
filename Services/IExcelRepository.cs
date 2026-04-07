@@ -80,6 +80,14 @@ public interface IExcelRepository
     Evenement UpdateEvenement(Evenement ev);
     bool DeleteEvenement(int id);
 
+    // Thèmes d'école
+    List<ThemeEcole> GetAllThemes();
+    List<ThemeEcole> GetThemesByEcole(int ecoleId);
+    ThemeEcole? GetThemeById(int id);
+    ThemeEcole AddTheme(ThemeEcole theme);
+    ThemeEcole UpdateTheme(ThemeEcole theme);
+    bool DeleteTheme(int id);
+
     // Dictionnaires
     List<DictionnaireEntree> GetAllDictionnaire();
     DictionnaireEntree AddDictionnaire(DictionnaireEntree entree);

@@ -173,10 +173,15 @@ public class PublicController : Controller
             .OrderByDescending(kvp => matchs.FirstOrDefault(m => m.Id == kvp.Key)?.DateMatch ?? DateTime.MinValue)
             .Select(kvp => (int?)kvp.Key).FirstOrDefault();
 
+        ThemeEcole? theme = equipe.ThemeId.HasValue
+            ? _ecoleService.GetThemeById(equipe.ThemeId.Value)
+            : null;
+
         var vm = new PublicEquipeViewModel
         {
             Equipe = equipe,
             Ecole = ecole,
+            Theme = theme,
             Staff = _staffService.GetStaffByEquipe(equipe.Id),
             Joueurs = joueurs,
             Matchs = matchs,

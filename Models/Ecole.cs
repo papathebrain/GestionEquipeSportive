@@ -20,6 +20,7 @@ public class Ecole
     public string CouleurPrimaire { get; set; } = "#1a3a5c";
     public string CouleurSecondaire { get; set; } = "#e8a020";
     public List<LienSocial> LiensSociaux { get; set; } = new();
+    public List<ThemeEcole> Themes { get; set; } = new();
 
     public string Slug => ToSlug(Nom);
 

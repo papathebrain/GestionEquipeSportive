@@ -47,7 +47,6 @@ public class EcoleService : IEcoleService
 
         if (logoFile != null && logoFile.Length > 0)
         {
-            // Supprimer l'ancien logo
             if (!string.IsNullOrEmpty(ecole.LogoPath))
             {
                 var oldPath = Path.Combine(webRootPath, ecole.LogoPath.TrimStart('/'));
@@ -70,6 +69,71 @@ public class EcoleService : IEcoleService
         CouleurPrimaire = ecole.CouleurPrimaire,
         CouleurSecondaire = ecole.CouleurSecondaire,
         LiensSociaux = ecole.LiensSociaux
+    };
+
+    // ── Thèmes ──────────────────────────────────────────────────────────────
+
+    public List<ThemeEcole> GetThemesByEcole(int ecoleId) => _repo.GetThemesByEcole(ecoleId);
+
+    public ThemeEcole? GetThemeById(int id) => _repo.GetThemeById(id);
+
+    public ThemeEcole CreateTheme(ThemeEcoleViewModel vm, IFormFile? logoFile, string webRootPath)
+    {
+        var theme = new ThemeEcole
+        {
+            EcoleId = vm.EcoleId,
+            NomEquipe = vm.NomEquipe.Trim(),
+            CouleurPrimaire = vm.CouleurPrimaire,
+            CouleurSecondaire = vm.CouleurSecondaire
+        };
+
+        if (logoFile != null && logoFile.Length > 0)
+            theme.LogoPath = SaveFile(logoFile, Path.Combine(webRootPath, "uploads", "logos"));
+
+        return _repo.AddTheme(theme);
+    }
+
+    public ThemeEcole UpdateTheme(ThemeEcoleViewModel vm, IFormFile? logoFile, string webRootPath)
+    {
+        var theme = _repo.GetThemeById(vm.Id) ?? new ThemeEcole();
+        theme.Id = vm.Id;
+        theme.EcoleId = vm.EcoleId;
+        theme.NomEquipe = vm.NomEquipe.Trim();
+        theme.CouleurPrimaire = vm.CouleurPrimaire;
+        theme.CouleurSecondaire = vm.CouleurSecondaire;
+
+        if (logoFile != null && logoFile.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(theme.LogoPath))
+            {
+                var oldPath = Path.Combine(webRootPath, theme.LogoPath.TrimStart('/'));
+                if (File.Exists(oldPath)) File.Delete(oldPath);
+            }
+            theme.LogoPath = SaveFile(logoFile, Path.Combine(webRootPath, "uploads", "logos"));
+        }
+
+        return _repo.UpdateTheme(theme);
+    }
+
+    public bool DeleteTheme(int id, string webRootPath)
+    {
+        var theme = _repo.GetThemeById(id);
+        if (theme != null && !string.IsNullOrEmpty(theme.LogoPath))
+        {
+            var path = Path.Combine(webRootPath, theme.LogoPath.TrimStart('/'));
+            if (File.Exists(path)) File.Delete(path);
+        }
+        return _repo.DeleteTheme(id);
+    }
+
+    public ThemeEcoleViewModel ToThemeViewModel(ThemeEcole theme) => new ThemeEcoleViewModel
+    {
+        Id = theme.Id,
+        EcoleId = theme.EcoleId,
+        NomEquipe = theme.NomEquipe,
+        CouleurPrimaire = theme.CouleurPrimaire,
+        CouleurSecondaire = theme.CouleurSecondaire,
+        LogoPathActuel = theme.LogoPath
     };
 
     private static string SaveFile(IFormFile file, string directory)
