@@ -12,6 +12,7 @@ public class StaffService : IStaffService
         _repo = repo;
     }
 
+    public List<Staff> GetAllStaff() => _repo.GetAllStaff();
     public List<Staff> GetStaffByEquipe(int equipeId) => _repo.GetStaffByEquipe(equipeId);
     public Staff? GetStaffById(int id) => _repo.GetStaffById(id);
     public List<Staff> GetStaffByNoFiche(string noFiche) => _repo.GetStaffByNoFiche(noFiche);
@@ -23,19 +24,19 @@ public class StaffService : IStaffService
         {
             var source = _repo.GetStaffById(id);
             if (source == null) continue;
-            // Ne pas dupliquer si même NoFiche déjà présent dans l'équipe destination
-            if (!string.IsNullOrEmpty(source.NoFiche) &&
-                destStaff.Any(s => s.NoFiche == source.NoFiche))
-                continue;
-            // Assurer que la source a un NoFiche (migration des anciens enregistrements)
-            if (string.IsNullOrEmpty(source.NoFiche))
+            // Migration : assigner CleUnique si absent
+            if (!source.CleUnique.HasValue)
             {
-                source.NoFiche = Guid.NewGuid().ToString("N");
+                source.CleUnique = Guid.NewGuid();
                 _repo.UpdateStaff(source);
             }
+            // Ne pas dupliquer si même CleUnique déjà présent dans l'équipe destination
+            if (destStaff.Any(s => s.CleUnique.HasValue && s.CleUnique == source.CleUnique))
+                continue;
             _repo.AddStaff(new Staff
             {
                 EquipeId = nouvelleEquipeId,
+                CleUnique = source.CleUnique, // même GUID → même employé dans l'école
                 Nom = source.Nom,
                 Prenom = source.Prenom,
                 Titre = source.Titre,
@@ -51,11 +52,12 @@ public class StaffService : IStaffService
         var staff = new Staff
         {
             EquipeId = vm.EquipeId,
+            CleUnique = Guid.NewGuid(),
             Nom = vm.Nom.Trim(),
             Prenom = vm.Prenom.Trim(),
             Titre = vm.Titre.Trim(),
             Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
-            NoFiche = Guid.NewGuid().ToString("N")
+            NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim()
         };
         if (photoFile != null && photoFile.Length > 0)
             staff.PhotoPath = SavePhoto(photoFile, webRootPath);
@@ -67,6 +69,7 @@ public class StaffService : IStaffService
         var staff = _repo.GetStaffById(vm.Id) ?? new Staff();
         staff.Id = vm.Id;
         staff.EquipeId = vm.EquipeId;
+        staff.CleUnique ??= Guid.NewGuid(); // migration : assigne un GUID aux anciens enregistrements
         staff.Nom = vm.Nom.Trim();
         staff.Prenom = vm.Prenom.Trim();
         staff.Titre = vm.Titre.Trim();

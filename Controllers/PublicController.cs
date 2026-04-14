@@ -158,15 +158,15 @@ public class PublicController : Controller
             .Where(m => !m.AResultat && m.DateMatch >= now && m.DateMatch <= now.AddDays(7))
             .OrderBy(m => m.DateMatch).FirstOrDefault();
 
-        var joueurs = _joueurService.GetJoueursByEquipe(equipe.Id, actifSeulement: true);
-        var joueurMedias = joueurs.ToDictionary(j => j.Id, j => _joueurService.GetMediasByJoueur(j.Id));
+        var joueurEquipes = _joueurService.GetJoueurEquipesByEquipe(equipe.Id).Where(je => je.Actif).ToList();
+        var joueurMedias = joueurEquipes.ToDictionary(je => je.JoueurId, je => _joueurService.GetMediasByJoueur(je.JoueurId));
 
         var matchsAvecResultat = matchs.Where(m => m.AResultat).ToList();
         var toutesAbsences = matchsAvecResultat
             .SelectMany(m => _matchService.GetAbsencesByMatch(m.Id)).ToList();
-        var statsJoueurs = joueurs.ToDictionary(
-            j => j.Id,
-            j => (MatchsJoues: matchsAvecResultat.Count, Absences: toutesAbsences.Count(a => a.JoueurId == j.Id)));
+        var statsJoueurs = joueurEquipes.ToDictionary(
+            je => je.JoueurId,
+            je => (MatchsJoues: matchsAvecResultat.Count, Absences: toutesAbsences.Count(a => a.JoueurId == je.JoueurId)));
 
         var dernierMatchAvecPhotosId = matchesMedias
             .Where(kvp => kvp.Value.Any())
@@ -177,13 +177,22 @@ public class PublicController : Controller
             ? _ecoleService.GetThemeById(equipe.ThemeId.Value)
             : null;
 
+        // Logos des équipes adverses liées
+        var adversaireLogos = matchs
+            .Where(m => m.AdversaireId.HasValue)
+            .Select(m => m.AdversaireId!.Value)
+            .Distinct()
+            .Select(aid => _ecoleService.GetEquipeAdverseById(aid))
+            .Where(a => a != null && !string.IsNullOrEmpty(a.LogoPath))
+            .ToDictionary(a => a!.Id, a => a!.LogoPath!);
+
         var vm = new PublicEquipeViewModel
         {
             Equipe = equipe,
             Ecole = ecole,
             Theme = theme,
             Staff = _staffService.GetStaffByEquipe(equipe.Id),
-            Joueurs = joueurs,
+            Joueurs = joueurEquipes,
             Matchs = matchs,
             Evenements = _evenementService.GetEvenementsByEquipe(equipe.Id),
             Stats = stats,
@@ -195,6 +204,7 @@ public class PublicController : Controller
             DernierMatchAvecPhotosId = dernierMatchAvecPhotosId,
             PhotoBanniere = photoBanniere,
             ProchainMatch = prochain,
+            AdversaireLogos = adversaireLogos,
             SportDisplay = typeSport switch
             {
                 TypeSport.FootballAmericain => "Football",

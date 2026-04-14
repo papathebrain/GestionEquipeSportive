@@ -1,30 +1,82 @@
 @model GestionEquipeSportive.ViewModels.EcoleViewModel
 @using GestionEquipeSportive.Models
 @{
-    ViewData["Title"] = "Modifier l'école";
-    var themes = ViewBag.Themes as List<ThemeEcole> ?? new List<ThemeEcole>();
+    bool isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Nouvelle école" : "Modifier l'école";
+    var themes          = ViewBag.Themes          as List<ThemeEcole>          ?? new();
+    var adverses        = ViewBag.EquipesAdverses  as List<EquipeAdverse>       ?? new();
+    var anneesScolaires = ViewBag.AnneesScolaires  as List<AnneeScolaireEcole>  ?? new();
+    var sportsDict      = ViewBag.SportsDict       as List<(string Key, string Label)> ?? new();
+    var joueurs         = ViewBag.Joueurs          as List<Joueur>              ?? new();
+    var jeParJoueur           = ViewBag.JoueurEquipesParJoueur   as Dictionary<int, List<JoueurEquipe>> ?? new();
+    var premierePhotoParJoueur = ViewBag.PremierePhotoParJoueur  as Dictionary<int, string?>             ?? new();
+    var employes        = ViewBag.Employes         as List<Staff>               ?? new();
+    var equipesParEmploye = ViewBag.EquipesParEmploye as Dictionary<string, List<Equipe?>> ?? new();
+    var equipesEcole    = ViewBag.EquipesEcole     as List<Equipe>              ?? new();
 }
 
-<div class="mb-4">
+<div class="mb-3">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
             <li class="breadcrumb-item"><a asp-action="Index">Écoles</a></li>
-            <li class="breadcrumb-item active">Modifier</li>
+            <li class="breadcrumb-item active">@(isNew ? "Nouvelle école" : "Modifier")</li>
         </ol>
     </nav>
-    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier l'école</h1>
+    <h1 class="h3">
+        <i class="bi @(isNew ? "bi-building-add" : "bi-pencil-square") me-2 text-primary"></i>
+        @(isNew ? "Nouvelle école" : Model.Nom)
+    </h1>
 </div>
 
-<div class="row g-4">
-    @* ── Informations de l'école ── *@
-    <div class="col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-building me-2"></i>Informations de l'école</h5>
-            </div>
-            <div class="card-body">
-                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+<ul class="nav nav-tabs mb-0" id="ecoleEditTabs">
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold" data-bs-toggle="tab" href="#tab-info">
+            <i class="bi bi-building me-1"></i>Informations
+        </a>
+    </li>
+    @if (!isNew)
+    {
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-themes">
+            <i class="bi bi-palette me-1"></i>Thèmes
+            @if (themes.Any()) { <span class="badge bg-secondary ms-1">@themes.Count</span> }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-annees">
+            <i class="bi bi-calendar3 me-1"></i>Années scolaires
+            @if (anneesScolaires.Any()) { <span class="badge bg-secondary ms-1">@anneesScolaires.Count</span> }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-adverses">
+            <i class="bi bi-shield-fill-x me-1"></i>Équipes adverses
+            @if (adverses.Any()) { <span class="badge bg-secondary ms-1">@adverses.Count</span> }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-joueurs">
+            <i class="bi bi-people me-1"></i>Joueurs
+            @if (joueurs.Any()) { <span class="badge bg-secondary ms-1">@joueurs.Count</span> }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-employes">
+            <i class="bi bi-person-badge me-1"></i>Employés
+            @if (employes.Any()) { <span class="badge bg-secondary ms-1">@employes.Count</span> }
+        </a>
+    </li>
+    }
+</ul>
+
+<div class="tab-content border border-top-0 rounded-bottom bg-white shadow-sm p-4 mb-4">
+
+    @* ── Onglet Informations ── *@
+    <div class="tab-pane fade show active" id="tab-info">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <form asp-action="@(isNew ? "Create" : "Edit")" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <input asp-for="Id" type="hidden" />
 
@@ -34,9 +86,7 @@
                         <span asp-validation-for="Nom" class="text-danger small"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="NomEquipe" class="form-label fw-semibold">
-                            Nom d'équipe par défaut
-                        </label>
+                        <label asp-for="NomEquipe" class="form-label fw-semibold">Nom d'équipe par défaut</label>
                         <input asp-for="NomEquipe" class="form-control" />
                         <div class="form-text">Utilisé si aucun thème n'est assigné à une équipe.</div>
                         <span asp-validation-for="NomEquipe" class="text-danger small"></span>
@@ -84,7 +134,7 @@
 
                     <div class="mt-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                            <i class="bi bi-check-circle me-2"></i>@(isNew ? "Créer l'école" : "Enregistrer")
                         </button>
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle me-2"></i>Annuler
@@ -95,63 +145,165 @@
         </div>
     </div>
 
-    @* ── Thèmes ── *@
-    <div class="col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-palette me-2"></i>Thèmes d'équipe</h5>
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterTheme">
-                    <i class="bi bi-plus-circle me-1"></i>Ajouter
-                </button>
-            </div>
-            <div class="card-body p-2">
-                @if (!themes.Any())
+    @* ── Onglet Thèmes ── *@
+    <div class="tab-pane fade" id="tab-themes">
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterTheme">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter un thème
+            </button>
+        </div>
+        @if (!themes.Any())
+        {
+            <p class="text-muted text-center py-3">Aucun thème défini. Ajoutez un thème pour personnaliser vos équipes.</p>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var theme in themes)
                 {
-                    <p class="text-muted small p-2">Aucun thème défini. Ajoutez un thème pour personnaliser vos équipes.</p>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card border rounded overflow-hidden">
+                            <div class="theme-header d-flex align-items-center gap-2 p-2 text-white"
+                                 style="background-color: @theme.CouleurPrimaire;">
+                                @if (!string.IsNullOrEmpty(theme.LogoPath))
+                                {
+                                    <img src="@theme.LogoPath" alt="Logo" style="width:36px;height:36px;object-fit:contain;background:transparent;" />
+                                }
+                                else
+                                {
+                                    <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="bi bi-building-fill"></i>
+                                    </div>
+                                }
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@theme.NomEquipe</div>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <div style="width:16px;height:16px;border-radius:50%;background:@theme.CouleurPrimaire;border:2px solid rgba(255,255,255,0.5);" title="@theme.CouleurPrimaire"></div>
+                                    <div style="width:16px;height:16px;border-radius:50%;background:@theme.CouleurSecondaire;border:2px solid rgba(255,255,255,0.5);" title="@theme.CouleurSecondaire"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 px-2 py-1" style="background:#f8f9fa;">
+                                <div class="d-flex gap-1">
+                                    <span class="badge" style="background-color:@theme.CouleurPrimaire;">@theme.CouleurPrimaire</span>
+                                    <span class="badge" style="background-color:@theme.CouleurSecondaire;">@theme.CouleurSecondaire</span>
+                                </div>
+                                <div class="ms-auto d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2"
+                                            onclick="ouvrirModifierTheme(@theme.Id)" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form asp-action="SupprimerTheme" method="post" class="d-inline"
+                                          onsubmit="return confirm('Supprimer ce thème ?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@theme.Id" />
+                                        <input type="hidden" name="ecoleId" value="@Model.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 }
-                else
+            </div>
+        }
+    </div>
+
+    @* ── Onglet Années scolaires ── *@
+    <div class="tab-pane fade" id="tab-annees">
+        <p class="text-muted small mb-3">Les années scolaires configurées ici seront disponibles dans les menus déroulants lors de la création/modification d'équipes.</p>
+        @if (anneesScolaires.Any())
+        {
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                @foreach (var annee in anneesScolaires)
                 {
-                    <div class="d-flex flex-column gap-2 p-1">
-                        @foreach (var theme in themes)
+                    <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-light">
+                        <span class="small fw-semibold">@annee.AnneeScolaire</span>
+                        <form asp-action="SupprimerAnnee" method="post" class="d-inline"
+                              onsubmit="return confirm('Supprimer l\'année @annee.AnneeScolaire ?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@annee.Id" />
+                            <input type="hidden" name="ecoleId" value="@Model.Id" />
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1" title="Supprimer">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+        <form asp-action="AjouterAnnee" method="post" class="d-flex gap-2 align-items-end" style="max-width:320px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ecoleId" value="@Model.Id" />
+            <div class="flex-grow-1">
+                <label class="form-label small fw-semibold mb-1">Ajouter une année</label>
+                <input type="text" name="annee" class="form-control form-control-sm"
+                       placeholder="Ex: 2025-2026" pattern="\d{4}-\d{4}"
+                       title="Format : AAAA-AAAA (ex: 2025-2026)" required />
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter
+            </button>
+        </form>
+    </div>
+
+    @* ── Onglet Équipes adverses ── *@
+    <div class="tab-pane fade" id="tab-adverses">
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterAdverse">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter une équipe adverse
+            </button>
+        </div>
+        @if (!adverses.Any())
+        {
+            <p class="text-muted text-center py-3">Aucune équipe adverse définie. Ajoutez des équipes pour les sélectionner lors de la création de matchs.</p>
+        }
+        else
+        {
+            @foreach (var sportGroup in adverses.GroupBy(a => a.TypeSport).OrderBy(g => g.Key))
+            {
+                var sportLabel = sportsDict.FirstOrDefault(s => s.Key == sportGroup.Key).Label ?? sportGroup.Key;
+                <div class="mb-4">
+                    <div class="text-uppercase fw-bold small text-muted border-bottom pb-1 mb-2" style="letter-spacing:.05em;">
+                        <i class="bi bi-shield me-1"></i>@sportLabel
+                    </div>
+                    <div class="row g-2">
+                        @foreach (var adv in sportGroup.OrderBy(a => a.Nom))
                         {
-                            <div class="theme-card border rounded overflow-hidden">
-                                <div class="theme-header d-flex align-items-center gap-2 p-2 text-white"
-                                     style="background-color: @theme.CouleurPrimaire;">
-                                    @if (!string.IsNullOrEmpty(theme.LogoPath))
+                            <div class="col-md-4 col-sm-6">
+                                <div class="border rounded p-2 d-flex align-items-center gap-2 bg-light">
+                                    @if (!string.IsNullOrEmpty(adv.LogoPath))
                                     {
-                                        <img src="@theme.LogoPath" alt="Logo" style="width:36px;height:36px;object-fit:contain;background:transparent;" />
+                                        <img src="@adv.LogoPath" alt="Logo" style="width:32px;height:32px;object-fit:contain;" />
                                     }
                                     else
                                     {
-                                        <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                                            <i class="bi bi-building-fill"></i>
+                                        <div style="width:32px;height:32px;background:#dee2e6;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="bi bi-shield text-muted"></i>
                                         </div>
                                     }
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold">@theme.NomEquipe</div>
+                                    <div class="flex-grow-1 overflow-hidden">
+                                        <div class="fw-semibold small text-truncate">@adv.Nom</div>
+                                        @if (!string.IsNullOrEmpty(adv.Lieu))
+                                        {
+                                            <div class="text-muted" style="font-size:.75rem;">
+                                                <i class="bi bi-geo-alt me-1"></i>@adv.Lieu
+                                            </div>
+                                        }
                                     </div>
-                                    <div class="d-flex gap-1">
-                                        <div style="width:16px;height:16px;border-radius:50%;background:@theme.CouleurPrimaire;border:2px solid rgba(255,255,255,0.5);" title="@theme.CouleurPrimaire"></div>
-                                        <div style="width:16px;height:16px;border-radius:50%;background:@theme.CouleurSecondaire;border:2px solid rgba(255,255,255,0.5);" title="@theme.CouleurSecondaire"></div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2 px-2 py-1" style="background:#f8f9fa;">
-                                    <div class="d-flex gap-1">
-                                        <span class="badge" style="background-color:@theme.CouleurPrimaire;">@theme.CouleurPrimaire</span>
-                                        <span class="badge" style="background-color:@theme.CouleurSecondaire;">@theme.CouleurSecondaire</span>
-                                    </div>
-                                    <div class="ms-auto d-flex gap-1">
-                                        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2"
-                                                onclick="ouvrirModifierTheme(@theme.Id)"
-                                                title="Modifier">
+                                    <div class="d-flex gap-1 flex-shrink-0">
+                                        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                                onclick="ouvrirModifierAdverse(@adv.Id)" title="Modifier">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <form asp-action="SupprimerTheme" method="post" class="d-inline"
-                                              onsubmit="return confirm('Supprimer ce thème ?')">
+                                        <form asp-action="SupprimerAdverse" method="post" class="d-inline"
+                                              onsubmit="return confirm('Supprimer cette équipe adverse ?')">
                                             @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@theme.Id" />
+                                            <input type="hidden" name="id" value="@adv.Id" />
                                             <input type="hidden" name="ecoleId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Supprimer">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -160,13 +312,423 @@
                             </div>
                         }
                     </div>
+                </div>
+            }
+        }
+    </div>
+
+    @* ── Onglet Joueurs ── *@
+    <div class="tab-pane fade" id="tab-joueurs">
+        @{
+            // Années scolaires disponibles (issues des équipes de l'école)
+            var anneesDisponibles = equipesEcole
+                .Select(e => e.AnneeScolaire)
+                .Where(a => !string.IsNullOrEmpty(a))
+                .Distinct()
+                .OrderByDescending(a => a)
+                .ToList();
+
+            // Construire la structure : joueur → liste (equipe, joueurEquipe) pour l'année filtrée
+            // On construit ici pour toutes les années; le filtre se fait côté JS
+            // Pour chaque joueur : ses JoueurEquipes par annéeScolaire
+            var lignesTout = new List<(Joueur J, JoueurEquipe? Je, Equipe? Eq)>();
+            foreach (var j in joueurs)
+            {
+                if (jeParJoueur.TryGetValue(j.Id, out var jes) && jes.Any())
+                    foreach (var je in jes.Where(x => x.Equipe != null))
+                        lignesTout.Add((j, je, je.Equipe));
+                // Toujours ajouter une ligne "sans équipe" pour chaque joueur (pour l'option "Tous")
+                if (!jeParJoueur.TryGetValue(j.Id, out var _jes2) || !_jes2.Any())
+                    lignesTout.Add((j, null, null));
+            }
+        }
+
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <div class="input-group input-group-sm" style="max-width:220px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="joueurEcoleRecherche" class="form-control" placeholder="Nom, fiche…" autocomplete="off" />
+                </div>
+                <select id="joueurAnneeFiltre" class="form-select form-select-sm" style="max-width:160px;">
+                    @foreach (var a in anneesDisponibles)
+                    {
+                        <option value="@a">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                @if (equipesEcole.Any())
+                {
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalImporterJoueursExcel">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Importer Excel
+                    </button>
+                }
+                <a asp-controller="Joueur" asp-action="Create" asp-route-ecoleId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Nouveau joueur
+                </a>
+            </div>
+        </div>
+
+        @if (!joueurs.Any())
+        {
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-people me-1"></i>Aucun joueur dans cette école.
+            </p>
+        }
+        else
+        {
+            <table class="table table-sm table-hover align-middle" id="joueurEcoleTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:36px;"></th>
+                        <th>Nom</th>
+                        <th>Fiche</th>
+                        <th>Statut</th>
+                        <th>Sport</th>
+                        <th>Niveau</th>
+                        <th style="width:40px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var j in joueurs.Where(j => j.Actif))
+                    {
+                        var jesDuJoueur = jeParJoueur.TryGetValue(j.Id, out var jl) ? jl : new();
+                        var photoSrc = jesDuJoueur.FirstOrDefault(x => !string.IsNullOrEmpty(x.PhotoPath))?.PhotoPath
+                            ?? (premierePhotoParJoueur.TryGetValue(j.Id, out var pm) ? pm : null);
+                        // Sérialiser les équipes par année pour le JS
+                        var equipeParAnnee = jesDuJoueur
+                            .Where(je => je.Equipe != null)
+                            .GroupBy(je => je.Equipe!.AnneeScolaire ?? "")
+                            .ToDictionary(g => g.Key, g => g.Select(je => new {
+                                nom          = je.Equipe!.Nom,
+                                sportOrdre   = (int)je.Equipe!.TypeSport,
+                                sport        = je.Equipe!.TypeSport switch {
+                                    TypeSport.FootballAmericain => "Football",
+                                    TypeSport.FlagFootball      => "Flag Football",
+                                    TypeSport.Soccer            => "Soccer",
+                                    TypeSport.Volleyball        => "Volleyball",
+                                    TypeSport.Hockey            => "Hockey",
+                                    _                           => je.Equipe!.TypeSport.ToString()
+                                },
+                                niveauOrdre  = (int)je.Equipe!.Niveau,
+                                niveau       = je.Equipe!.Niveau switch {
+                                    NiveauEquipe.Juvenil => "Juvénile",
+                                    NiveauEquipe.PeeWee  => "Pee-Wee",
+                                    _                    => je.Equipe!.Niveau.ToString()
+                                }
+                            }).ToList());
+                        var equipeParAnneeJson = System.Text.Json.JsonSerializer.Serialize(equipeParAnnee);
+                        // Toutes les années où ce joueur apparaît
+                        var anneesJoueur = equipeParAnnee.Keys.ToList();
+                        var anneesJson = System.Text.Json.JsonSerializer.Serialize(anneesJoueur);
+                        <tr class="joueur-ecole-row"
+                            data-nom="@($"{j.Prenom} {j.Nom}".ToLower())"
+                            data-fiche="@(j.NoFiche?.ToLower() ?? "")"
+                            data-annees="@anneesJson"
+                            data-equipes-par-annee="@equipeParAnneeJson">
+                            <td>
+                                @if (!string.IsNullOrEmpty(photoSrc) && j.ConsentementPhoto)
+                                {
+                                    <img src="@photoSrc" class="rounded-circle"
+                                         style="width:32px;height:32px;object-fit:cover;" />
+                                }
+                                else if (!string.IsNullOrEmpty(Model.LogoPathActuel))
+                                {
+                                    <img src="@Model.LogoPathActuel" class="rounded-circle"
+                                         style="width:32px;height:32px;object-fit:contain;padding:3px;background:#f8f9fa;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-muted"
+                                         style="width:32px;height:32px;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-semibold">@j.Prenom @j.Nom</span>
+                            </td>
+                            <td class="text-muted small">@j.NoFiche</td>
+                            <td>
+                                @if (j.Actif)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle small">Actif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle small">Inactif</span>
+                                }
+                            </td>
+                            <td class="joueur-sport-cell small"></td>
+                            <td class="joueur-niveau-cell small"></td>
+                            <td>
+                                <a asp-controller="Joueur" asp-action="Edit" asp-route-id="@j.Id"
+                                   class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p id="joueurEcoleAucun" class="text-muted text-center py-2 mb-0" style="display:none;">
+                <i class="bi bi-search me-1"></i>Aucun joueur trouvé.
+            </p>
+        }
+    </div>
+
+    @* ── Onglet Employés ── *@
+    <div class="tab-pane fade" id="tab-employes">
+        @if (!employes.Any())
+        {
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-person-badge me-1"></i>Aucun employé dans cette école.
+            </p>
+        }
+        else
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <div class="input-group input-group-sm" style="max-width:240px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="employeEcoleRecherche" class="form-control" placeholder="Nom, titre, équipe…" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="row g-3" id="employesList">
+                @foreach (var emp in employes)
+                {
+                    var cleEmp = emp.CleUnique.HasValue ? emp.CleUnique.Value.ToString() : $"__id_{emp.Id}";
+                    var eqs = equipesParEmploye.ContainsKey(cleEmp) ? equipesParEmploye[cleEmp] : new();
+                    var equipeNoms = string.Join(", ", eqs.Where(e => e != null).Select(e => e!.Nom));
+                    <div class="col-12 col-md-6 col-lg-4 employe-item"
+                         data-nom="@($"{emp.Prenom} {emp.Nom}".ToLower())"
+                         data-titre="@emp.Titre.ToLower()"
+                         data-equipe="@equipeNoms.ToLower()">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded border">
+                            @if (!string.IsNullOrEmpty(emp.PhotoPath))
+                            {
+                                <img src="@emp.PhotoPath" class="rounded-circle flex-shrink-0"
+                                     style="width:48px;height:48px;object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center bg-secondary text-white"
+                                     style="width:48px;height:48px;font-size:1.2rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                            }
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="fw-semibold text-truncate">@emp.Prenom @emp.Nom</div>
+                                <div class="small text-muted text-truncate">@emp.Titre</div>
+                                @if (eqs.Count > 1)
+                                {
+                                    <div class="small mt-1 d-flex flex-wrap gap-1">
+                                        @foreach (var eq in eqs.Where(e => e != null))
+                                        {
+                                            <span class="badge bg-light text-dark border">@eq!.Nom</span>
+                                        }
+                                    </div>
+                                }
+                                else if (eqs.Count == 1)
+                                {
+                                    <div class="small text-muted">@eqs[0]?.Nom</div>
+                                }
+                            </div>
+                            <a asp-controller="Staff" asp-action="Edit" asp-route-id="@emp.Id"
+                               class="btn btn-sm btn-outline-warning py-0 px-2 flex-shrink-0" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </div>
                 }
             </div>
+            <p id="employeEcoleAucun" class="text-muted text-center py-2 mb-0 mt-2" style="display:none;">
+                <i class="bi bi-search me-1"></i>Aucun employé trouvé.
+            </p>
+        }
+    </div>
+
+</div>
+
+
+@* ── Modal Importer joueurs Excel ── *@
+<div class="modal fade" id="modalImporterJoueursExcel" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Importer joueurs depuis Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-controller="Joueur" asp-action="ImporterExcel" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="/Ecole/Edit/@Model.Id?tab=joueurs" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Équipe cible <span class="text-danger">*</span></label>
+                        <select name="equipeId" class="form-select" required>
+                            @foreach (var eq in equipesEcole)
+                            {
+                                <option value="@eq.Id">@eq.Nom @(!string.IsNullOrEmpty(eq.AnneeScolaire) ? $"({eq.AnneeScolaire})" : "")</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fichier Excel (.xlsx) <span class="text-danger">*</span></label>
+                        <input type="file" name="fichierExcel" class="form-control" accept=".xlsx" required />
+                    </div>
+
+                    @* Format attendu *@
+                    <div class="border rounded p-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold small"><i class="bi bi-info-circle me-1 text-primary"></i>Format attendu</span>
+                            <a asp-controller="Joueur" asp-action="GabaritExcelJoueurs"
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-download me-1"></i>Télécharger le gabarit
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-1" style="font-size:.8rem;">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>No Fiche</th>
+                                        <th>Nom <span class="text-danger">*</span></th>
+                                        <th>Prénom <span class="text-danger">*</span></th>
+                                        <th>Numéro chandail</th>
+                                        <th>Position</th>
+                                        <th>Position spécifique</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="text-muted">
+                                        <td><em>optionnel</em></td>
+                                        <td>Tremblay</td>
+                                        <td>Marc</td>
+                                        <td>12</td>
+                                        <td>Attaque</td>
+                                        <td>Attaque|QB</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <ul class="mb-0 small text-muted ps-3">
+                            <li><strong>No Fiche</strong> : clé externe GPI — si présent, met à jour le joueur existant au lieu d'en créer un nouveau</li>
+                            <li><strong>Position spécifique</strong> : format <code>Groupe|Rôle</code> (ex: <code>Attaque|QB</code>)</li>
+                            <li>Les colonnes peuvent être dans n'importe quel ordre</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-@* ── Modal Ajouter Thème ── *@
+@* ── Modales (inchangées) ── *@
+
+@* Modal Ajouter Adverse *@
+<div class="modal fade" id="modalAjouterAdverse" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="AjouterAdverse" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EcoleId" value="@Model.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-shield-fill-x me-2"></i>Ajouter une équipe adverse</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Sport <span class="text-danger">*</span></label>
+                            <select name="TypeSport" class="form-select" required>
+                                <option value="">— Sélectionner —</option>
+                                @foreach (var s in sportsDict)
+                                { <option value="@s.Key">@s.Label</option> }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nom de l'équipe <span class="text-danger">*</span></label>
+                            <input type="text" name="Nom" class="form-control" required placeholder="Ex: Lions de Québec" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Lieu habituel</label>
+                            <input type="text" name="Lieu" class="form-control" placeholder="Ex: Stade municipal" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Logo</label>
+                            <input type="file" name="LogoFile" class="form-control" accept="image/*"
+                                   onchange="previewAdverseLogo(this,'addAdvLogoPreview','addAdvLogoWrap')" />
+                            <div id="addAdvLogoWrap" class="mt-1" style="display:none;">
+                                <img id="addAdvLogoPreview" src="#" alt="Aperçu" style="height:40px;object-fit:contain;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modal Modifier Adverse *@
+<div class="modal fade" id="modalModifierAdverse" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="ModifierAdverse" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editAdvId" />
+                <input type="hidden" name="EcoleId" value="@Model.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Modifier l'équipe adverse</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Sport <span class="text-danger">*</span></label>
+                            <select name="TypeSport" id="editAdvTypeSport" class="form-select" required>
+                                <option value="">— Sélectionner —</option>
+                                @foreach (var s in sportsDict)
+                                { <option value="@s.Key">@s.Label</option> }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nom de l'équipe <span class="text-danger">*</span></label>
+                            <input type="text" name="Nom" id="editAdvNom" class="form-control" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Lieu habituel</label>
+                            <input type="text" name="Lieu" id="editAdvLieu" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nouveau logo (optionnel)</label>
+                            <input type="file" name="LogoFile" id="editAdvLogoFile" class="form-control" accept="image/*"
+                                   onchange="previewAdverseLogo(this,'editAdvLogoPreview','editAdvLogoWrap')" />
+                            <div id="editAdvLogoWrap" class="mt-1" style="display:none;">
+                                <img id="editAdvLogoPreview" src="#" alt="Logo" style="height:40px;object-fit:contain;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modal Ajouter Thème *@
 <div class="modal fade" id="modalAjouterTheme" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -208,7 +770,6 @@
                             <input type="file" name="LogoFile" class="form-control" accept="image/*"
                                    onchange="previewThemeLogo(this,'addLogoPreview','addLogoContainer','addLogoPlaceholder')" />
                         </div>
-                        @* Aperçu en temps réel *@
                         <div class="col-12">
                             <div id="addThemePreview" class="rounded p-2 text-white d-flex align-items-center gap-2"
                                  style="background-color:#1a3a5c;">
@@ -232,7 +793,7 @@
     </div>
 </div>
 
-@* ── Modal Modifier Thème ── *@
+@* Modal Modifier Thème *@
 <div class="modal fade" id="modalModifierTheme" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -280,7 +841,6 @@
                                 <img id="editLogoActuel" src="#" alt="Logo actuel" style="height:30px;object-fit:contain;" />
                             </div>
                         </div>
-                        @* Aperçu *@
                         <div class="col-12">
                             <div id="editThemePreview" class="rounded p-2 text-white d-flex align-items-center gap-2"
                                  style="background-color:#1a3a5c;">
@@ -306,12 +866,20 @@
 
 @section Scripts {
 <script>
-    // ── Sync nom de l'équipe dans aperçu ajouter ────────────────────────────
+    // ── Activer l'onglet selon le paramètre ?tab= dans l'URL ──────────────────
+    (function () {
+        var urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (urlTab) {
+            var tabEl = document.querySelector('#ecoleEditTabs a[href="#tab-' + urlTab + '"]');
+            if (tabEl) new bootstrap.Tab(tabEl).show();
+        }
+    })();
+
+    // ── Sync nom d'équipe dans aperçu
     document.querySelector('#modalAjouterTheme [name="NomEquipe"]')?.addEventListener('input', function() {
         document.getElementById('addPreviewNom').textContent = this.value || "Nom d'équipe";
     });
 
-    // ── Sync couleurs ────────────────────────────────────────────────────────
     function syncAddColor(prefix, which, value) {
         document.getElementById(prefix + 'Couleur' + which + 'Text').value = value;
         updateThemePreview(prefix);
@@ -327,7 +895,6 @@
         document.getElementById(prefix + 'ThemePreview').style.backgroundColor = p;
     }
 
-    // ── Preview logo ─────────────────────────────────────────────────────────
     function previewThemeLogo(input, imgId, containerId, placeholderId) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -340,7 +907,6 @@
         }
     }
 
-    // ── Ouvrir modal modifier ────────────────────────────────────────────────
     function ouvrirModifierTheme(id) {
         fetch('/Ecole/GetTheme/' + id)
             .then(r => r.json())
@@ -353,7 +919,6 @@
                 document.getElementById('editCouleurSecondaireInput').value = t.couleurSecondaire;
                 document.getElementById('editCouleurSecondaireText').value = t.couleurSecondaire;
                 document.getElementById('editThemePreview').style.backgroundColor = t.couleurPrimaire;
-                // Logo actuel
                 if (t.logoPath) {
                     document.getElementById('editLogoActuel').src = t.logoPath;
                     document.getElementById('editLogoActuelWrap').style.display = 'block';
@@ -365,7 +930,6 @@
                     document.getElementById('editLogoContainer').style.display = 'none';
                     document.getElementById('editLogoPlaceholder').style.display = 'flex';
                 }
-                // Réinitialiser input file
                 document.getElementById('editLogoFile').value = '';
                 new bootstrap.Modal(document.getElementById('modalModifierTheme')).show();
             });
@@ -401,5 +965,122 @@
             reindexLiens();
         }
     });
+
+    // ── Équipes adverses ─────────────────────────────────────────────────────
+    function previewAdverseLogo(input, imgId, wrapId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById(imgId).src = e.target.result;
+                document.getElementById(wrapId).style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function ouvrirModifierAdverse(id) {
+        fetch('/Ecole/GetAdverse/' + id)
+            .then(r => r.json())
+            .then(a => {
+                document.getElementById('editAdvId').value = a.id;
+                document.getElementById('editAdvTypeSport').value = a.typeSport;
+                document.getElementById('editAdvNom').value = a.nom;
+                document.getElementById('editAdvLieu').value = a.lieu || '';
+                const wrap = document.getElementById('editAdvLogoWrap');
+                const img = document.getElementById('editAdvLogoPreview');
+                if (a.logoPath) {
+                    img.src = a.logoPath;
+                    wrap.style.display = 'block';
+                } else {
+                    wrap.style.display = 'none';
+                }
+                document.getElementById('editAdvLogoFile').value = '';
+                new bootstrap.Modal(document.getElementById('modalModifierAdverse')).show();
+            });
+    }
+
+// ── Filtre employés de l'école ───────────────────────────────────────────
+    var employeEcoleInput = document.getElementById('employeEcoleRecherche');
+    if (employeEcoleInput) {
+        employeEcoleInput.addEventListener('input', function () {
+            var q = this.value.toLowerCase().trim();
+            var total = 0;
+            document.querySelectorAll('.employe-item').forEach(function (item) {
+                var match = !q
+                    || item.dataset.nom.includes(q)
+                    || item.dataset.titre.includes(q)
+                    || item.dataset.equipe.includes(q);
+                item.style.display = match ? '' : 'none';
+                if (match) total++;
+            });
+            document.getElementById('employeEcoleAucun').style.display = total === 0 ? '' : 'none';
+        });
+    }
+
+    // ── Filtre joueurs de l'école ─────────────────────────────────────────────
+    function filtrerJoueurs() {
+        var q     = (document.getElementById('joueurEcoleRecherche')?.value ?? '').toLowerCase().trim();
+        var annee = document.getElementById('joueurAnneeFiltre')?.value ?? '';
+        var total = 0;
+
+        document.querySelectorAll('.joueur-ecole-row').forEach(function (row) {
+            var nomMatch = !q || row.dataset.nom.includes(q) || row.dataset.fiche.includes(q);
+
+            // Mettre à jour les cellules sport/niveau selon l'année sélectionnée
+            var sportCell  = row.querySelector('.joueur-sport-cell');
+            var niveauCell = row.querySelector('.joueur-niveau-cell');
+            if (sportCell && niveauCell) {
+                var equipeParAnnee = JSON.parse(row.dataset.equipesParAnnee || '{}');
+                var eqs = annee ? (equipeParAnnee[annee] || []) : Object.values(equipeParAnnee).flat();
+                // Dédupliquer par clé sport+niveau
+                var seen = new Set();
+                eqs = eqs.filter(function(e) {
+                    var key = e.sportOrdre + '|' + e.niveauOrdre;
+                    if (seen.has(key)) return false;
+                    seen.add(key); return true;
+                });
+                // Trier : sport → niveau
+                eqs.sort(function(a, b) {
+                    if (a.sportOrdre !== b.sportOrdre) return a.sportOrdre - b.sportOrdre;
+                    return a.niveauOrdre - b.niveauOrdre;
+                });
+                if (annee && eqs.length === 0) {
+                    sportCell.innerHTML  = '<span class="text-muted fst-italic">Aucune équipe</span>';
+                    niveauCell.innerHTML = '';
+                } else {
+                    sportCell.innerHTML  = eqs.map(function(e) { return '<div>' + e.sport  + '</div>'; }).join('');
+                    niveauCell.innerHTML = eqs.map(function(e) { return '<div>' + e.niveau + '</div>'; }).join('');
+                }
+            }
+
+            // Tous les joueurs actifs sont toujours visibles, seul le filtre texte s'applique
+            row.style.display = nomMatch ? '' : 'none';
+            if (nomMatch) total++;
+        });
+
+        var aucun = document.getElementById('joueurEcoleAucun');
+        if (aucun) aucun.style.display = total === 0 ? '' : 'none';
+    }
+
+    // Auto-sélectionner l'année scolaire courante
+    (function () {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = now.getMonth() + 1; // 1-12
+        var anneeCourante = m >= 9 ? (y + '-' + (y + 1)) : ((y - 1) + '-' + y);
+        var sel = document.getElementById('joueurAnneeFiltre');
+        if (sel) {
+            var found = Array.from(sel.options).some(function (o) {
+                if (o.value === anneeCourante) { sel.value = anneeCourante; return true; }
+                return false;
+            });
+            if (!found && sel.options.length > 0) sel.value = sel.options[0].value;
+        }
+    })();
+
+    filtrerJoueurs();
+
+    document.getElementById('joueurEcoleRecherche')?.addEventListener('input', filtrerJoueurs);
+    document.getElementById('joueurAnneeFiltre')?.addEventListener('change', filtrerJoueurs);
 </script>
 }

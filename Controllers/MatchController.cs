@@ -50,31 +50,7 @@ public class MatchController : Controller
         return View(matchs);
     }
 
-    // ─── Details ──────────────────────────────────────────────────────────────
 
-    public IActionResult Details(int id)
-    {
-        var match = _matchService.GetMatchById(id);
-        if (match == null) return NotFound();
-
-        var equipe = _equipeService.GetEquipeById(match.EquipeId);
-        var ecole = equipe != null ? _ecoleService.GetEcoleById(equipe.EcoleId) : null;
-        if (ecole != null) SetTheme(ecole);
-
-        match.Equipe = equipe;
-
-        var medias = _matchService.GetMediasByMatch(id);
-
-        ViewBag.Ecole = ecole;
-        ViewBag.Medias = medias;
-        ViewBag.PeutModifier = equipe != null && _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
-
-        var joueurs = _joueurService.GetJoueursByEquipe(match.EquipeId);
-        ViewBag.Joueurs = joueurs;
-        ViewBag.Absences = _matchService.GetAbsencesByMatch(id);
-
-        return View(match);
-    }
 
     // ─── Create ───────────────────────────────────────────────────────────────
 
@@ -97,6 +73,7 @@ public class MatchController : Controller
             NomEcole = ecole?.Nom,
             DateMatch = DateTime.Today
         };
+        vm.EquipesAdversesDisponibles = _ecoleService.GetEquipesAdversesByEcoleSport(equipe.EcoleId, equipe.TypeSport.ToString());
         return View(vm);
     }
 
@@ -115,18 +92,31 @@ public class MatchController : Controller
             vm.NomEquipe = equipe.Nom;
             vm.NomEcole = ecole2?.Nom;
             vm.EcoleId = equipe.EcoleId;
+            vm.EquipesAdversesDisponibles = _ecoleService.GetEquipesAdversesByEcoleSport(equipe.EcoleId, equipe.TypeSport.ToString());
             return View(vm);
+        }
+
+        // Pré-remplir adversaire/lieu depuis le dictionnaire si sélectionné
+        if (vm.AdversaireId.HasValue)
+        {
+            var adv = _ecoleService.GetEquipeAdverseById(vm.AdversaireId.Value);
+            if (adv != null)
+            {
+                vm.Adversaire = adv.Nom;
+                if (string.IsNullOrWhiteSpace(vm.Lieu) && !string.IsNullOrEmpty(adv.Lieu))
+                    vm.Lieu = adv.Lieu;
+            }
         }
 
         var match = _matchService.CreateMatch(vm);
         TempData["Success"] = $"Match contre {match.Adversaire} ajouté avec succès.";
-        return RedirectToAction(nameof(Index), new { equipeId = vm.EquipeId });
+        return RedirectToAction("Details", "Equipe", new { id = vm.EquipeId, tab = "matchs" });
     }
 
     // ─── Edit ─────────────────────────────────────────────────────────────────
 
     [HttpGet]
-    public IActionResult Edit(int id)
+    public IActionResult Edit(int id, string? tab = null)
     {
         var match = _matchService.GetMatchById(id);
         if (match == null) return NotFound();
@@ -142,6 +132,13 @@ public class MatchController : Controller
         vm.NomEquipe = equipe.Nom;
         vm.NomEcole = ecole?.Nom;
         vm.EcoleId = equipe.EcoleId;
+        vm.EquipesAdversesDisponibles = _ecoleService.GetEquipesAdversesByEcoleSport(equipe.EcoleId, equipe.TypeSport.ToString());
+
+        ViewBag.Medias = _matchService.GetMediasByMatch(id);
+        ViewBag.Joueurs = _joueurService.GetJoueurEquipesByEquipe(match.EquipeId);
+        ViewBag.Absences = _matchService.GetAbsencesByMatch(id);
+        ViewBag.ActiveTab = tab ?? "info";
+
         return View(vm);
     }
 
@@ -162,12 +159,24 @@ public class MatchController : Controller
             vm.NomEquipe = equipe.Nom;
             vm.NomEcole = ecole2?.Nom;
             vm.EcoleId = equipe.EcoleId;
+            vm.EquipesAdversesDisponibles = _ecoleService.GetEquipesAdversesByEcoleSport(equipe.EcoleId, equipe.TypeSport.ToString());
+            ViewBag.Medias = _matchService.GetMediasByMatch(id);
+            ViewBag.Joueurs = _joueurService.GetJoueurEquipesByEquipe(vm.EquipeId);
+            ViewBag.Absences = _matchService.GetAbsencesByMatch(id);
             return View(vm);
+        }
+
+        // Pré-remplir adversaire/lieu depuis le dictionnaire si sélectionné
+        if (vm.AdversaireId.HasValue)
+        {
+            var adv = _ecoleService.GetEquipeAdverseById(vm.AdversaireId.Value);
+            if (adv != null)
+                vm.Adversaire = adv.Nom;
         }
 
         _matchService.UpdateMatch(vm);
         TempData["Success"] = "Match modifié avec succès.";
-        return RedirectToAction(nameof(Index), new { equipeId = vm.EquipeId });
+        return RedirectToAction("Details", "Equipe", new { id = vm.EquipeId, tab = "matchs" });
     }
 
     // ─── Delete ───────────────────────────────────────────────────────────────
@@ -206,13 +215,13 @@ public class MatchController : Controller
         if (!valides.Any())
         {
             TempData["Error"] = "Veuillez sélectionner au moins un fichier.";
-            return RedirectToAction(nameof(Details), new { id = matchId });
+            return RedirectToAction(nameof(Edit), new { id = matchId, tab = "galerie" });
         }
 
         var type = typeMedia == "Video" ? TypeMedia.Video : TypeMedia.Photo;
         var ajoutees = _matchService.AddMedias(matchId, valides, type, description, _env.WebRootPath);
         TempData["Success"] = ajoutees.Count == 1 ? "Média ajouté." : $"{ajoutees.Count} médias ajoutés.";
-        return RedirectToAction(nameof(Details), new { id = matchId });
+        return RedirectToAction(nameof(Edit), new { id = matchId, tab = "galerie" });
     }
 
     [HttpPost]
@@ -228,7 +237,7 @@ public class MatchController : Controller
 
         _matchService.DeleteMedia(id, _env.WebRootPath);
         TempData["Success"] = "Média supprimé.";
-        return RedirectToAction(nameof(Details), new { id = matchId });
+        return RedirectToAction(nameof(Edit), new { id = matchId, tab = "galerie" });
     }
 
     // ─── Absences ─────────────────────────────────────────────────────────────
@@ -243,7 +252,7 @@ public class MatchController : Controller
         if (!_access.PeutModifierEquipe(User, equipe?.Id ?? 0, equipe?.EcoleId ?? 0))
             return Forbid();
         _matchService.ToggleAbsence(matchId, joueurId);
-        return RedirectToAction(nameof(Details), new { id = matchId });
+        return RedirectToAction(nameof(Edit), new { id = matchId, tab = "presences" });
     }
 
     // ─── Import calendrier Excel ──────────────────────────────────────────────

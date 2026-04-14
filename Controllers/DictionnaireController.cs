@@ -71,11 +71,11 @@ public class DictionnaireController : Controller
             var valeur = entree.Valeur;
 
             if (entree.Categorie == "Position" &&
-                _joueurService.GetAllJoueurs().Any(j => j.Position == valeur || j.PositionPairs.Any(p => p.Pos == valeur)))
+                _joueurService.GetAllJoueurEquipes().Any(je => je.Position == valeur || je.PositionPairs.Any(p => p.Pos == valeur)))
                 erreur = $"Impossible de supprimer « {valeur} » : utilisé par au moins un joueur (Position).";
 
             else if (entree.Categorie == "PositionSpecifique" &&
-                _joueurService.GetAllJoueurs().Any(j => j.PositionPairs.Any(p => p.Spec == valeur)))
+                _joueurService.GetAllJoueurEquipes().Any(je => je.PositionPairs.Any(p => p.Spec == valeur)))
                 erreur = $"Impossible de supprimer « {valeur} » : utilisé par au moins un joueur (Position spécifique).";
 
             else if (entree.Categorie == "TitreStaff" &&

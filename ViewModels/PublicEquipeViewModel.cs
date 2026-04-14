@@ -8,7 +8,7 @@ public class PublicEquipeViewModel
     public Ecole Ecole { get; set; } = null!;
 
     public List<Staff> Staff { get; set; } = new();
-    public List<Joueur> Joueurs { get; set; } = new();
+    public List<JoueurEquipe> Joueurs { get; set; } = new();
     public List<Match> Matchs { get; set; } = new();
     public List<Evenement> Evenements { get; set; } = new();
     public StatistiquesMatchViewModel Stats { get; set; } = new();
@@ -21,6 +21,9 @@ public class PublicEquipeViewModel
 
     // Photos par match (matchId → liste de photos)
     public Dictionary<int, List<MatchMedia>> MatchesMedias { get; set; } = new();
+
+    // Logo par AdversaireId (adversaireId → logoPath)
+    public Dictionary<int, string> AdversaireLogos { get; set; } = new();
 
     // Photos par joueur (joueurId → liste de photos)
     public Dictionary<int, List<JoueurMedia>> JoueurMedias { get; set; } = new();

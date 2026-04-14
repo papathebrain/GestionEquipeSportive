@@ -302,14 +302,14 @@
                 <div class="fc-cols">
                     @foreach (var j in groupe.OrderBy(j => j.Numero))
                     {
-                        (int MatchsJoues, int Absences) sj = Model.StatsJoueurs.TryGetValue(j.Id, out var st) ? st : (0, 0);
+                        (int MatchsJoues, int Absences) sj = Model.StatsJoueurs.TryGetValue(j.JoueurId, out var st) ? st : (0, 0);
                         var presences = sj.MatchsJoues - sj.Absences;
                         var posAbreg = string.IsNullOrEmpty(j.PositionSpecifique)
                             ? (j.Position.Length > 4 ? j.Position[..3] : j.Position)
                             : j.PositionSpecifique;
                         var snackPosId   = $"snack-pos-{j.Id}";
                         var snackSpecId  = $"snack-spec-{j.Id}";
-                        var hasPhoto     = !string.IsNullOrEmpty(j.PhotoPath) && j.ConsentementPhoto;
+                        var hasPhoto     = !string.IsNullOrEmpty(j.PhotoPath) && j.Joueur?.ConsentementPhoto == true;
                         var hasLogo      = !string.IsNullOrEmpty(Model.Ecole.LogoPath);
 
                         <div class="fc-col" ontouchstart="this.classList.toggle('hover');">
@@ -328,7 +328,7 @@
                                         <div class="fc-top">
                                             @if (hasPhoto)
                                             {
-                                                <img class="j2-player-photo" src="@j.PhotoPath" alt="@j.Prenom @j.Nom" />
+                                                <img class="j2-player-photo" src="@j.PhotoPath" alt="@j.Joueur?.Prenom @j.Joueur?.Nom" />
                                             }
                                             else if (hasLogo)
                                             {
@@ -344,7 +344,7 @@
                                     </div>
 
                                     <div class="fc-bottom">
-                                        <p class="j2-h1">@j.Nom.ToUpper()</p>
+                                        <p class="j2-h1">@(j.Joueur?.Nom.ToUpper())</p>
                                         @if (hasLogo)
                                         {
                                             <img class="j2-club-logo" src="@Model.Ecole.LogoPath" alt="@Model.Ecole.Nom" />
@@ -377,7 +377,7 @@
                                         <div class="fc-top">
                                             @if (hasPhoto)
                                             {
-                                                <img class="j2-profile-photo" src="@j.PhotoPath" alt="@j.Prenom @j.Nom" />
+                                                <img class="j2-profile-photo" src="@j.PhotoPath" alt="@j.Joueur?.Prenom @j.Joueur?.Nom" />
                                             }
                                             else if (hasLogo)
                                             {
@@ -409,7 +409,7 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <p class="j2-h2">@j.Prenom @j.Nom</p>
+                                            <p class="j2-h2">@j.Joueur?.Prenom @j.Joueur?.Nom</p>
                                             @if (!string.IsNullOrEmpty(j.Description))
                                             {
                                                 <p class="j2-p">@j.Description</p>

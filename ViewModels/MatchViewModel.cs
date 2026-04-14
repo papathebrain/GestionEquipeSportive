@@ -1,3 +1,4 @@
+using GestionEquipeSportive.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace GestionEquipeSportive.ViewModels;
@@ -44,10 +45,17 @@ public class MatchViewModel
     [Display(Name = "Notes")]
     public string? Notes { get; set; }
 
+    // Équipe adverse du dictionnaire (optionnel)
+    [Display(Name = "Équipe adverse")]
+    public int? AdversaireId { get; set; }
+
     // Navigation (affichage)
     public string? NomEquipe { get; set; }
     public string? NomEcole { get; set; }
     public int EcoleId { get; set; }
+
+    // Liste des équipes adverses disponibles (peuplée par le contrôleur)
+    public List<EquipeAdverse> EquipesAdversesDisponibles { get; set; } = new();
 }
 
 public class StatistiquesMatchViewModel

@@ -9,6 +9,7 @@ public class Match
     public string? HeureDepartAutobus { get; set; }     // null si domicile
     public string? HeureDebutMatch { get; set; }        // "HH:mm"
     public bool EstDomicile { get; set; }
+    public int? AdversaireId { get; set; }   // FK vers EquipeAdverse (optionnel)
     public string Adversaire { get; set; } = "";
     public string? Lieu { get; set; }
     public int? ScoreEquipe { get; set; }

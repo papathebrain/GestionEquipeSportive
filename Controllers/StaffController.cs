@@ -191,6 +191,88 @@ public class StaffController : Controller
         }));
     }
 
+    [HttpGet]
+    public IActionResult RechercherStaff(string q, int equipeId)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            return Json(new { staff = Array.Empty<object>(), message = "Saisissez au moins 2 caractères." });
+
+        var equipe = _equipeService.GetEquipeById(equipeId);
+        if (equipe == null) return Json(new { staff = Array.Empty<object>() });
+
+        var equipesDeLEcole = _equipeService.GetEquipesByEcole(equipe.EcoleId);
+        var equipeIds = equipesDeLEcole.Select(e => e.Id).ToHashSet();
+
+        // CleUnique déjà présentes dans cette équipe (pour marquer les doublons)
+        var clesDejaDansEquipe = _staffService.GetStaffByEquipe(equipeId)
+            .Where(s => s.CleUnique.HasValue)
+            .Select(s => s.CleUnique!.Value)
+            .ToHashSet();
+
+        var terme = q.Trim();
+
+        // Recherche dans tout le staff de l'école
+        var tous = _staffService.GetAllStaff()
+            .Where(s => equipeIds.Contains(s.EquipeId))
+            .Where(s =>
+                s.Nom.Contains(terme, StringComparison.OrdinalIgnoreCase) ||
+                s.Prenom.Contains(terme, StringComparison.OrdinalIgnoreCase) ||
+                (s.Prenom + " " + s.Nom).Contains(terme, StringComparison.OrdinalIgnoreCase) ||
+                (s.Nom + " " + s.Prenom).Contains(terme, StringComparison.OrdinalIgnoreCase) ||
+                s.Titre.Contains(terme, StringComparison.OrdinalIgnoreCase))
+            // Dédoublonner par CleUnique — garder l'entrée la plus récente
+            .GroupBy(s => s.CleUnique.HasValue ? s.CleUnique.Value.ToString() : $"_id_{s.Id}")
+            .Select(g => g.OrderByDescending(s => s.Id).First())
+            .OrderBy(s => s.Nom).ThenBy(s => s.Prenom)
+            .Take(40)
+            .ToList();
+
+        var equipeNoms = equipesDeLEcole.ToDictionary(e => e.Id, e => e.Nom);
+
+        var result = tous.Select(s => new
+        {
+            id = s.Id,
+            nom = s.Nom,
+            prenom = s.Prenom,
+            titre = s.Titre,
+            photoPath = s.PhotoPath ?? "",
+            equipeActuelle = equipeNoms.TryGetValue(s.EquipeId, out var en) ? en : "",
+            dejaPresent = s.CleUnique.HasValue && clesDejaDansEquipe.Contains(s.CleUnique.Value)
+        }).ToList();
+
+        return Json(new { staff = result });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult AjouterExistantStaff(string staffSourceIds, int equipeId, string? returnUrl = null)
+    {
+        var equipe = _equipeService.GetEquipeById(equipeId);
+        if (!_access.PeutModifierEquipe(User, equipeId, equipe?.EcoleId ?? 0)) return Forbid();
+
+        var ids = (staffSourceIds ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out var i) ? i : 0)
+            .Where(i => i > 0)
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            TempData["Error"] = "Aucun employé sélectionné.";
+        }
+        else
+        {
+            _staffService.CopierVersEquipe(ids, equipeId);
+            TempData["Success"] = ids.Count == 1
+                ? "1 employé importé dans l'équipe."
+                : $"{ids.Count} employés importés dans l'équipe.";
+        }
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+        return RedirectToAction("Details", "Equipe", new { id = equipeId, tab = "staff" });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Importer(int equipeId, List<int> staffIds)

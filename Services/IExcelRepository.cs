@@ -19,13 +19,24 @@ public interface IExcelRepository
     Equipe UpdateEquipe(Equipe equipe);
     bool DeleteEquipe(int id);
 
-    // Joueurs
+    // Joueurs (niveau école)
     List<Joueur> GetAllJoueurs();
-    List<Joueur> GetJoueursByEquipe(int equipeId);
+    List<Joueur> GetJoueursByEcole(int ecoleId);
     Joueur? GetJoueurById(int id);
     Joueur AddJoueur(Joueur joueur);
     Joueur UpdateJoueur(Joueur joueur);
     bool DeleteJoueur(int id);
+
+    // JoueurEquipes (assignations équipe)
+    List<JoueurEquipe> GetAllJoueurEquipes();
+    List<JoueurEquipe> GetJoueurEquipesByEquipe(int equipeId);
+    List<JoueurEquipe> GetJoueurEquipesByJoueur(int joueurId);
+    JoueurEquipe? GetJoueurEquipeById(int id);
+    JoueurEquipe? GetJoueurEquipeByJoueurAndEquipe(int joueurId, int equipeId);
+    JoueurEquipe AddJoueurEquipe(JoueurEquipe je);
+    JoueurEquipe UpdateJoueurEquipe(JoueurEquipe je);
+    bool DeleteJoueurEquipe(int id);
+    void DeleteJoueurEquipesByJoueur(int joueurId);
 
     // Galerie
     List<GaleriePhoto> GetAllPhotos();
@@ -79,6 +90,21 @@ public interface IExcelRepository
     Evenement AddEvenement(Evenement ev);
     Evenement UpdateEvenement(Evenement ev);
     bool DeleteEvenement(int id);
+
+    // Années scolaires par école
+    List<AnneeScolaireEcole> GetAllAnneesScolaires();
+    List<AnneeScolaireEcole> GetAnneesScolairesByEcole(int ecoleId);
+    AnneeScolaireEcole AddAnneeScolaire(AnneeScolaireEcole annee);
+    bool DeleteAnneeScolaire(int id);
+
+    // Équipes adverses
+    List<EquipeAdverse> GetAllEquipesAdverses();
+    List<EquipeAdverse> GetEquipesAdversesByEcole(int ecoleId);
+    List<EquipeAdverse> GetEquipesAdversesByEcoleSport(int ecoleId, string typeSport);
+    EquipeAdverse? GetEquipeAdverseById(int id);
+    EquipeAdverse AddEquipeAdverse(EquipeAdverse equipe);
+    EquipeAdverse UpdateEquipeAdverse(EquipeAdverse equipe);
+    bool DeleteEquipeAdverse(int id);
 
     // Thèmes d'école
     List<ThemeEcole> GetAllThemes();

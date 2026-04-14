@@ -1,203 +1,281 @@
 @model GestionEquipeSportive.ViewModels.JoueurViewModel
+@using GestionEquipeSportive.Models
 @{
     ViewData["Title"] = "Modifier le joueur";
+    var joueurMedias = ViewBag.JoueurMedias as List<JoueurMedia> ?? new();
+    var assignations = ViewBag.Assignations as List<JoueurEquipe> ?? new();
+    var ecole = ViewBag.Ecole as Ecole;
 }
 
-<div class="mb-4">
+<div class="mb-3">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@Model.EquipeId">@Model.NomEquipe</a></li>
-            <li class="breadcrumb-item active">Modifier le joueur</li>
+            @if (ecole != null)
+            {
+                <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole.Id">@ecole.Nom</a></li>
+            }
+            <li class="breadcrumb-item active">@Model.Prenom @Model.Nom</li>
         </ol>
     </nav>
-    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le joueur</h1>
+    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>@Model.Prenom @Model.Nom</h1>
+    @if (!string.IsNullOrEmpty(Model.NomEcole))
+    {
+        <p class="text-muted mb-0">École : <strong>@Model.NomEcole</strong></p>
+    }
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Informations du joueur</h5>
-            </div>
-            <div class="card-body">
-                <form asp-action="Edit" method="post" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-                    <input asp-for="Id" type="hidden" />
-                    <input asp-for="EquipeId" type="hidden" />
+<ul class="nav nav-tabs mb-0" id="joueurEditTabs">
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold" data-bs-toggle="tab" href="#tab-info">
+            <i class="bi bi-person me-1"></i>Informations
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-assignations">
+            <i class="bi bi-people me-1"></i>Équipes
+            @if (assignations.Any())
+            {
+                <span class="badge bg-secondary ms-1">@assignations.Count</span>
+            }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tab-photos">
+            <i class="bi bi-images me-1"></i>Photos
+            @if (joueurMedias.Any())
+            {
+                <span class="badge bg-secondary ms-1">@joueurMedias.Count</span>
+            }
+        </a>
+    </li>
+</ul>
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="Prenom" class="form-label fw-semibold"></label>
-                            <input asp-for="Prenom" class="form-control" />
-                            <span asp-validation-for="Prenom" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="Nom" class="form-label fw-semibold"></label>
-                            <input asp-for="Nom" class="form-control" />
-                            <span asp-validation-for="Nom" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="Numero" class="form-label fw-semibold"></label>
-                            <div class="input-group">
-                                <span class="input-group-text">#</span>
-                                <input asp-for="Numero" class="form-control" />
-                            </div>
-                            <span asp-validation-for="Numero" class="text-danger small"></span>
-                        </div>
-                        <div class="col-12">
-                            @await Html.PartialAsync("_PositionPairsEditor", Model)
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="NoFiche" class="form-label fw-semibold"></label>
-                            <input asp-for="NoFiche" class="form-control" placeholder="Ex: JD-2019" />
-                            <div class="form-text">Identifiant permanent du joueur</div>
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="Description" class="form-label fw-semibold"></label>
-                            <textarea asp-for="Description" class="form-control" rows="3"
-                                      placeholder="Notes, informations supplémentaires..."></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input asp-for="ConsentementPhoto" class="form-check-input" role="switch" />
-                                <label asp-for="ConsentementPhoto" class="form-check-label fw-semibold">
-                                    Consentement parental — diffusion des photos autorisée
-                                </label>
-                            </div>
-                            <div class="form-text text-muted">
-                                Si désactivé, les photos de ce joueur ne seront pas affichées sur la page publique.
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input asp-for="Actif" class="form-check-input" role="switch" />
-                                <label asp-for="Actif" class="form-check-label fw-semibold">
-                                    Joueur actif
-                                </label>
-                            </div>
-                            <div class="form-text text-muted">
-                                Si désactivé, le joueur n'apparaîtra pas sur la page publique et sera masqué dans les recherches.
-                            </div>
-                        </div>
-                    </div>
+<div class="tab-content border border-top-0 rounded-bottom bg-white shadow-sm p-4 mb-4">
 
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-6">
-                            @if (!string.IsNullOrEmpty(Model.PhotoPathActuelle))
-                            {
-                                <label class="form-label fw-semibold">Photo actuelle</label>
-                                <div class="mb-2">
-                                    <img src="@Model.PhotoPathActuelle" alt="Photo actuelle" class="player-photo-preview" />
-                                </div>
-                            }
-                            <label asp-for="PhotoFile" class="form-label fw-semibold">
-                                @(string.IsNullOrEmpty(Model.PhotoPathActuelle) ? "Photo" : "Nouvelle photo (optionnel)")
-                            </label>
-                            <input asp-for="PhotoFile" type="file" class="form-control" accept="image/*"
-                                   onchange="previewPhoto(this)" />
-                            <div class="form-text">Laisser vide pour conserver la photo actuelle</div>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center justify-content-center">
-                            <div id="photoPreviewContainer" class="text-center" style="display:none;">
-                                <img id="photoPreview" src="#" alt="Aperçu" class="player-photo-preview" />
-                                <p class="small text-muted mt-1">Nouvelle photo</p>
-                            </div>
-                            @if (string.IsNullOrEmpty(Model.PhotoPathActuelle))
-                            {
-                                <div id="photoPlaceholder" class="text-center text-muted">
-                                    <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
-                                </div>
-                            }
-                        </div>
-                    </div>
+    @* ── Onglet Informations ── *@
+    <div class="tab-pane fade show active" id="tab-info">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="EcoleId" type="hidden" />
 
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>Enregistrer
-                        </button>
-                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ── Galerie de photos supplémentaires ────────────────────────────────── *@
-@{
-    var joueurMedias = ViewBag.JoueurMedias as List<GestionEquipeSportive.Models.JoueurMedia> ?? new();
-}
-<div class="row justify-content-center mt-4">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-images me-2"></i>Photos supplémentaires
-                    <span class="badge bg-secondary ms-1">@joueurMedias.Count</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                <form asp-action="AjouterMedia" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
-                      class="d-flex gap-2 align-items-end mb-3">
-                    @Html.AntiForgeryToken()
-                    <div class="flex-grow-1">
-                        <label class="form-label fw-semibold small">Ajouter une photo</label>
-                        <input type="file" name="fichier" class="form-control form-control-sm" accept="image/*" required />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="bi bi-upload me-1"></i>Ajouter
-                    </button>
-                </form>
-
-                @if (!joueurMedias.Any())
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Prenom" class="form-label fw-semibold"></label>
+                    <input asp-for="Prenom" class="form-control" />
+                    <span asp-validation-for="Prenom" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Nom" class="form-label fw-semibold"></label>
+                    <input asp-for="Nom" class="form-control" />
+                    <span asp-validation-for="Nom" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="NoFiche" class="form-label fw-semibold"></label>
+                    <input asp-for="NoFiche" class="form-control" placeholder="Ex: 123456" />
+                    <div class="form-text">Identifiant GPI permanent du joueur</div>
+                </div>
+                @if (Model.CleUnique.HasValue)
                 {
-                    <p class="text-muted small mb-0">Aucune photo supplémentaire.</p>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Identifiant unique (GUID)</label>
+                        <input type="text" class="form-control form-control-sm font-monospace text-muted"
+                               value="@Model.CleUnique.Value" readonly />
+                    </div>
                 }
-                else
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input asp-for="Actif" class="form-check-input" role="switch" id="joueurActifSwitch" />
+                        <label asp-for="Actif" class="form-check-label fw-semibold">
+                            Joueur actif dans l'école
+                        </label>
+                    </div>
+                    <div class="form-text text-muted" id="actifWarning" style="display:none;">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                        Désactiver ce joueur le rendra inactif dans <strong>toutes ses équipes</strong>.
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input asp-for="ConsentementPhoto" class="form-check-input" role="switch" />
+                        <label asp-for="ConsentementPhoto" class="form-check-label fw-semibold">
+                            Consentement parental — diffusion des photos autorisée
+                        </label>
+                    </div>
+                    <div class="form-text text-muted">
+                        Si désactivé, les photos de ce joueur ne seront pas affichées sur la page publique.
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>Enregistrer
+                </button>
+                @if (ecole != null)
                 {
-                    <div class="row g-2">
-                        @foreach (var m in joueurMedias.OrderBy(m => m.DateAjout))
+                    <a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole.Id" asp-route-tab="joueurs" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Annuler
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    @* ── Onglet Assignations (équipes) ── *@
+    <div class="tab-pane fade" id="tab-assignations">
+        @if (!assignations.Any())
+        {
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-people me-1"></i>Ce joueur n'est assigné à aucune équipe.
+            </p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Équipe</th>
+                            <th>#</th>
+                            <th>Position</th>
+                            <th>Actif</th>
+                            <th>Photo</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var je in assignations)
                         {
-                            <div class="col-6 col-md-4 col-lg-3">
-                                <div class="position-relative">
-                                    <img src="@m.CheminFichier" alt="@m.Description"
-                                         class="img-fluid rounded shadow-sm w-100"
-                                         style="height:110px;object-fit:cover;" />
-                                    <form asp-action="SupprimerMedia" method="post" class="mt-1">
+                            var sportDisplay = je.Equipe?.TypeSport switch
+                            {
+                                TypeSport.FootballAmericain => "Football",
+                                TypeSport.FlagFootball => "Flag Football",
+                                TypeSport.Soccer => "Soccer",
+                                TypeSport.Volleyball => "Volleyball",
+                                TypeSport.Hockey => "Hockey",
+                                _ => je.Equipe?.TypeSport.ToString()
+                            };
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@je.Equipe?.Nom</div>
+                                    <div class="text-muted small">@sportDisplay — @je.Equipe?.AnneeScolaire</div>
+                                </td>
+                                <td><span class="badge bg-dark">#@je.Numero</span></td>
+                                <td>
+                                    @if (je.PositionPairs.Any())
+                                    {
+                                        @foreach (var g in je.PositionPairs.GroupBy(p => p.Pos))
+                                        {
+                                            <div class="small fw-semibold">@Html.Raw(System.Net.WebUtility.HtmlDecode(g.Key))</div>
+                                        }
+                                    }
+                                    else if (!string.IsNullOrEmpty(je.Position))
+                                    {
+                                        <span class="small">@je.Position</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (je.Actif)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Actif</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactif</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(je.PhotoPath))
+                                    {
+                                        <img src="@je.PhotoPath" alt="Photo" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-controller="Joueur" asp-action="EditAssignation" asp-route-id="@je.Id"
+                                       class="btn btn-sm btn-outline-warning py-0 px-1" title="Modifier l'assignation">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-controller="Joueur" asp-action="SupprimerAssignation" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
-                                        <input type="hidden" name="mediaId" value="@m.Id" />
-                                        <input type="hidden" name="joueurId" value="@Model.Id" />
-                                        <button type="submit" class="btn btn-danger btn-sm w-100 py-0"
-                                                onclick="return confirm('Supprimer cette photo ?')">
-                                            <i class="bi bi-trash"></i>
+                                        <input type="hidden" name="id" value="@je.Id" />
+                                        <input type="hidden" name="equipeId" value="@je.EquipeId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1"
+                                                title="Retirer de l'équipe"
+                                                onclick="return confirm('Retirer de @Html.Raw((je.Equipe?.Nom ?? "l\'équipe").Replace("'", "\\'")) ?')">
+                                            <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    @* ── Onglet Photos supplémentaires ── *@
+    <div class="tab-pane fade" id="tab-photos">
+        <form asp-action="AjouterMedia" asp-route-joueurId="@Model.Id" method="post" enctype="multipart/form-data"
+              class="d-flex gap-2 align-items-end mb-3 border-bottom pb-3">
+            @Html.AntiForgeryToken()
+            <div class="flex-grow-1">
+                <label class="form-label fw-semibold small">Ajouter une photo</label>
+                <input type="file" name="fichier" class="form-control form-control-sm" accept="image/*" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-upload me-1"></i>Ajouter
+            </button>
+        </form>
+
+        @if (!joueurMedias.Any())
+        {
+            <p class="text-muted text-center py-3 mb-0">
+                <i class="bi bi-camera me-1"></i>Aucune photo supplémentaire.
+            </p>
+        }
+        else
+        {
+            <div class="row g-2">
+                @foreach (var m in joueurMedias.OrderBy(m => m.DateAjout))
+                {
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="position-relative">
+                            <img src="@m.CheminFichier" alt="@m.Description"
+                                 class="img-fluid rounded shadow-sm w-100"
+                                 style="height:110px;object-fit:cover;" />
+                            <form asp-action="SupprimerMedia" method="post" class="mt-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@m.Id" />
+                                <input type="hidden" name="joueurId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-danger btn-sm w-100 py-0"
+                                        onclick="return confirm('Supprimer cette photo ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 }
             </div>
-        </div>
+        }
     </div>
+
 </div>
 
 @section Scripts {
-    <script>
-        function previewPhoto(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('photoPreview').src = e.target.result;
-                    document.getElementById('photoPreviewContainer').style.display = 'block';
-                    const ph = document.getElementById('photoPlaceholder');
-                    if (ph) ph.style.display = 'none';
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
+<script>
+    var sw = document.getElementById('joueurActifSwitch');
+    var warn = document.getElementById('actifWarning');
+    if (sw && warn) {
+        sw.addEventListener('change', function () {
+            warn.style.display = !this.checked ? '' : 'none';
+        });
+    }
+</script>
 }

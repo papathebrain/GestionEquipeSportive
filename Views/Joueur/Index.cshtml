@@ -1,4 +1,4 @@
-@model List<GestionEquipeSportive.Models.Joueur>
+@model List<GestionEquipeSportive.Models.JoueurEquipe>
 @using GestionEquipeSportive.Models
 @{
     ViewData["Title"] = "Joueurs";
@@ -77,7 +77,7 @@ else
                     <div class="col">
                         <div class="card h-100 shadow-sm player-card" style="@(!joueur.Actif ? "opacity:.5;" : "")">
                             <div class="player-photo-container">
-                                @if (!joueur.ConsentementPhoto)
+                                @if (joueur.Joueur?.ConsentementPhoto == false)
                                 {
                                     @* Consentement refusé : logo de l'équipe centré *@
                                     <div class="player-photo-placeholder" style="background:linear-gradient(135deg,#f8f9fa,#e9ecef);">
@@ -94,7 +94,7 @@ else
                                 }
                                 else if (!string.IsNullOrEmpty(joueur.PhotoPath))
                                 {
-                                    <img src="@joueur.PhotoPath" alt="@joueur.Prenom @joueur.Nom" class="player-photo" />
+                                    <img src="@joueur.PhotoPath" alt="@joueur.Joueur?.Prenom @joueur.Joueur?.Nom" class="player-photo" />
                                 }
                                 else
                                 {
@@ -103,7 +103,7 @@ else
                                     </div>
                                 }
                                 <div class="player-number-badge">#@joueur.Numero</div>
-                                @if (!joueur.ConsentementPhoto)
+                                @if (joueur.Joueur?.ConsentementPhoto == false)
                                 {
                                     <span class="position-absolute bottom-0 start-0 m-1 badge bg-warning text-dark"
                                           style="font-size:.6rem;" title="Photo non autorisée">
@@ -112,7 +112,7 @@ else
                                 }
                             </div>
                             <div class="card-body text-center pt-2">
-                                <h6 class="card-title mb-0 fw-bold">@joueur.Prenom @joueur.Nom</h6>
+                                <h6 class="card-title mb-0 fw-bold">@joueur.Joueur?.Prenom @joueur.Joueur?.Nom</h6>
                                 @if (joueur.PositionPairs.Any())
                                 {
                                     foreach (var pair in joueur.PositionPairs)
@@ -126,9 +126,9 @@ else
                                 {
                                     <span class="badge bg-secondary mt-1">@joueur.Position</span>
                                 }
-                                @if (!string.IsNullOrEmpty(joueur.NoFiche))
+                                @if (!string.IsNullOrEmpty(joueur.Joueur?.NoFiche))
                                 {
-                                    <div class="small text-muted mt-1">Fiche : @joueur.NoFiche</div>
+                                    <div class="small text-muted mt-1">Fiche : @joueur.Joueur.NoFiche</div>
                                 }
                                 @if (!joueur.Actif)
                                 {
@@ -137,19 +137,15 @@ else
                             </div>
                             <div class="card-footer bg-transparent py-2">
                                 <div class="d-flex gap-1 justify-content-center flex-wrap">
-                                    <a asp-action="Details" asp-route-id="@joueur.Id"
-                                       class="btn btn-sm btn-outline-info" title="Détails">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     @if (peutModifier)
                                     {
-                                        <a asp-action="Edit" asp-route-id="@joueur.Id"
+                                        <a asp-action="Edit" asp-route-id="@joueur.JoueurId"
                                            class="btn btn-sm btn-outline-warning" title="Modifier">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form method="post" asp-action="ToggleActif" style="display:inline;">
                                             @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@joueur.Id" />
+                                            <input type="hidden" name="joueurEquipeId" value="@joueur.Id" />
                                             <input type="hidden" name="equipeId" value="@equipe!.Id" />
                                             <button type="submit" class="btn btn-sm @(joueur.Actif ? "btn-outline-warning" : "btn-outline-success")"
                                                     title="@(joueur.Actif ? "Désactiver" : "Réactiver")">
@@ -160,13 +156,13 @@ else
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Déplacer vers une autre équipe"
                                                     data-deplacer-joueur-id="@joueur.Id"
-                                                    data-deplacer-joueur-nom="@joueur.Prenom @joueur.Nom">
+                                                    data-deplacer-joueur-nom="@joueur.Joueur?.Prenom @joueur.Joueur?.Nom">
                                                 <i class="bi bi-arrow-left-right"></i>
                                             </button>
                                         }
                                         <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
-                                                data-joueur-id="@joueur.Id"
-                                                data-joueur-nom="@joueur.Prenom @joueur.Nom"
+                                                data-joueur-id="@joueur.JoueurId"
+                                                data-joueur-nom="@joueur.Joueur?.Prenom @joueur.Joueur?.Nom"
                                                 data-equipe-id="@equipe!.Id">
                                             <i class="bi bi-trash"></i>
                                         </button>

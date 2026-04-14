@@ -9,7 +9,8 @@ public class Staff
     public string Titre { get; set; } = string.Empty;       // Ex: Entraîneur chef, Physio, ...
     public string? Description { get; set; }               // Bio / description (peut changer par année)
     public string? PhotoPath { get; set; }
-    public string? NoFiche { get; set; }  // Identifiant permanent du staff entre les années
+    public Guid? CleUnique { get; set; }   // Clé unique permanente (GUID) — persiste à travers les copies inter-équipes
+    public string? NoFiche { get; set; }  // Clé externe GPI — lien avec les systèmes scolaires externes
 
     // Navigation
     public Equipe? Equipe { get; set; }

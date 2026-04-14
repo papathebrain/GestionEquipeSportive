@@ -1,4 +1,5 @@
 @model List<GestionEquipeSportive.Models.Ecole>
+@using GestionEquipeSportive.Models
 @{
     ViewData["Title"] = "Gestion des écoles";
 }
@@ -42,19 +43,21 @@ else
                 <tr>
                     <th>Logo</th>
                     <th>Nom</th>
-                    <th>Code</th>
-                    <th>Couleurs</th>
+                    <th>Thèmes</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var ecole in Model)
                 {
+                    @* Logo : école → premier thème *@
+                    var logoSrc = ecole.LogoPath
+                        ?? ecole.Themes.FirstOrDefault(t => !string.IsNullOrEmpty(t.LogoPath))?.LogoPath;
                     <tr>
                         <td>
-                            @if (!string.IsNullOrEmpty(ecole.LogoPath))
+                            @if (!string.IsNullOrEmpty(logoSrc))
                             {
-                                <img src="@ecole.LogoPath" alt="Logo" class="school-logo-sm" />
+                                <img src="@logoSrc" alt="Logo" class="school-logo-sm" />
                             }
                             else
                             {
@@ -62,13 +65,24 @@ else
                             }
                         </td>
                         <td class="fw-semibold">@ecole.Nom</td>
-                        <td><span class="badge bg-secondary">@ecole.NomEquipe</span></td>
                         <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="color-swatch-sm" style="background-color: @ecole.CouleurPrimaire;" title="@ecole.CouleurPrimaire"></div>
-                                <div class="color-swatch-sm" style="background-color: @ecole.CouleurSecondaire;" title="@ecole.CouleurSecondaire"></div>
-                                <small class="text-muted">@ecole.CouleurPrimaire / @ecole.CouleurSecondaire</small>
-                            </div>
+                            @if (!ecole.Themes.Any())
+                            {
+                                <span class="text-muted small fst-italic">Aucun thème</span>
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var theme in ecole.Themes)
+                                    {
+                                        <div class="d-flex align-items-center gap-1 border rounded px-2 py-1" style="font-size:.8rem;">
+                                            <div style="width:12px;height:12px;border-radius:3px;background:@theme.CouleurPrimaire;flex-shrink:0;" title="@theme.CouleurPrimaire"></div>
+                                            <div style="width:12px;height:12px;border-radius:3px;background:@theme.CouleurSecondaire;flex-shrink:0;" title="@theme.CouleurSecondaire"></div>
+                                            <span>@theme.NomEquipe</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
@@ -76,11 +90,14 @@ else
                                    class="btn btn-outline-primary" title="Équipes">
                                     <i class="bi bi-people"></i>
                                 </a>
-                                @if (User.IsInRole("Admin"))
+                                @if (User.IsInRole("Admin") || User.IsInRole("AdminEcole"))
                                 {
                                     <a asp-action="Edit" asp-route-id="@ecole.Id" class="btn btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                }
+                                @if (User.IsInRole("Admin"))
+                                {
                                     <button type="button" class="btn btn-outline-danger" title="Supprimer"
                                             onclick="confirmDelete(@ecole.Id, '@ecole.Nom')">
                                         <i class="bi bi-trash"></i>

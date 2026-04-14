@@ -18,11 +18,13 @@ public class EquipeController : Controller
     private readonly IMatchService _matchService;
     private readonly IEvenementService _evenementService;
     private readonly IDictionnaireService _dictionnaireService;
+    private readonly IWebHostEnvironment _env;
 
     public EquipeController(IEquipeService equipeService, IEcoleService ecoleService,
         IEcoleAccessService access, IJoueurService joueurService,
         IStaffService staffService, IMatchService matchService,
-        IEvenementService evenementService, IDictionnaireService dictionnaireService)
+        IEvenementService evenementService, IDictionnaireService dictionnaireService,
+        IWebHostEnvironment env)
     {
         _equipeService = equipeService;
         _ecoleService = ecoleService;
@@ -32,6 +34,7 @@ public class EquipeController : Controller
         _matchService = matchService;
         _evenementService = evenementService;
         _dictionnaireService = dictionnaireService;
+        _env = env;
     }
 
     public IActionResult Index(int ecoleId)
@@ -46,7 +49,7 @@ public class EquipeController : Controller
         equipes = _access.FiltrerEquipes(User, equipes, ecoleId).ToList();
         ViewBag.NbJoueurs = equipes.ToDictionary(
             e => e.Id,
-            e => _joueurService.GetJoueursByEquipe(e.Id).Count);
+            e => _joueurService.GetJoueurEquipesByEquipe(e.Id).Count);
         ViewBag.StatsEquipes = equipes.ToDictionary(
             e => e.Id,
             e => _matchService.GetStatistiques(e.Id));
@@ -57,7 +60,7 @@ public class EquipeController : Controller
         return View(equipes);
     }
 
-    public IActionResult Details(int id)
+    public IActionResult Details(int id, string? tab = null)
     {
         var equipe = _equipeService.GetEquipeById(id);
         if (equipe == null) return NotFound();
@@ -69,20 +72,42 @@ public class EquipeController : Controller
         equipe.Ecole = ecole;
         equipe.Theme = theme;
 
-        var joueurs = _joueurService.GetJoueursByEquipe(id);
+        var joueurs = _joueurService.GetJoueurEquipesByEquipe(id);
         var staff = _staffService.GetStaffByEquipe(id);
         var matchs = _matchService.GetMatchsByEquipe(id);
         var stats = _matchService.GetStatistiques(id);
 
         var evenements = _evenementService.GetEvenementsByEquipe(id);
 
+        var advLogos = matchs
+            .Where(m => m.AdversaireId.HasValue)
+            .Select(m => m.AdversaireId!.Value)
+            .Distinct()
+            .Select(aid => _ecoleService.GetEquipeAdverseById(aid))
+            .Where(a => a != null && !string.IsNullOrEmpty(a.LogoPath))
+            .ToDictionary(a => a!.Id, a => a!.LogoPath!);
+
+        // Bandeau : logo du thème
+        ViewBag.ImageEquipe = theme?.LogoPath;
+
+        // Photo par joueur : photo d'assignation → JoueurMedia la plus récente
+        var photoParJoueur = joueurs.ToDictionary(
+            j => j.JoueurId,
+            j => string.IsNullOrEmpty(j.PhotoPath)
+                ? _joueurService.GetMediasByJoueur(j.JoueurId)
+                    .OrderByDescending(m => m.DateAjout)
+                    .FirstOrDefault()?.CheminFichier
+                : j.PhotoPath);
+        ViewBag.PhotoParJoueur = photoParJoueur;
         ViewBag.PeutModifier = _access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId);
         ViewBag.NbJoueurs = joueurs.Count;
-        ViewBag.Joueurs = joueurs;
+        ViewBag.Joueurs = joueurs; // List<JoueurEquipe>
         ViewBag.Staff = staff;
         ViewBag.Matchs = matchs;
         ViewBag.Stats = stats;
         ViewBag.Evenements = evenements;
+        ViewBag.AdvLogos = advLogos;
+        ViewBag.ActiveTab = tab ?? "matchs";
         ViewBag.EquipesEcole = _equipeService.GetEquipesByEcole(equipe.EcoleId)
             .Where(e => e.Id != id)
             .OrderBy(e => e.TypeSport.ToString())
@@ -196,7 +221,7 @@ public class EquipeController : Controller
 
         ViewBag.SourceEquipeId = id;
         ViewBag.SourceEquipeNom = equipe.Nom;
-        ViewBag.Joueurs = _joueurService.GetJoueursByEquipe(id);
+        ViewBag.Joueurs = _joueurService.GetJoueurEquipesByEquipe(id);
         ViewBag.Staff = _staffService.GetStaffByEquipe(id);
 
         return View(vm);
@@ -220,15 +245,34 @@ public class EquipeController : Controller
             RebuildLists(vm);
             ViewBag.SourceEquipeId = id;
             ViewBag.SourceEquipeNom = sourceEquipe.Nom;
-            ViewBag.Joueurs = _joueurService.GetJoueursByEquipe(id);
+            ViewBag.Joueurs = _joueurService.GetJoueurEquipesByEquipe(id);
             ViewBag.Staff = _staffService.GetStaffByEquipe(id);
             return View(vm);
         }
 
         var nouvelleEquipe = _equipeService.CreateEquipe(vm);
 
+        // Copier les assignations: assigner les mêmes joueurs à la nouvelle équipe
         if (joueursIds.Length > 0)
-            _joueurService.CopierVersEquipe(joueursIds, nouvelleEquipe.Id);
+        {
+            var dejaAssignes = new HashSet<int>();
+            foreach (var jeId in joueursIds)
+            {
+                var sourceJe = _joueurService.GetJoueurEquipeById(jeId);
+                if (sourceJe == null || dejaAssignes.Contains(sourceJe.JoueurId)) continue;
+                dejaAssignes.Add(sourceJe.JoueurId);
+                _joueurService.AssignerAEquipe(new GestionEquipeSportive.ViewModels.JoueurEquipeViewModel
+                {
+                    JoueurId = sourceJe.JoueurId,
+                    EquipeId = nouvelleEquipe.Id,
+                    PositionPrincipale = sourceJe.Position,
+                    PositionPairsRaw = sourceJe.PositionSpecifique ?? "",
+                    Numero = sourceJe.Numero,
+                    Description = sourceJe.Description,
+                    Actif = sourceJe.Actif
+                }, null, _env.WebRootPath);
+            }
+        }
 
         if (staffIds.Length > 0)
             _staffService.CopierVersEquipe(staffIds, nouvelleEquipe.Id);
@@ -241,7 +285,7 @@ public class EquipeController : Controller
     public JsonResult GetNiveaux(string sport)
     {
         var niveaux = _dictionnaireService.GetNiveaux(sport);
-        return Json(niveaux.Select(n => new { value = n, text = GetNiveauDisplayName(n) }));
+        return Json(niveaux.Select(n => new { value = ToNiveauEnumName(n), text = GetNiveauDisplayName(n) }));
     }
 
     private EquipeViewModel BuildViewModel(int ecoleId)
@@ -264,12 +308,14 @@ public class EquipeController : Controller
         var niveaux = _dictionnaireService.GetNiveaux(vm.TypeSport.ToString());
         vm.NiveauxList = niveaux.Select(n => new SelectListItem
         {
-            Value = n,
+            Value = ToNiveauEnumName(n),
             Text = GetNiveauDisplayName(n),
-            Selected = n == vm.Niveau.ToString()
+            Selected = ToNiveauEnumName(n) == vm.Niveau.ToString()
         }).ToList();
 
-        vm.AnneesList = _equipeService.GetAnnesScolaires().Select(a => new SelectListItem
+        var anneesScolaires = _ecoleService.GetAnneesScolairesByEcole(vm.EcoleId)
+            .Select(a => a.AnneeScolaire).ToList();
+        vm.AnneesList = anneesScolaires.Select(a => new SelectListItem
         {
             Value = a,
             Text = a,
@@ -298,14 +344,22 @@ public class EquipeController : Controller
         _ => sport.ToString()
     };
 
-    private static string GetNiveauDisplayName(string niveau) => niveau switch
+    // Normalise une valeur de dictionnaire vers le nom exact de l'enum NiveauEquipe
+    private static string ToNiveauEnumName(string valeur) => valeur switch
+    {
+        "Juvenil" or "Juvénile" or "juvénile" => "Juvenil",
+        "PeeWee"  or "Pee-Wee"  or "pee-wee"  => "PeeWee",
+        _ => valeur
+    };
+
+    private static string GetNiveauDisplayName(string niveau) => ToNiveauEnumName(niveau) switch
     {
         "Benjamin" => "Benjamin",
-        "Cadet" => "Cadet",
-        "Juvenil" => "Juvénile",
-        "Atome" => "Atome",
-        "PeeWee" => "Pee-Wee",
-        "Bantam" => "Bantam",
+        "Cadet"    => "Cadet",
+        "Juvenil"  => "Juvénile",
+        "Atome"    => "Atome",
+        "PeeWee"   => "Pee-Wee",
+        "Bantam"   => "Bantam",
         _ => niveau
     };
 

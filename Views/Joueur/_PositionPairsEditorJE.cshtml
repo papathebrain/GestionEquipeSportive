@@ -1,4 +1,4 @@
-@model GestionEquipeSportive.ViewModels.JoueurViewModel
+@model GestionEquipeSportive.ViewModels.JoueurEquipeViewModel
 @{
     var pairesInitiales = Model.PositionPairs; // List<(Pos, Spec)>
     var posInitiale = Model.PositionPrincipale;
@@ -53,12 +53,10 @@
 (function() {
     const posSpecParGroupe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionsSpecifiquesParGroupe));
 
-    // Paires en mémoire : [{pos, spec}]
     let paires = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         pairesInitiales.Select(p => new { pos = p.Pos, spec = p.Spec })
     ));
 
-    // Si aucune paire mais position principale définie (ancien format), créer une paire
     @if (!pairesInitiales.Any() && !string.IsNullOrEmpty(posInitiale))
     {
         <text>
@@ -117,7 +115,6 @@
         table.appendChild(tbody);
         container.appendChild(table);
 
-        // Auto-définir principale si pas définie
         if (!positionPrincipale && paires.length > 0) {
             positionPrincipale = paires[0].pos;
         }
@@ -150,14 +147,12 @@
         const spec = document.getElementById('addSpec').value;
         if (!pos) { alert('Veuillez choisir une position.'); return; }
 
-        // Éviter doublon exact
         if (paires.some(p => p.pos === pos && p.spec === spec)) return;
 
         paires.push({ pos, spec });
 
         if (!positionPrincipale) positionPrincipale = pos;
 
-        // Réinitialiser selects
         document.getElementById('addPos').value = '';
         document.getElementById('addSpec').innerHTML = '<option value="">— Aucune —</option>';
         @foreach (var p in Model.PositionsSpecifiquesDisponibles)
@@ -184,7 +179,6 @@
         sauvegarder();
     };
 
-    // Initialiser
     rendrePaires();
 })();
 </script>

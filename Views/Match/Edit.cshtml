@@ -1,42 +1,301 @@
 @model GestionEquipeSportive.ViewModels.MatchViewModel
+@using GestionEquipeSportive.Models
 @{
-    ViewData["Title"] = "Modifier le match";
+    ViewData["Title"] = Model.Id == 0 ? "Nouveau match" : $"Modifier — vs {Model.Adversaire}";
+    var medias     = ViewBag.Medias   as List<MatchMedia>   ?? new();
+    var joueurs    = ViewBag.Joueurs  as List<JoueurEquipe> ?? new();
+    var absences   = ViewBag.Absences as List<AbsenceMatch> ?? new();
+    var absentsIds = absences.Select(a => a.JoueurId).ToHashSet();
+    var photos     = medias.Where(m => m.TypeMedia == TypeMedia.Photo).ToList();
+    var videos     = medias.Where(m => m.TypeMedia == TypeMedia.Video).ToList();
+    bool isNew     = Model.Id == 0;
+    var activeTab  = (ViewBag.ActiveTab as string) ?? "info";
 }
 
-<div class="mb-4">
+<div class="mb-3">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-controller="Equipe" asp-action="Index" asp-route-ecoleId="@Model.EcoleId">@Model.NomEcole</a></li>
-            <li class="breadcrumb-item"><a asp-action="Index" asp-route-equipeId="@Model.EquipeId">Matchs</a></li>
-            <li class="breadcrumb-item active">Modifier</li>
+            <li class="breadcrumb-item">
+                <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId" asp-route-tab="matchs">@Model.NomEquipe</a>
+            </li>
+            <li class="breadcrumb-item active">@(isNew ? "Nouveau match" : $"vs {Model.Adversaire}")</li>
         </ol>
     </nav>
-    <h1 class="h3"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le match — vs @Model.Adversaire</h1>
+    <h1 class="h3">
+        <i class="bi bi-@(isNew ? "plus-circle" : "pencil-square") me-2 text-primary"></i>
+        @(isNew ? "Nouveau match" : $"Modifier — vs {Model.Adversaire}")
+    </h1>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+@if (isNew)
+{
+    @* ── Création : formulaire seul, pas d'onglets ── *@
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Informations du match</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="EquipeId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                @await Html.PartialAsync("_MatchForm", Model)
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Créer le match
+                    </button>
+                    <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId" asp-route-tab="matchs"
+                       class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    @* ── Édition : onglets ── *@
+    <ul class="nav nav-tabs mb-0" id="matchEditTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "info" ? "active" : "") fw-semibold" data-bs-toggle="tab" href="#tab-info">
+                <i class="bi bi-calendar-event me-1"></i>Informations
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "presences" ? "active" : "") fw-semibold" data-bs-toggle="tab" href="#tab-presences">
+                <i class="bi bi-person-check me-1"></i>Présences
+                @if (joueurs.Any())
+                {
+                    <span class="badge bg-secondary ms-1">@joueurs.Count</span>
+                }
+                @if (absentsIds.Any())
+                {
+                    <span class="badge bg-danger ms-1">@absentsIds.Count</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "galerie" ? "active" : "") fw-semibold" data-bs-toggle="tab" href="#tab-galerie">
+                <i class="bi bi-images me-1"></i>Galerie
+                @if (medias.Any())
+                {
+                    <span class="badge bg-secondary ms-1">@medias.Count</span>
+                }
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom bg-white shadow-sm p-4 mb-4">
+
+        @* ── Onglet Informations ── *@
+        <div class="tab-pane fade @(activeTab == "info" ? "show active" : "")" id="tab-info">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="EquipeId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                @await Html.PartialAsync("_MatchForm", Model)
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Enregistrer
+                    </button>
+                    <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId" asp-route-tab="matchs"
+                       class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+
+        @* ── Onglet Présences ── *@
+        <div class="tab-pane fade @(activeTab == "presences" ? "show active" : "")" id="tab-presences">
+            @if (!joueurs.Any())
+            {
+                <p class="text-muted text-center py-4 mb-0">
+                    <i class="bi bi-person-x me-1"></i>Aucun joueur dans cette équipe.
+                </p>
+            }
+            else
+            {
+                var parPosition = joueurs
+                    .OrderBy(j => j.Position).ThenBy(j => j.Joueur?.Nom)
+                    .GroupBy(j => j.Position)
+                    .ToList();
+
+                <div class="d-flex justify-content-end mb-3">
+                    <div class="input-group input-group-sm" style="max-width:220px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="presenceRecherche" class="form-control" placeholder="Nom, #, position…" autocomplete="off" />
+                    </div>
+                </div>
+
+                @foreach (var grp in parPosition)
+                {
+                    <div class="presence-groupe mb-3" data-position="@grp.Key.ToLower()">
+                        <div class="text-uppercase fw-bold small text-muted border-bottom pb-1 mb-2">
+                            <i class="bi bi-diagram-3 me-1"></i>@grp.Key
+                            <span class="badge bg-light text-dark ms-1">@grp.Count()</span>
+                        </div>
+                        <div class="row g-2">
+                            @foreach (var j in grp)
+                            {
+                                var estAbsent = absentsIds.Contains(j.JoueurId);
+                                <div class="col-6 col-md-4 col-lg-3 presence-item"
+                                     data-nom="@($"{j.Joueur?.Prenom} {j.Joueur?.Nom}".ToLower())"
+                                     data-numero="@j.Numero"
+                                     data-position="@j.Position.ToLower()">
+                                    <div class="d-flex align-items-center gap-2 p-2 rounded border @(estAbsent ? "border-danger bg-danger bg-opacity-10" : "border-light")">
+                                        @if (!string.IsNullOrEmpty(j.PhotoPath))
+                                        {
+                                            <img src="@j.PhotoPath" class="rounded-circle flex-shrink-0"
+                                                 style="width:36px;height:36px;object-fit:cover;" alt="@j.Joueur?.Prenom @j.Joueur?.Nom" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                                 style="width:36px;height:36px;background:var(--couleur-primaire,#1a3a5c);color:#fff;font-size:.75rem;font-weight:700;">
+                                                #@j.Numero
+                                            </div>
+                                        }
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="small fw-semibold text-truncate">@j.Joueur?.Prenom @j.Joueur?.Nom</div>
+                                            <div class="small text-muted">#@j.Numero · @j.Position</div>
+                                        </div>
+                                        <form asp-controller="Match" asp-action="ToggleAbsence" method="post" class="flex-shrink-0">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="matchId" value="@Model.Id" />
+                                            <input type="hidden" name="joueurId" value="@j.JoueurId" />
+                                            <button type="submit"
+                                                    class="btn btn-sm @(estAbsent ? "btn-danger" : "btn-outline-secondary")"
+                                                    title="@(estAbsent ? "Marquer présent" : "Marquer absent")">
+                                                <i class="bi @(estAbsent ? "bi-person-check" : "bi-person-dash")"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                <p id="presenceAucun" class="text-muted text-center py-2 mb-0" style="display:none;">
+                    <i class="bi bi-search me-1"></i>Aucun joueur trouvé.
+                </p>
+            }
+        </div>
+
+        @* ── Onglet Galerie ── *@
+        <div class="tab-pane fade @(activeTab == "galerie" ? "show active" : "")" id="tab-galerie">
+
+            @* Upload *@
+            <div class="border-bottom pb-3 mb-3">
+                <form asp-controller="Match" asp-action="AjouterMedia" method="post" enctype="multipart/form-data"
+                      class="row g-3 align-items-end">
                     @Html.AntiForgeryToken()
-                    <input asp-for="Id" type="hidden" />
-                    <input asp-for="EquipeId" type="hidden" />
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
-                    @await Html.PartialAsync("_MatchForm", Model)
-
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+                    <input type="hidden" name="matchId" value="@Model.Id" />
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Type</label>
+                        <select name="typeMedia" class="form-select form-select-sm">
+                            <option value="Photo">Photo</option>
+                            <option value="Video">Vidéo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Fichier(s)</label>
+                        <input type="file" name="fichiers" class="form-control form-control-sm"
+                               accept="image/*,video/*" multiple />
+                        <div class="form-text">Une ou plusieurs images / vidéos</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Description (optionnel)</label>
+                        <input type="text" name="description" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100" title="Téléverser">
+                            <i class="bi bi-upload"></i>
                         </button>
-                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">Annuler</a>
                     </div>
                 </form>
             </div>
+
+            @* Médias *@
+            @if (!medias.Any())
+            {
+                <p class="text-muted text-center py-3 mb-0">
+                    <i class="bi bi-camera me-1"></i>Aucun média. Ajoutez des photos ou vidéos ci-dessus.
+                </p>
+            }
+            else
+            {
+                @if (photos.Any())
+                {
+                    <h6 class="text-muted mb-3"><i class="bi bi-camera me-1"></i>Photos (@photos.Count)</h6>
+                    <div class="row g-2 mb-4">
+                        @foreach (var photo in photos)
+                        {
+                            <div class="col-6 col-md-3 col-lg-2">
+                                <div class="position-relative">
+                                    <a href="@photo.CheminFichier" target="_blank">
+                                        <img src="@photo.CheminFichier" alt="@photo.Description"
+                                             class="img-fluid rounded w-100" style="height:110px;object-fit:cover;" />
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(photo.Description))
+                                    {
+                                        <small class="d-block text-muted text-truncate mt-1">@photo.Description</small>
+                                    }
+                                    <form asp-controller="Match" asp-action="SupprimerMedia" method="post" class="mt-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@photo.Id" />
+                                        <input type="hidden" name="matchId" value="@Model.Id" />
+                                        <button type="submit" class="btn btn-danger btn-sm w-100 py-0"
+                                                onclick="return confirm('Supprimer cette photo ?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (videos.Any())
+                {
+                    <h6 class="text-muted mb-3"><i class="bi bi-camera-video me-1"></i>Vidéos (@videos.Count)</h6>
+                    <div class="row g-3">
+                        @foreach (var video in videos)
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card">
+                                    <video class="card-img-top" controls style="max-height:200px;">
+                                        <source src="@video.CheminFichier" />
+                                        Votre navigateur ne supporte pas la vidéo.
+                                    </video>
+                                    <div class="card-body p-2">
+                                        @if (!string.IsNullOrEmpty(video.Description))
+                                        {
+                                            <small class="text-muted">@video.Description</small>
+                                        }
+                                        <form asp-controller="Match" asp-action="SupprimerMedia" method="post" class="mt-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@video.Id" />
+                                            <input type="hidden" name="matchId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm w-100"
+                                                    onclick="return confirm('Supprimer cette vidéo ?')">
+                                                <i class="bi bi-trash me-1"></i>Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
         </div>
+
     </div>
-</div>
+}
 
 @section Scripts {
 <script>
@@ -45,6 +304,29 @@ toggleAutobus();
 function toggleAutobus() {
     var dom = document.getElementById('estDomicile').checked;
     document.getElementById('rowAutobus').style.display = dom ? 'none' : '';
+}
+
+// ── Filtre présences ──────────────────────────────────────────────────────
+var presenceInput = document.getElementById('presenceRecherche');
+if (presenceInput) {
+    presenceInput.addEventListener('input', function () {
+        var q = this.value.toLowerCase().trim();
+        var totalVisible = 0;
+        document.querySelectorAll('.presence-groupe').forEach(function (grp) {
+            var visibleInGrp = 0;
+            grp.querySelectorAll('.presence-item').forEach(function (item) {
+                var match = !q
+                    || item.dataset.nom.includes(q)
+                    || item.dataset.numero.includes(q)
+                    || item.dataset.position.includes(q);
+                item.style.display = match ? '' : 'none';
+                if (match) visibleInGrp++;
+            });
+            grp.style.display = visibleInGrp > 0 ? '' : 'none';
+            totalVisible += visibleInGrp;
+        });
+        document.getElementById('presenceAucun').style.display = totalVisible === 0 ? '' : 'none';
+    });
 }
 </script>
 }

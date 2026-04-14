@@ -1,29 +1,38 @@
 @model GestionEquipeSportive.ViewModels.JoueurViewModel
 @{
     ViewData["Title"] = "Ajouter un joueur";
+    var ecole = ViewBag.Ecole as GestionEquipeSportive.Models.Ecole;
+    var equipeId = ViewBag.EquipeId as int?;
 }
 
 <div class="mb-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Joueur" asp-action="Index" asp-route-equipeId="@Model.EquipeId">@Model.NomEquipe</a></li>
+            @if (ecole != null)
+            {
+                <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole.Id">@ecole.Nom</a></li>
+            }
             <li class="breadcrumb-item active">Ajouter un joueur</li>
         </ol>
     </nav>
     <h1 class="h3"><i class="bi bi-person-plus me-2 text-primary"></i>Ajouter un joueur</h1>
+    @if (ecole != null)
+    {
+        <p class="text-muted mb-0">École : <strong>@ecole.Nom</strong></p>
+    }
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-person me-2"></i>Informations du joueur</h5>
             </div>
             <div class="card-body">
-                <form asp-action="Create" method="post" enctype="multipart/form-data">
+                <form asp-action="Create" asp-route-equipeId="@equipeId" method="post">
                     @Html.AntiForgeryToken()
-                    <input asp-for="EquipeId" type="hidden" />
+                    <input asp-for="EcoleId" type="hidden" />
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -36,26 +45,10 @@
                             <input asp-for="Nom" class="form-control" placeholder="Nom de famille" />
                             <span asp-validation-for="Nom" class="text-danger small"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label asp-for="Numero" class="form-label fw-semibold"></label>
-                            <div class="input-group">
-                                <span class="input-group-text">#</span>
-                                <input asp-for="Numero" class="form-control" placeholder="Ex: 12" />
-                            </div>
-                            <span asp-validation-for="Numero" class="text-danger small"></span>
-                        </div>
-                        <div class="col-12">
-                            @await Html.PartialAsync("_PositionPairsEditor", Model)
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label asp-for="NoFiche" class="form-label fw-semibold"></label>
-                            <input asp-for="NoFiche" class="form-control" placeholder="Ex: JD-2019" />
-                            <div class="form-text">Identifiant permanent du joueur (optionnel)</div>
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="Description" class="form-label fw-semibold"></label>
-                            <textarea asp-for="Description" class="form-control" rows="3"
-                                      placeholder="Notes, informations supplémentaires..."></textarea>
+                            <input asp-for="NoFiche" class="form-control" placeholder="Ex: 123456" />
+                            <div class="form-text">Identifiant GPI du joueur (optionnel)</div>
                         </div>
                         <div class="col-12">
                             <div class="form-check form-switch">
@@ -70,50 +63,25 @@
                         </div>
                     </div>
 
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-6">
-                            <label asp-for="PhotoFile" class="form-label fw-semibold"></label>
-                            <input asp-for="PhotoFile" type="file" class="form-control" accept="image/*"
-                                   onchange="previewPhoto(this)" />
-                            <div class="form-text">Photo de profil du joueur (optionnel)</div>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center justify-content-center">
-                            <div id="photoPreviewContainer" class="text-center" style="display:none;">
-                                <img id="photoPreview" src="#" alt="Aperçu" class="player-photo-preview" />
-                            </div>
-                            <div id="photoPlaceholder" class="text-center text-muted">
-                                <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
-                                <p class="small mt-2">Aperçu de la photo</p>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>Ajouter le joueur
+                            <i class="bi bi-check-circle me-2"></i>Créer le joueur
                         </button>
-                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </a>
+                        @if (equipeId.HasValue)
+                        {
+                            <a asp-controller="Equipe" asp-action="Details" asp-route-id="@equipeId" asp-route-tab="joueurs" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Annuler
+                            </a>
+                        }
+                        else if (ecole != null)
+                        {
+                            <a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole.Id" asp-route-tab="joueurs" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Annuler
+                            </a>
+                        }
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        function previewPhoto(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('photoPreview').src = e.target.result;
-                    document.getElementById('photoPreviewContainer').style.display = 'block';
-                    document.getElementById('photoPlaceholder').style.display = 'none';
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
-}

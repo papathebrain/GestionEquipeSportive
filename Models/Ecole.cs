@@ -21,6 +21,8 @@ public class Ecole
     public string CouleurSecondaire { get; set; } = "#e8a020";
     public List<LienSocial> LiensSociaux { get; set; } = new();
     public List<ThemeEcole> Themes { get; set; } = new();
+    public List<EquipeAdverse> EquipesAdverses { get; set; } = new();
+    public List<AnneeScolaireEcole> AnneesScolaires { get; set; } = new();
 
     public string Slug => ToSlug(Nom);
 

@@ -93,34 +93,131 @@
 }
 
 @* ── Bannière ─────────────────────────────────────────────────────────────── *@
-<div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
-    @if (Model.PhotoBanniere != null)
+@{
+    var aucunMatch = Model.ProchainMatch == null && Model.DernierMatchAvecResultat == null && !Model.Matchs.Any();
+    string? bgBanniere = null;
+    if (Model.PhotoBanniere != null)
     {
-        <div style="position:absolute;inset:0;background:url('@Model.PhotoBanniere.CheminFichier') center/cover no-repeat;opacity:.3;"></div>
+        bgBanniere = Model.PhotoBanniere.CheminFichier;
+    }
+    else if (aucunMatch)
+    {
+        var idx = Random.Shared.Next(1, 5);
+        bgBanniere = $"/images/defaults/football-{idx}.svg";
     }
 
-    <div class="container py-4" style="position:relative;z-index:1;">
-        @if (Model.ProchainMatch != null)
+    // Image aléatoire pour la bannière prochain match (matchs en priorité, puis joueurs)
+    string? pubBgImg = null;
+    if (Model.ProchainMatch != null)
+    {
+        var toutes = Model.MatchesMedias.Values
+            .SelectMany(l => l.Where(m => m.TypeMedia == TypeMedia.Photo && !string.IsNullOrEmpty(m.CheminFichier)))
+            .Select(m => m.CheminFichier!)
+            .ToList();
+        if (!toutes.Any())
+            toutes = Model.JoueurMedias.Values
+                .SelectMany(l => l.Where(m => !string.IsNullOrEmpty(m.CheminFichier)))
+                .Select(m => m.CheminFichier!)
+                .ToList();
+        if (toutes.Any())
+            pubBgImg = toutes[Random.Shared.Next(toutes.Count)];
+    }
+}
+
+@if (Model.ProchainMatch != null)
+{
+    <style>
+        #pubBanniere { background:linear-gradient(135deg, @Model.CouleurPrimaire 0%, color-mix(in srgb, @Model.CouleurPrimaire 50%, #000) 100%);
+            color:#fff; position:relative; overflow:hidden; min-height:240px;
+            display:flex; align-items:center; justify-content:center; }
+        .pub-bg { position:absolute;inset:0;background-size:cover;background-position:center;
+            opacity:.22; pointer-events:none;
+            animation:pubBgReveal 1.2s ease .2s both; }
+        @@keyframes pubBgReveal { from{opacity:0;transform:scale(1.06)} to{opacity:.22;transform:scale(1)} }
+
+        .pub-glow { position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none; }
+
+        .pub-inner { position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:28px 16px; }
+
+        .pub-badge { display:inline-block;padding:4px 16px;border-radius:4px;font-weight:700;font-size:.65rem;
+            letter-spacing:.14em;text-transform:uppercase;color:#fff;
+            background:@Model.CouleurSecondaire;margin-bottom:14px;
+            animation:pubSlideDown .5s ease .15s both; }
+        @@keyframes pubSlideDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+
+        .pub-vs-wrap { display:flex;align-items:center;gap:28px;
+            animation:pubScaleIn .65s cubic-bezier(.17,.67,.35,1.3) .35s both; }
+        @@keyframes pubScaleIn { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
+
+        .pub-logo { width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,.6)); }
+        .pub-logo-ph { width:80px;height:80px;border-radius:50%;border:2px dashed rgba(255,255,255,.22);
+            display:flex;align-items:center;justify-content:center; }
+        .pub-vs { font-size:2.2rem;font-weight:900;color:#fff;letter-spacing:.04em;
+            animation:pubVsPulse 1.4s ease-in-out 1s infinite alternate; }
+        @@keyframes pubVsPulse {
+            from { text-shadow:0 0 10px rgba(255,255,255,.25); opacity:.75; }
+            to   { text-shadow:0 0 50px rgba(255,255,255,1);   opacity:1;   } }
+
+        .pub-adversaire { font-size:1.3rem;font-weight:800;color:#fff;text-align:center;margin-top:14px;
+            animation:pubSlideUp .5s ease .75s both; }
+        .pub-date { font-size:.82rem;font-weight:500;color:rgba(255,255,255,.82);text-align:center;margin-top:5px;
+            animation:pubSlideUp .5s ease .9s both; }
+        .pub-details { font-size:.75rem;color:rgba(255,255,255,.6);text-align:center;margin-top:4px;
+            animation:pubSlideUp .5s ease 1.05s both; }
+        @@keyframes pubSlideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    </style>
+
+    var pubPm = Model.ProchainMatch;
+    var pubAdvLogo = pubPm.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(pubPm.AdversaireId.Value, out var pubAlp) ? pubAlp : null;
+    <div id="pubBanniere">
+        @if (!string.IsNullOrEmpty(pubBgImg))
         {
-            var pm = Model.ProchainMatch;
-            <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
-                <span class="rounded px-3 py-1 fw-bold text-uppercase small"
-                      style="background-color:var(--couleur-secondaire);letter-spacing:.05em;">
-                    Prochain match
-                </span>
-                <span class="fs-5 fw-semibold">
-                    @pm.DateMatch.ToString("dddd d MMMM yyyy", frCA)
-                    @if (!string.IsNullOrEmpty(pm.HeureDebutMatch))
-                    { <span class="opacity-75 ms-1">@pm.HeureDebutMatch</span> }
-                </span>
-            </div>
-            <div class="fs-4 fw-bold">@(pm.EstDomicile ? "vs" : "@") @pm.Adversaire</div>
-            @if (!string.IsNullOrEmpty(pm.Lieu))
-            { <div class="mt-1 opacity-75"><i class="bi bi-geo-alt me-1"></i>@pm.Lieu</div> }
-            @if (!pm.EstDomicile && !string.IsNullOrEmpty(pm.HeureDepartAutobus))
-            { <div class="mt-1 opacity-75 small"><i class="bi bi-bus-front me-1"></i>Autobus : @pm.HeureDepartAutobus</div> }
+            <div class="pub-bg" style="background-image:url('@pubBgImg');"></div>
         }
-        else if (Model.DernierMatchAvecResultat != null)
+        <div class="pub-glow" style="width:320px;height:320px;background:@Model.CouleurSecondaire;opacity:.16;top:-100px;left:-80px;"></div>
+        <div class="pub-glow" style="width:220px;height:220px;background:#fff;opacity:.05;bottom:-60px;right:-40px;"></div>
+
+        <div class="pub-inner">
+            <div class="pub-badge">Prochain match</div>
+
+            <div class="pub-vs-wrap">
+                @if (!string.IsNullOrEmpty(Model.LogoPath))
+                { <img src="@Model.LogoPath" alt="@Model.NomEquipe" class="pub-logo" /> }
+                else
+                { <div class="pub-logo-ph"><i class="bi bi-shield-fill" style="font-size:2rem;color:rgba(255,255,255,.28);"></i></div> }
+
+                <div class="pub-vs">VS</div>
+
+                @if (!string.IsNullOrEmpty(pubAdvLogo))
+                { <img src="@pubAdvLogo" alt="@pubPm.Adversaire" class="pub-logo" /> }
+                else
+                { <div class="pub-logo-ph"><i class="bi bi-shield" style="font-size:2rem;color:rgba(255,255,255,.28);"></i></div> }
+            </div>
+
+            <div class="pub-adversaire">@pubPm.Adversaire</div>
+            <div class="pub-date">
+                @pubPm.DateMatch.ToString("dddd d MMMM yyyy", frCA)
+                @if (!string.IsNullOrEmpty(pubPm.HeureDebutMatch)) { <span>· @pubPm.HeureDebutMatch</span> }
+            </div>
+            @if (!string.IsNullOrEmpty(pubPm.Lieu) || !string.IsNullOrEmpty(pubPm.HeureDepartAutobus))
+            {
+                <div class="pub-details">
+                    @if (!string.IsNullOrEmpty(pubPm.Lieu)) { <span><i class="bi bi-geo-alt me-1"></i>@pubPm.Lieu</span> }
+                    @if (!string.IsNullOrEmpty(pubPm.HeureDepartAutobus)) { <span class="ms-3"><i class="bi bi-bus-front me-1"></i>Autobus @pubPm.HeureDepartAutobus</span> }
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+<div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
+    @if (bgBanniere != null)
+    {
+        <div style="position:absolute;inset:0;background:url('@bgBanniere') center/cover no-repeat;opacity:.3;"></div>
+    }
+    <div class="container py-4" style="position:relative;z-index:1;">
+        @if (Model.DernierMatchAvecResultat != null)
         {
             var dm = Model.DernierMatchAvecResultat;
             var resultCss = dm.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" };
@@ -134,7 +231,7 @@
                 <span class="fw-bold" style="font-size:3.5rem;line-height:1;">@dm.ScoreEquipe</span>
                 <span class="opacity-50 fs-4">–</span>
                 <span class="fw-bold" style="font-size:3.5rem;line-height:1;">@dm.ScoreAdversaire</span>
-                <span class="fs-4 ms-2">@(dm.EstDomicile ? "vs" : "@") @dm.Adversaire</span>
+                <span class="fs-4 ms-2">@dm.Adversaire</span>
             </div>
         }
         else
@@ -144,6 +241,7 @@
         }
     </div>
 </div>
+}
 
 @* ── Stats ────────────────────────────────────────────────────────────────── *@
 @if (Model.Stats.MatchsJoues > 0)
@@ -227,7 +325,16 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <div class="fw-bold fs-5">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</div>
+                                            @{
+                                                var fAdvLogo = m.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(m.AdversaireId.Value, out var fLp) ? fLp : null;
+                                            }
+                                            <div class="fw-bold fs-5 d-flex align-items-center gap-2">
+                                                @if (!string.IsNullOrEmpty(fAdvLogo))
+                                                {
+                                                    <img src="@fAdvLogo" alt="" style="width:36px;height:36px;object-fit:contain;" />
+                                                }
+                                                @m.Adversaire
+                                            </div>
                                             <div class="text-muted small">
                                                 <i class="bi bi-calendar3 me-1"></i>@m.DateMatch.ToString("dddd d MMMM yyyy", frCA)
                                                 @if (!string.IsNullOrEmpty(m.HeureDebutMatch))
@@ -284,7 +391,16 @@
                                     title="@(hasMedia ? "Voir photos / vidéos" : "")">
                                     <td class="text-nowrap small">@m.DateMatch.ToString("d MMM yyyy", frCA)</td>
                                     <td>
-                                        <span class="fw-semibold">@(m.EstDomicile ? "vs" : "@") @m.Adversaire</span>
+                                        @{
+                                            var pAdvLogo = m.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(m.AdversaireId.Value, out var pLp) ? pLp : null;
+                                        }
+                                        <span class="fw-semibold d-inline-flex align-items-center gap-2">
+                                            @if (!string.IsNullOrEmpty(pAdvLogo))
+                                            {
+                                                <img src="@pAdvLogo" alt="" style="width:24px;height:24px;object-fit:contain;" />
+                                            }
+                                            @m.Adversaire
+                                        </span>
                                         @if (m.EstDomicile)
                                         { <span class="badge bg-info text-dark ms-1 small">Domicile</span> }
                                     </td>
@@ -345,14 +461,15 @@
         @* ── Onglet Calendrier ───────────────────────────────────────────────── *@
         <div class="tab-pane fade" id="tab-calendrier">
             @{
-                var pubCalItems = new List<(DateTime Date, DateTime? DateFin, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, string Heure, string HeureArrivee, string HeureDepart, bool EstMatch)>();
+                var pubCalItems = new List<(DateTime Date, DateTime? DateFin, string Titre, string SousTexte, string Lieu, string IconClass, string IconColor, string Heure, string HeureArrivee, string HeureDepart, bool EstMatch, string? AdvLogo)>();
                 foreach (var m in Model.Matchs)
                 {
                     var resultColor = m.AResultat ? (m.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" }) : "#6c757d";
-                    var adversaire = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire;
+                    var adversaire = m.Adversaire;
                     var sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : (m.EstDomicile ? "Domicile" : "Extérieur");
                     var heure = m.HeureDebutMatch ?? "";
-                    pubCalItems.Add((m.DateMatch, null, adversaire, sous, m.Lieu ?? "", "bi-flag-fill", resultColor, heure, m.HeureArriveeVestiaire ?? "", m.HeureDepartAutobus ?? "", true));
+                    var pcLogo = m.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(m.AdversaireId.Value, out var pcLp) ? pcLp : null;
+                    pubCalItems.Add((m.DateMatch, null, adversaire, sous, m.Lieu ?? "", "bi-flag-fill", resultColor, heure, m.HeureArriveeVestiaire ?? "", m.HeureDepartAutobus ?? "", true, pcLogo));
                 }
                 foreach (var ev in Model.Evenements)
                 {
@@ -377,7 +494,7 @@
                         _ => "Autre"
                     };
                     var heure = ev.DateDebut.ToString("HH:mm");
-                    pubCalItems.Add((ev.DateDebut, ev.DateFin, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, heure, "", "", false));
+                    pubCalItems.Add((ev.DateDebut, ev.DateFin, ev.Titre, typeLabel, ev.Lieu ?? "", icon, color, heure, "", "", false, null));
                 }
                 var pubGrouped = pubCalItems.OrderBy(x => x.Date).GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1)).ToList();
             }
@@ -419,7 +536,14 @@
                                             <div style="width:3px;border-radius:2px;background:@item.IconColor;align-self:stretch;flex-shrink:0;"></div>
                                             <div class="flex-grow-1">
                                                 <div class="d-flex align-items-center gap-2 fw-semibold small">
-                                                    <i class="bi @item.IconClass text-muted"></i>
+                                                    @if (!string.IsNullOrEmpty(item.AdvLogo))
+                                                    {
+                                                        <img src="@item.AdvLogo" alt="" style="width:22px;height:22px;object-fit:contain;flex-shrink:0;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi @item.IconClass text-muted"></i>
+                                                    }
                                                     @item.Titre
                                                 </div>
                                                 <div class="small text-muted">@item.SousTexte</div>
@@ -539,24 +663,34 @@
                             @foreach (var j in groupe.Items)
                             {
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 joueur-card"
-                                     data-nom="@j.Nom.ToLower()"
-                                     data-prenom="@j.Prenom.ToLower()"
+                                     data-nom="@(j.Joueur?.Nom ?? "").ToLower()"
+                                     data-prenom="@(j.Joueur?.Prenom ?? "").ToLower()"
                                      data-numero="@j.Numero.ToLower()"
-                                     data-fullnom="@j.Prenom @j.Nom"
+                                     data-fullnom="@j.Joueur?.Prenom @j.Joueur?.Nom"
                                      data-photo="@j.PhotoPath"
                                      data-position="@j.Position"
                                      data-pairs="@j.PositionSpecifique"
                                      data-description="@j.Description"
-                                     data-joueur-id="@j.Id"
-                                     data-nofiche="@j.NoFiche"
-                                     data-consentement="@j.ConsentementPhoto.ToString().ToLower()"
+                                     data-joueur-id="@j.JoueurId"
+                                     data-nofiche="@j.Joueur?.NoFiche"
+                                     data-consentement="@(j.Joueur?.ConsentementPhoto.ToString().ToLower() ?? "true")"
                                      style="cursor:pointer;">
                                     <div class="mini-trading-card">
-                                        @if (!string.IsNullOrEmpty(j.PhotoPath) && j.ConsentementPhoto)
-                                        {
-                                            <img src="@j.PhotoPath" alt="@j.Prenom @j.Nom" class="mini-photo" />
+                                        @{
+                                            var photoMini = (string?)null;
+                                            if (j.Joueur?.ConsentementPhoto == true)
+                                            {
+                                                if (!string.IsNullOrEmpty(j.PhotoPath))
+                                                    photoMini = j.PhotoPath;
+                                                else if (Model.JoueurMedias.TryGetValue(j.JoueurId, out var mediasJMini))
+                                                    photoMini = mediasJMini.OrderByDescending(m => m.DateAjout).FirstOrDefault()?.CheminFichier;
+                                            }
                                         }
-                                        else if (!j.ConsentementPhoto && !string.IsNullOrEmpty(Model.LogoPath))
+                                        @if (photoMini != null)
+                                        {
+                                            <img src="@photoMini" alt="@j.Joueur?.Prenom @j.Joueur?.Nom" class="mini-photo" />
+                                        }
+                                        else if (!string.IsNullOrEmpty(Model.LogoPath))
                                         {
                                             <img src="@Model.LogoPath" alt="Logo" class="mini-photo" style="opacity:.45;object-fit:contain;padding:12px;" />
                                         }
@@ -567,7 +701,7 @@
                                         <div class="mini-gradient"></div>
                                         <div class="mini-numero">#@j.Numero</div>
                                         <div class="mini-info">
-                                            <div class="mini-nom">@j.Prenom @j.Nom</div>
+                                            <div class="mini-nom">@j.Joueur?.Prenom @j.Joueur?.Nom</div>
                                             <div class="mini-pos">
                                                 @{
                                                     var firstPair = j.PositionPairs.FirstOrDefault();
@@ -618,7 +752,7 @@
             .Where(m => m.AResultat)
             .ToDictionary(
                 m => m.Id.ToString(),
-                m => (m.EstDomicile ? "vs" : "\u0040") + " " + m.Adversaire + " \u2014 " + m.DateMatch.ToString("d MMM yyyy", frCA)
+                m => m.Adversaire + " \u2014 " + m.DateMatch.ToString("d MMM yyyy", frCA)
             )
     );
 }
@@ -648,7 +782,7 @@
     var calEventsJson = System.Text.Json.JsonSerializer.Serialize(
         Model.Matchs.Select(m => new {
             date = m.DateMatch.ToString("yyyy-MM-dd"),
-            titre = (m.EstDomicile ? "vs " : "\u0040 ") + m.Adversaire,
+            titre = m.Adversaire,
             sous = m.AResultat ? $"{m.ScoreEquipe}\u2013{m.ScoreAdversaire}" : (m.EstDomicile ? "Domicile" : "Extérieur"),
             lieu = m.Lieu ?? "",
             heure = m.HeureDebutMatch ?? "",
@@ -656,7 +790,8 @@
             heureArrivee = m.HeureArriveeVestiaire ?? "",
             heureDepart = m.HeureDepartAutobus ?? "",
             icon = "bi-flag-fill",
-            color = m.AResultat ? (m.Resultat == "V" ? "#198754" : m.Resultat == "D" ? "#dc3545" : "#6c757d") : "#6c757d"
+            color = m.AResultat ? (m.Resultat == "V" ? "#198754" : m.Resultat == "D" ? "#dc3545" : "#6c757d") : "#6c757d",
+            logo = m.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(m.AdversaireId.Value, out var gLp) ? gLp : null
         }).Concat(Model.Evenements.Select(ev => new {
             date = ev.DateDebut.ToString("yyyy-MM-dd"),
             titre = ev.Titre,
@@ -691,7 +826,8 @@
                 TypeEvenement.Evaluation => "#fd7e14",
                 TypeEvenement.ActiviteEquipe => "#198754",
                 _ => "#6c757d"
-            }
+            },
+            logo = (string?)null
         }))
     );
 }
@@ -813,7 +949,7 @@
     }
     /* Zone photo */
     .mut-image-container {
-        position: relative; height: 210px; overflow: hidden;
+        position: relative; height: 300px; overflow: hidden;
     }
     .mut-image-container img {
         width: 100%; object-fit: cover;
@@ -868,7 +1004,7 @@
         font-size: 1rem; color: rgba(255,255,255,.5);
     }
     .mut-position {
-        margin-top: 6px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+        margin-top: 6px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; height: 22px;
     }
     .mut-pos-pill {
         font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
@@ -886,6 +1022,7 @@
         color: var(--couleur-secondaire);
         font-family: Impact, Arial Black, sans-serif;
         line-height: 1;
+        height: 14px;
     }
     /* Stats bas */
     .mut-stats {
@@ -935,7 +1072,7 @@
     }
     .mini-trading-card .mini-numero {
         position:absolute; top:6px; left:8px;
-        font-size:1.1rem; font-weight:900; color:#fff;
+        font-size:1.1rem;  color:#fff;
         text-shadow:0 1px 4px rgba(0,0,0,.8);
         font-family:Impact,Arial Black,sans-serif;
     }
@@ -1446,7 +1583,7 @@
         }
 
         // Photos recto (passe le logo si pas de consentement)
-        mutRenderPhotos(consentement ? null : logoEcole);
+        mutRenderPhotos(!mutPhotos.length ? logoEcole : null);
 
         new bootstrap.Modal(document.getElementById('modalJoueur')).show();
     }
@@ -1584,8 +1721,11 @@
                 if (ev.heureDepart)  tip += '\nAutobus : '          + ev.heureDepart;
                 if (ev.heure)        tip += '\nD\u00e9but du match : ' + ev.heure + (ev.heureFin ? '\u2013' + ev.heureFin : '');
 
+                var logoHtml = ev.logo
+                    ? '<img src="' + ev.logo + '" alt="" style="width:16px;height:16px;object-fit:contain;margin-right:4px;vertical-align:middle;" />'
+                    : '<i class="bi ' + ev.icon + '" style="color:' + ev.color + ';margin-right:4px;font-size:.75rem;vertical-align:middle;"></i>';
                 html += '<div style="background:' + ev.color + '14;border-left:3px solid ' + ev.color + ';border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:.72rem;line-height:1.4;" title="' + tip.replace(/"/g, '&quot;') + '">'
-                    + '<div class="fw-semibold">' + ev.titre.substring(0, 22) + (ev.titre.length > 22 ? '\u2026' : '') + '</div>';
+                    + '<div class="fw-semibold">' + logoHtml + ev.titre.substring(0, 22) + (ev.titre.length > 22 ? '\u2026' : '') + '</div>';
                 if (ev.lieu)         html += '<div class="text-muted"><i class="bi bi-geo-alt me-1"></i>' + ev.lieu + '</div>';
                 if (ev.heureArrivee) html += '<div class="text-muted"><i class="bi bi-door-open me-1"></i>Vestiaire ' + ev.heureArrivee + '</div>';
                 if (ev.heureDepart)  html += '<div class="text-muted"><i class="bi bi-bus-front me-1"></i>Autobus ' + ev.heureDepart + '</div>';

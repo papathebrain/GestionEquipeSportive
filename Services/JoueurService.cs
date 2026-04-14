@@ -7,191 +7,211 @@ public class JoueurService : IJoueurService
 {
     private readonly IExcelRepository _repo;
 
-    public JoueurService(IExcelRepository repo)
-    {
-        _repo = repo;
-    }
+    public JoueurService(IExcelRepository repo) => _repo = repo;
 
+    // ── Joueurs (niveau école) ────────────────────────────────────────────────
     public List<Joueur> GetAllJoueurs() => _repo.GetAllJoueurs();
-
-    public List<Joueur> GetHistoriqueJoueur(Joueur joueur)
-    {
-        // NoFiche est la clé unique permanente — sans NoFiche, pas d'historique inter-années
-        if (string.IsNullOrWhiteSpace(joueur.NoFiche))
-            return new List<Joueur> { joueur };
-
-        return _repo.GetAllJoueurs()
-            .Where(j => !string.IsNullOrWhiteSpace(j.NoFiche) &&
-                        string.Equals(j.NoFiche.Trim(), joueur.NoFiche.Trim(), StringComparison.OrdinalIgnoreCase))
-            .OrderBy(j => j.Id)
-            .ToList();
-    }
-
-    public void CopierVersEquipe(IEnumerable<int> joueurIds, int nouvelleEquipeId)
-    {
-        foreach (var id in joueurIds)
-        {
-            var source = _repo.GetJoueurById(id);
-            if (source == null) continue;
-            _repo.AddJoueur(new Joueur
-            {
-                EquipeId = nouvelleEquipeId,
-                Nom = source.Nom,
-                Prenom = source.Prenom,
-                Numero = source.Numero,
-                Position = source.Position,
-                PositionSpecifique = source.PositionSpecifique,
-                PhotoPath = source.PhotoPath,
-                NoFiche = source.NoFiche,
-                Description = source.Description,
-                ConsentementPhoto = source.ConsentementPhoto,
-                Actif = source.Actif
-            });
-        }
-    }
-
-    public void DeplacerJoueur(int joueurId, int nouvelleEquipeId)
-    {
-        var joueur = _repo.GetJoueurById(joueurId);
-        if (joueur == null) return;
-        joueur.EquipeId = nouvelleEquipeId;
-        _repo.UpdateJoueur(joueur);
-    }
-
-    public List<Joueur> GetJoueursByEquipe(int equipeId, bool actifSeulement = false)
-    {
-        var tous = _repo.GetJoueursByEquipe(equipeId);
-        return actifSeulement ? tous.Where(j => j.Actif).ToList() : tous;
-    }
-
-    public void ToggleActif(int joueurId)
-    {
-        var joueur = _repo.GetJoueurById(joueurId);
-        if (joueur == null) return;
-        joueur.Actif = !joueur.Actif;
-        _repo.UpdateJoueur(joueur);
-    }
-
+    public List<Joueur> GetJoueursByEcole(int ecoleId) => _repo.GetJoueursByEcole(ecoleId);
     public Joueur? GetJoueurById(int id) => _repo.GetJoueurById(id);
 
-    public Joueur CreateJoueur(JoueurViewModel vm, IFormFile? photoFile, string webRootPath)
+    public Joueur CreateJoueur(JoueurViewModel vm)
     {
         var joueur = new Joueur
         {
-            EquipeId = vm.EquipeId,
-            Nom = vm.Nom,
-            Prenom = vm.Prenom,
-            Numero = vm.Numero,
-            Position = vm.PositionPrincipale.Trim(),
-            PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim(),
+            EcoleId = vm.EcoleId,
+            Nom = vm.Nom.Trim(),
+            Prenom = vm.Prenom.Trim(),
             NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim(),
-            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
+            CleUnique = Guid.NewGuid(),
             ConsentementPhoto = vm.ConsentementPhoto,
             Actif = vm.Actif
         };
-
-        if (photoFile != null && photoFile.Length > 0)
-            joueur.PhotoPath = SaveFile(photoFile, Path.Combine(webRootPath, "uploads", "photos"));
-
         return _repo.AddJoueur(joueur);
     }
 
-    public Joueur UpdateJoueur(JoueurViewModel vm, IFormFile? photoFile, string webRootPath)
+    public Joueur UpdateJoueur(JoueurViewModel vm)
     {
         var joueur = _repo.GetJoueurById(vm.Id) ?? new Joueur();
+        var etaitActif = joueur.Actif;
         joueur.Id = vm.Id;
-        joueur.EquipeId = vm.EquipeId;
-        joueur.Nom = vm.Nom;
-        joueur.Prenom = vm.Prenom;
-        joueur.Numero = vm.Numero;
-        joueur.Position = vm.PositionPrincipale.Trim();
-        joueur.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim();
+        joueur.EcoleId = vm.EcoleId;
+        joueur.Nom = vm.Nom.Trim();
+        joueur.Prenom = vm.Prenom.Trim();
         joueur.NoFiche = string.IsNullOrWhiteSpace(vm.NoFiche) ? null : vm.NoFiche.Trim();
-        joueur.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
+        joueur.CleUnique ??= Guid.NewGuid();
         joueur.ConsentementPhoto = vm.ConsentementPhoto;
         joueur.Actif = vm.Actif;
+        _repo.UpdateJoueur(joueur);
 
-        if (photoFile != null && photoFile.Length > 0)
+        // Cascade : si on désactive le joueur, désactiver toutes ses assignations
+        if (etaitActif && !vm.Actif)
         {
-            if (!string.IsNullOrEmpty(joueur.PhotoPath))
+            var assignations = _repo.GetJoueurEquipesByJoueur(vm.Id);
+            foreach (var je in assignations)
             {
-                var oldPath = Path.Combine(webRootPath, joueur.PhotoPath.TrimStart('/'));
-                if (File.Exists(oldPath)) File.Delete(oldPath);
+                je.Actif = false;
+                _repo.UpdateJoueurEquipe(je);
             }
-            joueur.PhotoPath = SaveFile(photoFile, Path.Combine(webRootPath, "uploads", "photos"));
         }
 
-        return _repo.UpdateJoueur(joueur);
+        return joueur;
     }
 
     public bool DeleteJoueur(int id, string webRootPath)
     {
-        var joueur = _repo.GetJoueurById(id);
-        if (joueur != null && !string.IsNullOrEmpty(joueur.PhotoPath))
+        // Supprimer photos des assignations
+        var assignations = _repo.GetJoueurEquipesByJoueur(id);
+        foreach (var je in assignations)
         {
-            var photoPath = Path.Combine(webRootPath, joueur.PhotoPath.TrimStart('/'));
-            if (File.Exists(photoPath)) File.Delete(photoPath);
+            if (!string.IsNullOrEmpty(je.PhotoPath))
+            {
+                var p = Path.Combine(webRootPath, je.PhotoPath.TrimStart('/'));
+                if (File.Exists(p)) File.Delete(p);
+            }
         }
+        _repo.DeleteJoueurEquipesByJoueur(id);
         return _repo.DeleteJoueur(id);
     }
 
     public JoueurViewModel ToViewModel(Joueur joueur) => new JoueurViewModel
     {
         Id = joueur.Id,
-        EquipeId = joueur.EquipeId,
+        EcoleId = joueur.EcoleId,
         Nom = joueur.Nom,
         Prenom = joueur.Prenom,
-        Numero = joueur.Numero,
-        PositionPrincipale = joueur.Position,
-        PositionPairsRaw = joueur.PositionSpecifique ?? string.Empty,
         NoFiche = joueur.NoFiche,
-        Description = joueur.Description,
-        PhotoPathActuelle = joueur.PhotoPath,
         ConsentementPhoto = joueur.ConsentementPhoto,
-        Actif = joueur.Actif
+        Actif = joueur.Actif,
+        CleUnique = joueur.CleUnique
     };
 
-    private static string SaveFile(IFormFile file, string directory)
+    // ── JoueurEquipes (assignations) ─────────────────────────────────────────
+    public List<JoueurEquipe> GetAllJoueurEquipes() => _repo.GetAllJoueurEquipes();
+
+    public List<JoueurEquipe> GetJoueurEquipesByEquipe(int equipeId)
     {
-        Directory.CreateDirectory(directory);
-        var ext = Path.GetExtension(file.FileName);
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var fullPath = Path.Combine(directory, fileName);
-        using var stream = new FileStream(fullPath, FileMode.Create);
-        file.CopyTo(stream);
-        return $"/uploads/photos/{fileName}";
+        var jes = _repo.GetJoueurEquipesByEquipe(equipeId);
+        foreach (var je in jes)
+            je.Joueur = _repo.GetJoueurById(je.JoueurId);
+        return jes;
     }
 
-    public List<JoueurMedia> GetMediasByJoueur(int joueurId)
-        => _repo.GetMediasByJoueur(joueurId);
+    public List<JoueurEquipe> GetJoueurEquipesByJoueur(int joueurId)
+    {
+        var jes = _repo.GetJoueurEquipesByJoueur(joueurId);
+        return jes;
+    }
+
+    public JoueurEquipe? GetJoueurEquipeById(int id)
+    {
+        var je = _repo.GetJoueurEquipeById(id);
+        if (je != null) je.Joueur = _repo.GetJoueurById(je.JoueurId);
+        return je;
+    }
+
+    public JoueurEquipe AssignerAEquipe(JoueurEquipeViewModel vm, IFormFile? photoFile, string webRootPath)
+    {
+        var je = new JoueurEquipe
+        {
+            JoueurId = vm.JoueurId,
+            EquipeId = vm.EquipeId,
+            Position = vm.PositionPrincipale.Trim(),
+            PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim(),
+            Numero = vm.Numero,
+            Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
+            Actif = vm.Actif
+        };
+        if (photoFile != null && photoFile.Length > 0)
+            je.PhotoPath = SaveFile(photoFile, Path.Combine(webRootPath, "uploads", "photos"));
+        return _repo.AddJoueurEquipe(je);
+    }
+
+    public JoueurEquipe UpdateAssignation(JoueurEquipeViewModel vm, IFormFile? photoFile, string webRootPath)
+    {
+        var je = _repo.GetJoueurEquipeById(vm.Id) ?? new JoueurEquipe();
+        je.Id = vm.Id;
+        je.JoueurId = vm.JoueurId;
+        je.EquipeId = vm.EquipeId;
+        je.Position = vm.PositionPrincipale.Trim();
+        je.PositionSpecifique = string.IsNullOrWhiteSpace(vm.PositionPairsRaw) ? null : vm.PositionPairsRaw.Trim();
+        je.Numero = vm.Numero;
+        je.Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim();
+        je.Actif = vm.Actif;
+        if (photoFile != null && photoFile.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(je.PhotoPath))
+            {
+                var old = Path.Combine(webRootPath, je.PhotoPath.TrimStart('/'));
+                if (File.Exists(old)) File.Delete(old);
+            }
+            je.PhotoPath = SaveFile(photoFile, Path.Combine(webRootPath, "uploads", "photos"));
+        }
+        return _repo.UpdateJoueurEquipe(je);
+    }
+
+    public bool SupprimerAssignation(int joueurEquipeId, string webRootPath)
+    {
+        var je = _repo.GetJoueurEquipeById(joueurEquipeId);
+        if (je != null && !string.IsNullOrEmpty(je.PhotoPath))
+        {
+            var p = Path.Combine(webRootPath, je.PhotoPath.TrimStart('/'));
+            if (File.Exists(p)) File.Delete(p);
+        }
+        return _repo.DeleteJoueurEquipe(joueurEquipeId);
+    }
+
+    public JoueurEquipeViewModel ToAssignationViewModel(JoueurEquipe je) => new JoueurEquipeViewModel
+    {
+        Id = je.Id,
+        JoueurId = je.JoueurId,
+        EquipeId = je.EquipeId,
+        PositionPrincipale = je.Position,
+        PositionPairsRaw = je.PositionSpecifique ?? "",
+        Numero = je.Numero,
+        Description = je.Description,
+        PhotoPathActuelle = je.PhotoPath,
+        Actif = je.Actif,
+        NomJoueur = je.Joueur != null ? $"{je.Joueur.Prenom} {je.Joueur.Nom}" : null
+    };
+
+    // ── Médias ────────────────────────────────────────────────────────────────
+    public List<JoueurMedia> GetMediasByJoueur(int joueurId) => _repo.GetMediasByJoueur(joueurId);
 
     public JoueurMedia AddJoueurMedia(int joueurId, IFormFile file, string webRootPath)
     {
-        var dir = Path.Combine(webRootPath, "uploads", "joueurs", joueurId.ToString());
+        var dir = Path.Combine(webRootPath, "uploads", "joueurs");
         Directory.CreateDirectory(dir);
         var ext = Path.GetExtension(file.FileName);
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var fullPath = Path.Combine(dir, fileName);
-        using var stream = new FileStream(fullPath, FileMode.Create);
+        var nom = $"{Guid.NewGuid()}{ext}";
+        using var stream = new FileStream(Path.Combine(dir, nom), FileMode.Create);
         file.CopyTo(stream);
-        var media = new JoueurMedia
+        return _repo.AddJoueurMedia(new JoueurMedia
         {
             JoueurId = joueurId,
-            CheminFichier = $"/uploads/joueurs/{joueurId}/{fileName}",
+            CheminFichier = $"/uploads/joueurs/{nom}",
             DateAjout = DateTime.UtcNow
-        };
-        return _repo.AddJoueurMedia(media);
+        });
     }
 
     public bool DeleteJoueurMedia(int id, string webRootPath)
     {
-        var all = _repo.GetAllJoueurMedias();
-        var media = all.FirstOrDefault(m => m.Id == id);
+        var medias = _repo.GetAllJoueurMedias();
+        var media = medias.FirstOrDefault(m => m.Id == id);
         if (media != null && !string.IsNullOrEmpty(media.CheminFichier))
         {
-            var path = Path.Combine(webRootPath, media.CheminFichier.TrimStart('/'));
-            if (File.Exists(path)) File.Delete(path);
+            var p = Path.Combine(webRootPath, media.CheminFichier.TrimStart('/'));
+            if (File.Exists(p)) File.Delete(p);
         }
         return _repo.DeleteJoueurMedia(id);
+    }
+
+    private static string SaveFile(IFormFile file, string dir)
+    {
+        Directory.CreateDirectory(dir);
+        var ext = Path.GetExtension(file.FileName);
+        var nom = $"{Guid.NewGuid()}{ext}";
+        using var stream = new FileStream(Path.Combine(dir, nom), FileMode.Create);
+        file.CopyTo(stream);
+        return $"/uploads/photos/{nom}";
     }
 }

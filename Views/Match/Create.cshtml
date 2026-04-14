@@ -29,7 +29,8 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle me-2"></i>Créer le match
                         </button>
-                        <a asp-action="Index" asp-route-equipeId="@Model.EquipeId" class="btn btn-outline-secondary">Annuler</a>
+                        <a asp-controller="Equipe" asp-action="Details" asp-route-id="@Model.EquipeId" asp-route-tab="matchs"
+           class="btn btn-outline-secondary">Annuler</a>
                     </div>
                 </form>
             </div>

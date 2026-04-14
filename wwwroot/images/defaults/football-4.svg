@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <!-- Diagonal stripe field pattern -->
+  <defs>
+    <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e5c1e"/>
+      <stop offset="50%" stop-color="#267326"/>
+      <stop offset="100%" stop-color="#1e5c1e"/>
+    </linearGradient>
+    <pattern id="stripes" x="0" y="0" width="80" height="400" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="40" height="400" fill="rgba(0,0,0,0.08)"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="400" fill="url(#fieldGrad)"/>
+  <rect width="1200" height="400" fill="url(#stripes)"/>
+  <!-- Boundary lines -->
+  <rect x="20" y="20" width="1160" height="360" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+  <!-- Center circle -->
+  <circle cx="600" cy="200" r="60" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <circle cx="600" cy="200" r="4" fill="rgba(255,255,255,0.5)"/>
+  <!-- Center line -->
+  <line x1="600" y1="20" x2="600" y2="380" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+  <!-- Goal areas -->
+  <rect x="20" y="130" width="80" height="140" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <rect x="1100" y="130" width="80" height="140" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <!-- Penalty spots -->
+  <circle cx="160" cy="200" r="4" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="1040" cy="200" r="4" fill="rgba(255,255,255,0.5)"/>
+  <!-- Corner arcs -->
+  <path d="M20,20 Q40,20 40,40" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <path d="M1180,20 Q1160,20 1160,40" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <path d="M20,380 Q40,380 40,360" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <path d="M1180,380 Q1160,380 1160,360" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+</svg>

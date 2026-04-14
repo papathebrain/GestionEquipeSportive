@@ -1,10 +1,61 @@
 @model GestionEquipeSportive.ViewModels.MatchViewModel
+@using GestionEquipeSportive.Models
+@{
+    var adverses = Model.EquipesAdversesDisponibles;
+}
 
 <div class="row g-3">
     <div class="col-md-6">
-        <label asp-for="Adversaire" class="form-label fw-semibold"></label>
-        <input asp-for="Adversaire" class="form-control" placeholder="Nom de l'équipe adverse" />
-        <span asp-validation-for="Adversaire" class="text-danger small"></span>
+        <label class="form-label fw-semibold">Adversaire <span class="text-danger">*</span></label>
+
+        @if (adverses.Any())
+        {
+            @* ── Combobox dictionnaire ── *@
+            <select id="adversaireSelect" class="form-select mb-2" onchange="onAdversaireChange(this.value)">
+                <option value="">— Saisie libre —</option>
+                @foreach (var adv in adverses.OrderBy(a => a.Nom))
+                {
+                    var label = adv.Nom + (!string.IsNullOrEmpty(adv.Lieu) ? $" — {adv.Lieu}" : "");
+                    if (Model.Adversaire == adv.Nom)
+                    {
+                        <option value="@adv.Id" data-nom="@adv.Nom" data-lieu="@(adv.Lieu ?? "")" data-logo="@(adv.LogoPath ?? "")" selected>@label</option>
+                    }
+                    else
+                    {
+                        <option value="@adv.Id" data-nom="@adv.Nom" data-lieu="@(adv.Lieu ?? "")" data-logo="@(adv.LogoPath ?? "")">@label</option>
+                    }
+                }
+            </select>
+
+            @* Aperçu équipe sélectionnée (caché en saisie libre) *@
+            <div id="adversairePreview" class="d-flex align-items-center gap-2 p-2 border rounded bg-light mb-2" style="display:none;">
+                <div id="advLogoWrap" style="width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                    <img id="advLogoImg" src="#" alt="Logo" style="width:40px;height:40px;object-fit:contain;display:none;" />
+                    <div id="advLogoPlaceholder" style="width:40px;height:40px;background:#e9ecef;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-shield-fill text-muted" style="font-size:1.25rem;"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="fw-semibold small" id="advNomLabel"></div>
+                    <div class="text-muted" style="font-size:.75rem;" id="advLieuLabel"></div>
+                </div>
+            </div>
+
+            @* Champ libre si "— Saisie libre —" sélectionné *@
+            <div id="adversaireLibreWrap" @(Model.EquipesAdversesDisponibles.Any(a => a.Nom == Model.Adversaire) ? "style='display:none;'" : "")>
+                <input asp-for="Adversaire" id="adversaireLibre" class="form-control"
+                       placeholder="Nom de l'équipe adverse" />
+                <span asp-validation-for="Adversaire" class="text-danger small"></span>
+            </div>
+
+            <input type="hidden" asp-for="AdversaireId" id="adversaireIdHidden" />
+        }
+        else
+        {
+            @* Pas de dictionnaire — saisie libre directe *@
+            <input asp-for="Adversaire" class="form-control" placeholder="Nom de l'équipe adverse" />
+            <span asp-validation-for="Adversaire" class="text-danger small"></span>
+        }
     </div>
     <div class="col-md-6">
         <label asp-for="DateMatch" class="form-label fw-semibold"></label>
@@ -13,7 +64,7 @@
     </div>
     <div class="col-md-6">
         <label asp-for="Lieu" class="form-label fw-semibold"></label>
-        <input asp-for="Lieu" class="form-control" placeholder="Ex: Terrain municipal" />
+        <input asp-for="Lieu" id="lieuInput" class="form-control" placeholder="Ex: Terrain municipal" />
         <span asp-validation-for="Lieu" class="text-danger small"></span>
     </div>
     <div class="col-md-6 d-flex align-items-end">
@@ -66,3 +117,59 @@
     <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Notes sur le match..."></textarea>
     <span asp-validation-for="Notes" class="text-danger small"></span>
 </div>
+
+@if (adverses.Any())
+{
+    <script>
+    (function() {
+        const sel    = document.getElementById('adversaireSelect');
+        const libre  = document.getElementById('adversaireLibreWrap');
+        const idHid  = document.getElementById('adversaireIdHidden');
+        const nomInp = document.getElementById('adversaireLibre');
+        const preview = document.getElementById('adversairePreview');
+        const lieuInp = document.getElementById('lieuInput');
+
+        window.onAdversaireChange = function(val) {
+            if (!val) {
+                // Saisie libre : montrer le champ texte, cacher le preview, vider le lieu
+                libre.style.display = '';
+                preview.style.display = 'none';
+                idHid.value = '';
+                if (lieuInp) lieuInp.value = '';
+            } else {
+                const opt  = sel.querySelector('option[value="' + val + '"]');
+                const nom  = opt?.dataset.nom  || '';
+                const lieu = opt?.dataset.lieu || '';
+                const logo = opt?.dataset.logo || '';
+
+                libre.style.display = 'none';
+                idHid.value = val;
+
+                // Remplir champ Adversaire caché (pour la validation serveur)
+                if (nomInp) nomInp.value = nom;
+
+                // Toujours remplacer le lieu par celui de l'adversaire sélectionné
+                if (lieuInp) lieuInp.value = lieu;
+
+                // Aperçu
+                preview.style.display = '';
+                document.getElementById('advNomLabel').textContent = nom;
+                document.getElementById('advLieuLabel').textContent = lieu;
+                const img = document.getElementById('advLogoImg');
+                const ph  = document.getElementById('advLogoPlaceholder');
+                if (logo) {
+                    img.src = logo;
+                    img.style.display = '';
+                    ph.style.display = 'none';
+                } else {
+                    img.style.display = 'none';
+                    ph.style.display = 'flex';
+                }
+            }
+        };
+
+        // Initialiser à l'ouverture (édition ou retour erreur)
+        if (sel) onAdversaireChange(sel.value || '');
+    })();
+    </script>
+}

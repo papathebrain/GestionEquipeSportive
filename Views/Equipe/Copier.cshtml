@@ -4,7 +4,7 @@
     ViewData["Title"] = "Copier une équipe";
     var sourceId = (int)ViewBag.SourceEquipeId;
     var sourceNom = ViewBag.SourceEquipeNom as string ?? "";
-    var joueurs = ViewBag.Joueurs as List<Joueur> ?? new();
+    var joueurs = ViewBag.Joueurs as List<JoueurEquipe> ?? new();
     var staff = ViewBag.Staff as List<Staff> ?? new();
 }
 
@@ -103,7 +103,7 @@
                                                        name="joueursIds" value="@j.Id" checked />
                                             </td>
                                             <td><span class="badge bg-dark">#@j.Numero</span></td>
-                                            <td class="fw-semibold">@j.Prenom @j.Nom</td>
+                                            <td class="fw-semibold">@j.Joueur?.Prenom @j.Joueur?.Nom</td>
                                             <td>
                                                 <span class="badge bg-secondary">@j.Position</span>
                                                 @if (!string.IsNullOrEmpty(j.PositionSpecifique))
@@ -111,7 +111,7 @@
                                                     <span class="badge bg-primary ms-1">@j.PositionSpecifique</span>
                                                 }
                                             </td>
-                                            <td class="text-muted small">@j.NoFiche</td>
+                                            <td class="text-muted small">@j.Joueur?.NoFiche</td>
                                         </tr>
                                     }
                                 </tbody>

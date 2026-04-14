@@ -7,7 +7,7 @@
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-04-06T14:05:06.6895107Z",
+    "DerniereConnexion": "2026-04-13T23:46:31.498638Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [],
     "EquipesIds": []
@@ -20,7 +20,7 @@
     "Role": "AdminEcole",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": "2026-04-06T01:12:58.8186352Z",
+    "DerniereConnexion": "2026-04-14T01:36:20.423287Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [
       1
@@ -54,5 +54,21 @@
     "EquipesIds": [
       12
     ]
+  },
+  {
+    "Id": "e029c765-33ed-466b-8bdc-6ed6ad22c437",
+    "NomUtilisateur": "Admin2Ecole",
+    "NomComplet": "2 ecole",
+    "MotDePasseHash": "AQAAAAIAAYagAAAAEKakFWCT456ozwSMkCSMDqIZEZ8u0hTJGoBQM2\u002BhDLn6UKsgUAFIeCwDLcqYDM1NSw==",
+    "Role": "AdminEcole",
+    "EstActif": true,
+    "DateCreation": "2026-04-13T23:44:35.9463628Z",
+    "DerniereConnexion": "2026-04-13T23:51:34.732924Z",
+    "ChangerMotDePasse": false,
+    "EcolesIds": [
+      1,
+      2
+    ],
+    "EquipesIds": []
   }
 ]

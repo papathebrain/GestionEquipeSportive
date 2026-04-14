@@ -5,6 +5,7 @@ namespace GestionEquipeSportive.Services;
 
 public interface IStaffService
 {
+    List<Staff> GetAllStaff();
     List<Staff> GetStaffByEquipe(int equipeId);
     Staff? GetStaffById(int id);
     List<Staff> GetStaffByNoFiche(string noFiche);

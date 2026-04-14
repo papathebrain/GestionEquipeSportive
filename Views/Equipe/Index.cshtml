@@ -34,18 +34,25 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
                 <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
-                <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Details" asp-route-id="@ecole?.Id">@ecole?.Nom</a></li>
-                <li class="breadcrumb-item active">Équipes</li>
+                <li class="breadcrumb-item active">@ecole?.Nom</li>
             </ol>
         </nav>
-        <h1 class="h3 mb-0"><i class="bi bi-people me-2 text-primary"></i>Équipes de @ecole?.Nom</h1>
+        <h1 class="h3 mb-0"><i class="bi bi-people me-2 text-primary"></i>@ecole?.Nom</h1>
     </div>
-    @if (peutModifier)
-    {
-        <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Nouvelle équipe
-        </a>
-    }
+    <div class="d-flex gap-2">
+        @if (User.IsInRole("Admin") || User.IsInRole("AdminEcole"))
+        {
+            <a asp-controller="Ecole" asp-action="Edit" asp-route-id="@ecole?.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>Modifier l'école
+            </a>
+        }
+        @if (peutModifier)
+        {
+            <a asp-action="Create" asp-route-ecoleId="@ecole?.Id" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Nouvelle équipe
+            </a>
+        }
+    </div>
 </div>
 
 @if (!Model.Any())

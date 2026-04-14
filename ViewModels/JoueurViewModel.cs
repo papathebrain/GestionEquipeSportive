@@ -3,12 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GestionEquipeSportive.ViewModels;
 
+// ViewModel pour créer/éditer un joueur au niveau école
 public class JoueurViewModel
 {
     public int Id { get; set; }
 
     [Required]
-    public int EquipeId { get; set; }
+    public int EcoleId { get; set; }
 
     [Required(ErrorMessage = "Le nom est obligatoire")]
     [Display(Name = "Nom")]
@@ -18,20 +19,40 @@ public class JoueurViewModel
     [Display(Name = "Prénom")]
     public string Prenom { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le numéro est obligatoire")]
-    [Display(Name = "Numéro")]
-    public string Numero { get; set; } = string.Empty;
+    [Display(Name = "Numéro de fiche GPI")]
+    public string? NoFiche { get; set; }
 
-    // Position principale (pour le groupement dans les listes)
+    [Display(Name = "Consentement photo")]
+    public bool ConsentementPhoto { get; set; } = true;
+
+    [Display(Name = "Actif")]
+    public bool Actif { get; set; } = true;
+
+    // Infos de navigation (lecture seulement)
+    public string? NomEcole { get; set; }
+    public Guid? CleUnique { get; set; }
+}
+
+// ViewModel pour l'assignation d'un joueur à une équipe
+public class JoueurEquipeViewModel
+{
+    public int Id { get; set; }
+
+    [Required]
+    public int JoueurId { get; set; }
+
+    [Required]
+    public int EquipeId { get; set; }
+
     [Display(Name = "Position principale")]
     public string PositionPrincipale { get; set; } = string.Empty;
 
-    // Toutes les paires encodées "Attaque|QB,Défense|CB" — champ hidden soumis
     [Display(Name = "Positions")]
     public string PositionPairsRaw { get; set; } = string.Empty;
 
-    [Display(Name = "Numéro de fiche")]
-    public string? NoFiche { get; set; }
+    [Required(ErrorMessage = "Le numéro est obligatoire")]
+    [Display(Name = "Numéro")]
+    public string Numero { get; set; } = string.Empty;
 
     [Display(Name = "Description / Notes")]
     public string? Description { get; set; }
@@ -42,22 +63,19 @@ public class JoueurViewModel
     [Display(Name = "Photo")]
     public IFormFile? PhotoFile { get; set; }
 
-    [Display(Name = "Consentement photo")]
-    public bool ConsentementPhoto { get; set; } = true;
-
     [Display(Name = "Joueur actif")]
     public bool Actif { get; set; } = true;
 
-    // Infos de navigation
+    // Navigation
+    public string? NomJoueur { get; set; }
     public string? NomEquipe { get; set; }
     public int EcoleId { get; set; }
 
-    // Listes pour les combobox
+    // Listes pour combobox
     public List<string> PositionsDisponibles { get; set; } = new();
     public List<string> PositionsSpecifiquesDisponibles { get; set; } = new();
     public Dictionary<string, List<string>> PositionsSpecifiquesParGroupe { get; set; } = new();
 
-    // Helper : paires parsées depuis PositionPairsRaw
     public List<(string Pos, string Spec)> PositionPairs
     {
         get

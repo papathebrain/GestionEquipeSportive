@@ -124,13 +124,10 @@
                         }
                     </div>
                     <div class="card-footer bg-transparent d-flex gap-2">
-                        <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-primary flex-fill">
-                            <i class="bi bi-eye me-1"></i>Détails
-                        </a>
                         @if (peutModifier)
                         {
-                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning">
-                                <i class="bi bi-pencil"></i>
+                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning flex-fill">
+                                <i class="bi bi-pencil me-1"></i>Modifier
                             </a>
                             <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(@m.Id, '@m.Adversaire', @equipe!.Id)">
                                 <i class="bi bi-trash"></i>
@@ -162,12 +159,15 @@
                         </p>
                     </div>
                     <div class="card-footer bg-transparent d-flex gap-2">
-                        <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-primary flex-fill">
-                            <i class="bi bi-pencil-square me-1"></i>Entrer résultat
-                        </a>
-                        <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-eye"></i>
-                        </a>
+                        @if (peutModifier)
+                        {
+                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-primary flex-fill">
+                                <i class="bi bi-pencil-square me-1"></i>Entrer résultat
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(@m.Id, '@m.Adversaire', @equipe!.Id)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -216,9 +216,6 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
-                                <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
                                 @if (peutModifier)
                                 {
                                     <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-outline-warning">

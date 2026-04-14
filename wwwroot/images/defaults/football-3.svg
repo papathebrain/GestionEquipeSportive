@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <!-- Hexagon pattern background -->
+  <defs>
+    <pattern id="hexPat" x="0" y="0" width="60" height="52" patternUnits="userSpaceOnUse">
+      <polygon points="30,2 58,17 58,47 30,62 2,47 2,17" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+    </pattern>
+    <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f2a4a"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#hexGrad)"/>
+  <rect width="1200" height="400" fill="url(#hexPat)"/>
+  <!-- Football silhouette centered -->
+  <ellipse cx="600" cy="200" rx="140" ry="80" fill="rgba(150,90,30,0.35)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <line x1="600" y1="120" x2="600" y2="280" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+  <path d="M470,200 Q520,170 600,160 Q680,170 730,200 Q680,230 600,240 Q520,230 470,200Z"
+        fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <!-- Laces -->
+  <g stroke="rgba(255,255,255,0.5)" stroke-width="2">
+    <line x1="590" y1="168" x2="610" y2="168"/>
+    <line x1="590" y1="180" x2="610" y2="180"/>
+    <line x1="590" y1="192" x2="610" y2="192"/>
+    <line x1="590" y1="204" x2="610" y2="204"/>
+    <line x1="590" y1="216" x2="610" y2="216"/>
+  </g>
+  <!-- Stars decoration -->
+  <g fill="rgba(255,255,255,0.15)">
+    <circle cx="100" cy="80" r="2"/>
+    <circle cx="200" cy="150" r="1.5"/>
+    <circle cx="350" cy="60" r="2"/>
+    <circle cx="900" cy="100" r="2"/>
+    <circle cx="1050" cy="60" r="1.5"/>
+    <circle cx="1150" cy="130" r="2"/>
+    <circle cx="150" cy="300" r="1.5"/>
+    <circle cx="1000" cy="320" r="2"/>
+  </g>
+</svg>
