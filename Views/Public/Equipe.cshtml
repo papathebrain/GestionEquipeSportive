@@ -199,10 +199,11 @@
                 @pubPm.DateMatch.ToString("dddd d MMMM yyyy", frCA)
                 @if (!string.IsNullOrEmpty(pubPm.HeureDebutMatch)) { <span>· @pubPm.HeureDebutMatch</span> }
             </div>
-            @if (!string.IsNullOrEmpty(pubPm.Lieu) || !string.IsNullOrEmpty(pubPm.HeureDepartAutobus))
+            @if (!string.IsNullOrEmpty(pubPm.Lieu) || !string.IsNullOrEmpty(pubPm.HeureDepartAutobus) || !string.IsNullOrEmpty(pubPm.HeureArriveeVestiaire))
             {
                 <div class="pub-details">
                     @if (!string.IsNullOrEmpty(pubPm.Lieu)) { <span><i class="bi bi-geo-alt me-1"></i>@pubPm.Lieu</span> }
+                    @if (!string.IsNullOrEmpty(pubPm.HeureArriveeVestiaire)) { <span class="ms-3"><i class="bi bi-door-open me-1"></i>Vestiaire @pubPm.HeureArriveeVestiaire</span> }
                     @if (!string.IsNullOrEmpty(pubPm.HeureDepartAutobus)) { <span class="ms-3"><i class="bi bi-bus-front me-1"></i>Autobus @pubPm.HeureDepartAutobus</span> }
                 </div>
             }
