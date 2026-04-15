@@ -28,9 +28,10 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
+            Nom = !string.IsNullOrWhiteSpace(vm.Nom) ? vm.Nom.Trim() : GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
             AfficherPublic = vm.AfficherPublic,
-            ThemeId = vm.ThemeId
+            ThemeId = vm.ThemeId,
+            CleUnique = Guid.NewGuid()
         };
         return _repo.AddEquipe(equipe);
     }
@@ -44,24 +45,33 @@ public class EquipeService : IEquipeService
             AnneeScolaire = vm.AnneeScolaire,
             TypeSport = vm.TypeSport,
             Niveau = vm.Niveau,
-            Nom = GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
+            Nom = !string.IsNullOrWhiteSpace(vm.Nom) ? vm.Nom.Trim() : GenererNom(vm.EcoleId, vm.TypeSport, vm.Niveau, vm.ThemeId),
             AfficherPublic = vm.AfficherPublic,
-            ThemeId = vm.ThemeId
+            ThemeId = vm.ThemeId,
+            CleUnique = _repo.GetEquipeById(vm.Id)?.CleUnique ?? Guid.NewGuid()
         };
         return _repo.UpdateEquipe(equipe);
     }
 
     public bool DeleteEquipe(int id) => _repo.DeleteEquipe(id);
 
+    public bool NomDejaUtilise(int ecoleId, string nom, string annee, int excludeId = 0)
+        => _repo.GetEquipesByEcole(ecoleId).Any(e =>
+            e.Id != excludeId &&
+            string.Equals(e.AnneeScolaire, annee, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.Nom, nom, StringComparison.OrdinalIgnoreCase));
+
     public EquipeViewModel ToViewModel(Equipe equipe) => new EquipeViewModel
     {
         Id = equipe.Id,
         EcoleId = equipe.EcoleId,
+        Nom = equipe.Nom,
         AnneeScolaire = equipe.AnneeScolaire,
         TypeSport = equipe.TypeSport,
         Niveau = equipe.Niveau,
         AfficherPublic = equipe.AfficherPublic,
-        ThemeId = equipe.ThemeId
+        ThemeId = equipe.ThemeId,
+        CleUnique = equipe.CleUnique
     };
 
     private string GenererNom(int ecoleId, TypeSport sport, NiveauEquipe niveau, int? themeId)

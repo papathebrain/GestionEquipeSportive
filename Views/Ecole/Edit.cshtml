@@ -19,7 +19,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-            <li class="breadcrumb-item"><a asp-action="Index">Écoles</a></li>
+            @await Html.PartialAsync("_BreadcrumbEcoles")
             <li class="breadcrumb-item active">@(isNew ? "Nouvelle école" : "Modifier")</li>
         </ol>
     </nav>
@@ -214,6 +214,11 @@
     @* ── Onglet Années scolaires ── *@
     <div class="tab-pane fade" id="tab-annees">
         <p class="text-muted small mb-3">Les années scolaires configurées ici seront disponibles dans les menus déroulants lors de la création/modification d'équipes.</p>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreerAnnee">
+                <i class="bi bi-plus-circle me-1"></i>Créer année scolaire
+            </button>
+        </div>
         @if (anneesScolaires.Any())
         {
             <div class="d-flex flex-wrap gap-2 mb-3">
@@ -234,19 +239,10 @@
                 }
             </div>
         }
-        <form asp-action="AjouterAnnee" method="post" class="d-flex gap-2 align-items-end" style="max-width:320px;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="ecoleId" value="@Model.Id" />
-            <div class="flex-grow-1">
-                <label class="form-label small fw-semibold mb-1">Ajouter une année</label>
-                <input type="text" name="annee" class="form-control form-control-sm"
-                       placeholder="Ex: 2025-2026" pattern="\d{4}-\d{4}"
-                       title="Format : AAAA-AAAA (ex: 2025-2026)" required />
-            </div>
-            <button type="submit" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-circle me-1"></i>Ajouter
-            </button>
-        </form>
+        else
+        {
+            <p class="text-muted text-center py-2">Aucune année scolaire définie.</p>
+        }
     </div>
 
     @* ── Onglet Équipes adverses ── *@
@@ -498,8 +494,7 @@
             <div class="row g-3" id="employesList">
                 @foreach (var emp in employes)
                 {
-                    var cleEmp = emp.CleUnique.HasValue ? emp.CleUnique.Value.ToString() : $"__id_{emp.Id}";
-                    var eqs = equipesParEmploye.ContainsKey(cleEmp) ? equipesParEmploye[cleEmp] : new();
+                    var eqs = equipesParEmploye.ContainsKey(emp.Id.ToString()) ? equipesParEmploye[emp.Id.ToString()] : new();
                     var equipeNoms = string.Join(", ", eqs.Where(e => e != null).Select(e => e!.Nom));
                     <div class="col-12 col-md-6 col-lg-4 employe-item"
                          data-nom="@($"{emp.Prenom} {emp.Nom}".ToLower())"
@@ -629,9 +624,71 @@
     </div>
 </div>
 
-@* ── Modales (inchangées) ── *@
+@* ── Modal Créer année scolaire ── *@
+<div class="modal fade" id="modalCreerAnnee" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-action="CreerAnneeAvecCopie" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ecoleId" value="@Model.Id" />
+                <input type="hidden" name="equipeSourceIds" id="equipeSourceIdsHidden" />
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Créer une année scolaire</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Année scolaire <span class="text-danger">*</span></label>
+                        <input type="text" name="annee" id="nouvelleAnneeInput" class="form-control"
+                               placeholder="Ex: 2025-2026" pattern="\d{4}-\d{4}"
+                               title="Format : AAAA-AAAA (ex: 2025-2026)" required />
+                    </div>
+                    @if (equipesEcole.Any())
+                    {
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="copierEquipesCheck"
+                                       onchange="toggleCopierEquipes(this.checked)" />
+                                <label class="form-check-label fw-semibold" for="copierEquipesCheck">
+                                    Copier des équipes d'une année précédente
+                                </label>
+                            </div>
+                            <div class="form-text text-muted ms-4">Les joueurs assignés à ces équipes seront également copiés.</div>
+                        </div>
+                        <div id="copierEquipesSection" style="display:none;">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Sélectionner l'année source</label>
+                                <select id="anneeSourceSelect" class="form-select form-select-sm" style="max-width:200px;"
+                                        onchange="chargerEquipesCopie(this.value)">
+                                    <option value="">— Sélectionner —</option>
+                                    @foreach (var anneeItem in anneesScolaires.OrderByDescending(a => a.AnneeScolaire))
+                                    {
+                                        <option value="@anneeItem.AnneeScolaire">@anneeItem.AnneeScolaire</option>
+                                    }
+                                </select>
+                            </div>
+                            <div id="equipesACopierWrap" style="display:none;">
+                                <label class="form-label fw-semibold small">Équipes à copier</label>
+                                <div class="border rounded p-2 bg-light" style="max-height:220px;overflow-y:auto;" id="equipesACopierList"></div>
+                            </div>
+                            <div id="equipesACopierVide" class="text-muted small" style="display:none;">
+                                Aucune équipe pour cette année.
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" onclick="return prepareEquipeSourceIds()">
+                        <i class="bi bi-check-circle me-1"></i>Créer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-@* Modal Ajouter Adverse *@
+@* ── Modal Ajouter Adverse *@
 <div class="modal fade" id="modalAjouterAdverse" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -770,6 +827,36 @@
                             <input type="file" name="LogoFile" class="form-control" accept="image/*"
                                    onchange="previewThemeLogo(this,'addLogoPreview','addLogoContainer','addLogoPlaceholder')" />
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-music-note me-1"></i>Musique match à venir</label>
+                            <input type="file" name="MusiqueProchainMatchFile" class="form-control form-control-sm" accept="audio/*" />
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueProchainMatchDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueProchainMatchDuree" min="1" value="10" class="form-control form-control-sm" /></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-trophy me-1 text-warning"></i>Musique victoire</label>
+                            <input type="file" name="MusiqueVictoireFile" class="form-control form-control-sm" accept="audio/*" />
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueVictoireDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueVictoireDuree" min="1" value="10" class="form-control form-control-sm" /></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-emoji-frown me-1 text-danger"></i>Musique défaite</label>
+                            <input type="file" name="MusiqueDefaiteFile" class="form-control form-control-sm" accept="audio/*" />
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueDefaiteDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueDefaiteDuree" min="1" value="10" class="form-control form-control-sm" /></div>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <div id="addThemePreview" class="rounded p-2 text-white d-flex align-items-center gap-2"
                                  style="background-color:#1a3a5c;">
@@ -839,6 +926,45 @@
                             <div id="editLogoActuelWrap" class="mt-1" style="display:none;">
                                 <small class="text-muted">Logo actuel : </small>
                                 <img id="editLogoActuel" src="#" alt="Logo actuel" style="height:30px;object-fit:contain;" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-music-note me-1"></i>Musique match à venir</label>
+                            <input type="file" name="MusiqueProchainMatchFile" id="editMusiqueProchainMatch" class="form-control form-control-sm" accept="audio/*" />
+                            <div id="editMusiqueProchainMatchActuelWrap" class="mt-1" style="display:none;">
+                                <audio id="editMusiqueProchainMatchActuel" controls style="height:28px;width:100%;"></audio>
+                            </div>
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueProchainMatchDebut" id="editMusiqueProchainMatchDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueProchainMatchDuree" id="editMusiqueProchainMatchDuree" min="1" value="10" class="form-control form-control-sm" /></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-trophy me-1 text-warning"></i>Musique victoire</label>
+                            <input type="file" name="MusiqueVictoireFile" id="editMusiqueVictoire" class="form-control form-control-sm" accept="audio/*" />
+                            <div id="editMusiqueVictoireActuelWrap" class="mt-1" style="display:none;">
+                                <audio id="editMusiqueVictoireActuel" controls style="height:28px;width:100%;"></audio>
+                            </div>
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueVictoireDebut" id="editMusiqueVictoireDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueVictoireDuree" id="editMusiqueVictoireDuree" min="1" value="10" class="form-control form-control-sm" /></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-emoji-frown me-1 text-danger"></i>Musique défaite</label>
+                            <input type="file" name="MusiqueDefaiteFile" id="editMusiqueDefaite" class="form-control form-control-sm" accept="audio/*" />
+                            <div id="editMusiqueDefaiteActuelWrap" class="mt-1" style="display:none;">
+                                <audio id="editMusiqueDefaiteActuel" controls style="height:28px;width:100%;"></audio>
+                            </div>
+                            <div class="row g-1 mt-1">
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Démarrer à (s)</label>
+                                    <input type="number" name="MusiqueDefaiteDebut" id="editMusiqueDefaiteDebut" min="0" value="0" class="form-control form-control-sm" /></div>
+                                <div class="col-6"><label class="form-label small text-muted mb-0">Durée (s)</label>
+                                    <input type="number" name="MusiqueDefaiteDuree" id="editMusiqueDefaiteDuree" min="1" value="10" class="form-control form-control-sm" /></div>
                             </div>
                         </div>
                         <div class="col-12">
@@ -931,6 +1057,23 @@
                     document.getElementById('editLogoPlaceholder').style.display = 'flex';
                 }
                 document.getElementById('editLogoFile').value = '';
+                // Musiques
+                function setMusiqueEdit(path, wrapId, audioId, fileId) {
+                    var wrap = document.getElementById(wrapId);
+                    var audio = document.getElementById(audioId);
+                    document.getElementById(fileId).value = '';
+                    if (path) { audio.src = path; wrap.style.display = 'block'; }
+                    else { audio.src = ''; wrap.style.display = 'none'; }
+                }
+                setMusiqueEdit(t.musiqueProchainMatchPath, 'editMusiqueProchainMatchActuelWrap', 'editMusiqueProchainMatchActuel', 'editMusiqueProchainMatch');
+                setMusiqueEdit(t.musiqueVictoirePath, 'editMusiqueVictoireActuelWrap', 'editMusiqueVictoireActuel', 'editMusiqueVictoire');
+                setMusiqueEdit(t.musiqueDefaitePath, 'editMusiqueDefaiteActuelWrap', 'editMusiqueDefaiteActuel', 'editMusiqueDefaite');
+                document.getElementById('editMusiqueProchainMatchDebut').value = t.musiqueProchainMatchDebut ?? 0;
+                document.getElementById('editMusiqueProchainMatchDuree').value = t.musiqueProchainMatchDuree ?? 10;
+                document.getElementById('editMusiqueVictoireDebut').value = t.musiqueVictoireDebut ?? 0;
+                document.getElementById('editMusiqueVictoireDuree').value = t.musiqueVictoireDuree ?? 10;
+                document.getElementById('editMusiqueDefaiteDebut').value = t.musiqueDefaiteDebut ?? 0;
+                document.getElementById('editMusiqueDefaiteDuree').value = t.musiqueDefaiteDuree ?? 10;
                 new bootstrap.Modal(document.getElementById('modalModifierTheme')).show();
             });
     }
@@ -1082,5 +1225,62 @@
 
     document.getElementById('joueurEcoleRecherche')?.addEventListener('input', filtrerJoueurs);
     document.getElementById('joueurAnneeFiltre')?.addEventListener('change', filtrerJoueurs);
+
+    // ── Créer année scolaire ─────────────────────────────────────────────────
+    function toggleCopierEquipes(checked) {
+        document.getElementById('copierEquipesSection').style.display = checked ? '' : 'none';
+        if (!checked) {
+            document.getElementById('equipesACopierWrap').style.display = 'none';
+            document.getElementById('equipesACopierVide').style.display = 'none';
+            document.getElementById('anneeSourceSelect').value = '';
+        }
+    }
+
+    function chargerEquipesCopie(annee) {
+        var wrap = document.getElementById('equipesACopierWrap');
+        var vide = document.getElementById('equipesACopierVide');
+        var list = document.getElementById('equipesACopierList');
+        wrap.style.display = 'none';
+        vide.style.display = 'none';
+        list.innerHTML = '';
+        if (!annee) return;
+        fetch('/Ecole/GetEquipesPourAnnee?ecoleId=@Model.Id&annee=' + encodeURIComponent(annee))
+            .then(r => r.json())
+            .then(equipes => {
+                if (!equipes || equipes.length === 0) {
+                    vide.style.display = '';
+                    return;
+                }
+                equipes.forEach(function(e) {
+                    var div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = '<input class="form-check-input equipe-source-check" type="checkbox" value="' + e.id + '" id="src' + e.id + '" checked>'
+                        + '<label class="form-check-label" for="src' + e.id + '">' + e.nom + ' <span class="text-muted small">(' + e.sport + ')</span></label>';
+                    list.appendChild(div);
+                });
+                wrap.style.display = '';
+            });
+    }
+
+    function prepareEquipeSourceIds() {
+        var copierCheck = document.getElementById('copierEquipesCheck');
+        if (copierCheck && copierCheck.checked) {
+            var checked = Array.from(document.querySelectorAll('.equipe-source-check:checked')).map(cb => cb.value);
+            document.getElementById('equipeSourceIdsHidden').value = checked.join(',');
+        } else {
+            document.getElementById('equipeSourceIdsHidden').value = '';
+        }
+        return true;
+    }
+
+    // Préremplir l'année courante à l'ouverture du modal
+    document.getElementById('modalCreerAnnee')?.addEventListener('shown.bs.modal', function() {
+        var input = document.getElementById('nouvelleAnneeInput');
+        if (input && !input.value) {
+            var now = new Date();
+            var y = now.getFullYear(), m = now.getMonth() + 1;
+            input.value = m >= 9 ? (y + '-' + (y + 1)) : ((y - 1) + '-' + y);
+        }
+    });
 </script>
 }

@@ -12,6 +12,7 @@ public interface IEquipeService
     Equipe UpdateEquipe(EquipeViewModel vm);
     bool DeleteEquipe(int id);
     EquipeViewModel ToViewModel(Equipe equipe);
+    bool NomDejaUtilise(int ecoleId, string nom, string annee, int excludeId = 0);
     List<string> GetNiveauxPourSport(TypeSport sport);
     List<string> GetAnnesScolaires();
 }

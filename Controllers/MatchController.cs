@@ -202,6 +202,8 @@ public class MatchController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(200 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 200 * 1024 * 1024)]
     public IActionResult AjouterMedia(int matchId, List<IFormFile> fichiers, string typeMedia, string? description)
     {
         var match = _matchService.GetMatchById(matchId);
@@ -222,6 +224,30 @@ public class MatchController : Controller
         var ajoutees = _matchService.AddMedias(matchId, valides, type, description, _env.WebRootPath);
         TempData["Success"] = ajoutees.Count == 1 ? "Média ajouté." : $"{ajoutees.Count} médias ajoutés.";
         return RedirectToAction(nameof(Edit), new { id = matchId, tab = "galerie" });
+    }
+
+    /// <summary>Upload d'un seul fichier — appelé par le JS en parallèle (un fetch par fichier).</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 50 * 1024 * 1024)]
+    public IActionResult AjouterMediaUnique(int matchId, IFormFile fichier, string typeMedia, string? description)
+    {
+        var match = _matchService.GetMatchById(matchId);
+        if (match == null) return Json(new { ok = false, erreur = "Match introuvable." });
+
+        var equipe = _equipeService.GetEquipeById(match.EquipeId);
+        if (equipe == null) return Json(new { ok = false, erreur = "Équipe introuvable." });
+        if (!_access.PeutModifierEquipe(User, equipe.Id, equipe.EcoleId))
+            return Json(new { ok = false, erreur = "Accès refusé." });
+
+        if (fichier == null || fichier.Length == 0)
+            return Json(new { ok = false, erreur = "Fichier vide." });
+
+        var type = typeMedia == "Video" ? TypeMedia.Video : TypeMedia.Photo;
+        var ajoutees = _matchService.AddMedias(matchId, [fichier], type, description, _env.WebRootPath);
+        var media = ajoutees.FirstOrDefault();
+        return Json(new { ok = true, cheminFichier = media?.CheminFichier, id = media?.Id });
     }
 
     [HttpPost]

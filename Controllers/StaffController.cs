@@ -203,10 +203,9 @@ public class StaffController : Controller
         var equipesDeLEcole = _equipeService.GetEquipesByEcole(equipe.EcoleId);
         var equipeIds = equipesDeLEcole.Select(e => e.Id).ToHashSet();
 
-        // CleUnique déjà présentes dans cette équipe (pour marquer les doublons)
-        var clesDejaDansEquipe = _staffService.GetStaffByEquipe(equipeId)
-            .Where(s => s.CleUnique.HasValue)
-            .Select(s => s.CleUnique!.Value)
+        // Ids déjà présents dans cette équipe (pour marquer les doublons)
+        var idsDejaDansEquipe = _staffService.GetStaffByEquipe(equipeId)
+            .Select(s => s.Id)
             .ToHashSet();
 
         var terme = q.Trim();
@@ -220,9 +219,6 @@ public class StaffController : Controller
                 (s.Prenom + " " + s.Nom).Contains(terme, StringComparison.OrdinalIgnoreCase) ||
                 (s.Nom + " " + s.Prenom).Contains(terme, StringComparison.OrdinalIgnoreCase) ||
                 s.Titre.Contains(terme, StringComparison.OrdinalIgnoreCase))
-            // Dédoublonner par CleUnique — garder l'entrée la plus récente
-            .GroupBy(s => s.CleUnique.HasValue ? s.CleUnique.Value.ToString() : $"_id_{s.Id}")
-            .Select(g => g.OrderByDescending(s => s.Id).First())
             .OrderBy(s => s.Nom).ThenBy(s => s.Prenom)
             .Take(40)
             .ToList();
@@ -237,7 +233,7 @@ public class StaffController : Controller
             titre = s.Titre,
             photoPath = s.PhotoPath ?? "",
             equipeActuelle = equipeNoms.TryGetValue(s.EquipeId, out var en) ? en : "",
-            dejaPresent = s.CleUnique.HasValue && clesDejaDansEquipe.Contains(s.CleUnique.Value)
+            dejaPresent = idsDejaDansEquipe.Contains(s.Id)
         }).ToList();
 
         return Json(new { staff = result });

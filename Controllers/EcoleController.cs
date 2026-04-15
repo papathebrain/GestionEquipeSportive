@@ -37,14 +37,9 @@ public class EcoleController : Controller
         var visibles = _access.GetEcolesVisibles(User, toutes.Select(e => e.Id)).ToHashSet();
         var ecoles = toutes.Where(e => visibles.Contains(e.Id)).ToList();
 
-        // Redirection automatique si 1 seule école accessible
+        // Redirection automatique si 1 seule école accessible → liste des équipes directement
         if (ecoles.Count == 1)
-        {
-            // AdminEcole → page de gestion des équipes directement
-            if (User.IsInRole(Roles.AdminEcole) && !User.IsInRole(Roles.Admin))
-                return RedirectToAction("Index", "Equipe", new { ecoleId = ecoles[0].Id });
-            return RedirectToAction(nameof(Details), new { id = ecoles[0].Id });
-        }
+            return RedirectToAction("Index", "Equipe", new { ecoleId = ecoles[0].Id });
 
         return View(ecoles);
     }
@@ -135,22 +130,16 @@ public class EcoleController : Controller
         ViewBag.PremierePhotoParJoueur = premierePhotoParJoueur;
         ViewBag.EquipesEcole = equipes.OrderByDescending(e => e.AnneeScolaire).ThenBy(e => e.Nom).ToList();
 
-        // Employés : tous les staff des équipes de l'école, dédupliqués par CleUnique
+        // Employés : tous les staff des équipes de l'école (chaque record est unique par Id)
         var tousStaff = equipes
             .SelectMany(e => _staffService.GetStaffByEquipe(e.Id)
                 .Select(s => { s.Equipe = e; return s; }))
-            .ToList();
-        var employes = tousStaff
-            .GroupBy(s => s.CleUnique.HasValue ? s.CleUnique.Value.ToString() : $"__id_{s.Id}")
-            .Select(g => g.OrderByDescending(s => s.Id).First())
             .OrderBy(s => s.Nom).ThenBy(s => s.Prenom)
             .ToList();
-        // Pour chaque employé, récupérer toutes les équipes où il apparaît
-        var equipeParCle = tousStaff
-            .GroupBy(s => s.CleUnique.HasValue ? s.CleUnique.Value.ToString() : $"__id_{s.Id}")
-            .ToDictionary(g => g.Key, g => g.Select(s => s.Equipe).Where(e => e != null).ToList());
-        ViewBag.Employes = employes;
-        ViewBag.EquipesParEmploye = equipeParCle;
+        var equipeParId = tousStaff
+            .ToDictionary(s => s.Id.ToString(), s => new List<Equipe?> { s.Equipe });
+        ViewBag.Employes = tousStaff;
+        ViewBag.EquipesParEmploye = equipeParId;
 
         return View(_ecoleService.ToViewModel(ecole));
     }
@@ -222,6 +211,63 @@ public class EcoleController : Controller
         return RedirectToAction(nameof(Edit), new { id = ecoleId });
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = Roles.AdminOuAdminEcole)]
+    public IActionResult CreerAnneeAvecCopie(int ecoleId, string annee, string? equipeSourceIds)
+    {
+        if (!_access.PeutModifier(User, ecoleId)) return Forbid();
+        if (string.IsNullOrWhiteSpace(annee))
+        {
+            TempData["Error"] = "L'année scolaire est requise.";
+            return RedirectToAction(nameof(Edit), new { id = ecoleId, tab = "annees" });
+        }
+        annee = annee.Trim();
+        var existantes = _ecoleService.GetAnneesScolairesByEcole(ecoleId);
+        if (!existantes.Any(a => a.AnneeScolaire == annee))
+            _ecoleService.AddAnneeScolaire(ecoleId, annee);
+
+        // Copier les équipes sélectionnées vers la nouvelle année
+        var ids = (equipeSourceIds ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out var i) ? i : 0)
+            .Where(i => i > 0).ToList();
+
+        int nbEquipes = 0;
+        int nbJoueurs = 0;
+        foreach (var sourceId in ids)
+        {
+            var sourceEquipe = _equipeService.GetEquipeById(sourceId);
+            if (sourceEquipe == null || sourceEquipe.EcoleId != ecoleId) continue;
+
+            var vm = _equipeService.ToViewModel(sourceEquipe);
+            vm.Id = 0;
+            vm.AnneeScolaire = annee;
+            var nouvelleEquipe = _equipeService.CreateEquipe(vm);
+            nbEquipes++;
+
+            // Copier les joueurs
+            var joueurEquipes = _joueurService.GetJoueurEquipesByEquipe(sourceId);
+            foreach (var je in joueurEquipes)
+            {
+                var dejaPresent = _joueurService.GetJoueurEquipesByEquipe(nouvelleEquipe.Id).Any(x => x.JoueurId == je.JoueurId);
+                if (dejaPresent) continue;
+                _joueurService.AssignerAEquipe(new ViewModels.JoueurEquipeViewModel
+                {
+                    JoueurId = je.JoueurId,
+                    EquipeId = nouvelleEquipe.Id,
+                    Actif = true
+                }, null, _env.WebRootPath);
+                nbJoueurs++;
+            }
+        }
+
+        TempData["Success"] = nbEquipes == 0
+            ? $"Année scolaire {annee} créée."
+            : $"Année {annee} créée avec {nbEquipes} équipe(s) et {nbJoueurs} joueur(s) copié(s).";
+        return RedirectToAction(nameof(Edit), new { id = ecoleId, tab = "annees" });
+    }
+
     // ── Actions Équipes adverses ─────────────────────────────────────────────
 
     [HttpPost]
@@ -239,7 +285,7 @@ public class EcoleController : Controller
         {
             TempData["Error"] = "Données invalides.";
         }
-        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId, tab = "adverses" });
     }
 
     [HttpPost]
@@ -257,7 +303,7 @@ public class EcoleController : Controller
         {
             TempData["Error"] = "Données invalides.";
         }
-        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId, tab = "adverses" });
     }
 
     [HttpPost]
@@ -269,6 +315,18 @@ public class EcoleController : Controller
         _ecoleService.DeleteEquipeAdverse(id, _env.WebRootPath);
         TempData["Success"] = "Équipe adverse supprimée.";
         return RedirectToAction(nameof(Edit), new { id = ecoleId });
+    }
+
+    [HttpGet]
+    [Authorize(Roles = Roles.AdminOuAdminEcole)]
+    public IActionResult GetEquipesPourAnnee(int ecoleId, string annee)
+    {
+        if (!_access.PeutModifier(User, ecoleId)) return Forbid();
+        var equipes = _equipeService.GetEquipesByEcole(ecoleId)
+            .Where(e => e.AnneeScolaire == annee)
+            .OrderBy(e => e.TypeSport.ToString()).ThenBy(e => e.Nom)
+            .Select(e => new { e.Id, e.Nom, sport = e.TypeSport.ToString() });
+        return Json(equipes);
     }
 
     [HttpGet]
@@ -307,7 +365,7 @@ public class EcoleController : Controller
         {
             TempData["Error"] = "Données invalides.";
         }
-        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId, tab = "themes" });
     }
 
     [HttpPost]
@@ -325,7 +383,7 @@ public class EcoleController : Controller
         {
             TempData["Error"] = "Données invalides.";
         }
-        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId });
+        return RedirectToAction(nameof(Edit), new { id = vm.EcoleId, tab = "themes" });
     }
 
     [HttpPost]
@@ -336,7 +394,7 @@ public class EcoleController : Controller
         if (!_access.PeutModifier(User, ecoleId)) return Forbid();
         _ecoleService.DeleteTheme(id, _env.WebRootPath);
         TempData["Success"] = "Thème supprimé avec succès.";
-        return RedirectToAction(nameof(Edit), new { id = ecoleId });
+        return RedirectToAction(nameof(Edit), new { id = ecoleId, tab = "themes" });
     }
 
     [HttpGet]
@@ -348,7 +406,10 @@ public class EcoleController : Controller
         if (!_access.PeutModifier(User, theme.EcoleId)) return Forbid();
         return Json(new {
             theme.Id, theme.EcoleId, theme.NomEquipe,
-            theme.CouleurPrimaire, theme.CouleurSecondaire, theme.LogoPath
+            theme.CouleurPrimaire, theme.CouleurSecondaire, theme.LogoPath,
+            theme.MusiqueProchainMatchPath, theme.MusiqueProchainMatchDebut, theme.MusiqueProchainMatchDuree,
+            theme.MusiqueVictoirePath, theme.MusiqueVictoireDebut, theme.MusiqueVictoireDuree,
+            theme.MusiqueDefaitePath, theme.MusiqueDefaiteDebut, theme.MusiqueDefaiteDuree
         });
     }
 

@@ -8,7 +8,7 @@
     ViewBag.CouleurSecondaire = Model.Ecole.CouleurSecondaire;
     ViewBag.LogoPath = Model.Ecole.LogoPath;
 
-    var equipeUrl = $"/p/{Ecole.ToSlug(Model.Ecole.Nom)}/{Model.Equipe.AnneeScolaire}/{Model.Equipe.TypeSport.ToString().ToLower()}/{Model.Equipe.Niveau.ToString().ToLower()}";
+    var equipeUrl = $"/p/{Ecole.ToSlug(Model.Ecole.Nom)}/{Model.Equipe.AnneeScolaire}/{Model.Equipe.TypeSport.ToString().ToLower()}/{Model.Equipe.NomSlug}";
 }
 
 @section HeaderRight {

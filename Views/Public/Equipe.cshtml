@@ -54,9 +54,9 @@
         {
             <div class="dropdown switcher-dropdown">
                 <button class="switcher-btn dropdown-toggle" data-bs-toggle="dropdown" type="button">
-                    <i class="bi bi-people me-1"></i>@Model.SportDisplay — @Model.NiveauDisplay
+                    <i class="bi bi-people me-1"></i>@Model.Equipe.Nom — @Model.Equipe.AnneeScolaire
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:240px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:260px;">
                     <li><h6 class="dropdown-header"><i class="bi bi-shield-fill me-1"></i>@Model.Ecole.Nom</h6></li>
                     @foreach (var sportGroupe in parSport)
                     {
@@ -72,16 +72,12 @@
                         <li><span class="dropdown-header py-1 text-uppercase fw-bold" style="font-size:.7rem;letter-spacing:.06em;">@sportLabel</span></li>
                         @foreach (var (equipe, url) in sportGroupe)
                         {
-                            var niveauLabel = equipe.Niveau switch {
-                                NiveauEquipe.Juvenil => "Juvénile",
-                                NiveauEquipe.PeeWee  => "Pee-Wee",
-                                _                    => equipe.Niveau.ToString()
-                            };
                             var isCurrent = equipe.Id == Model.Equipe.Id;
                             <li>
                                 <a class="dropdown-item @(isCurrent ? "active" : "")" href="@url">
                                     @if (isCurrent) { <i class="bi bi-check2 me-1"></i> }
-                                    @niveauLabel @equipe.AnneeScolaire
+                                    <span class="fw-semibold">@equipe.Nom</span>
+                                    <span class="text-muted ms-1" style="font-size:.8rem;">@equipe.AnneeScolaire</span>
                                 </a>
                             </li>
                         }
@@ -100,10 +96,23 @@
     {
         bgBanniere = Model.PhotoBanniere.CheminFichier;
     }
-    else if (aucunMatch)
+    else
     {
-        var idx = Random.Shared.Next(1, 5);
-        bgBanniere = $"/images/defaults/football-{idx}.svg";
+        // Essayer les photos du dernier match ou des joueurs
+        var anyMatchPhoto = Model.MatchesMedias.Values
+            .SelectMany(l => l.Where(m => m.TypeMedia == TypeMedia.Photo && !string.IsNullOrEmpty(m.CheminFichier)))
+            .Select(m => m.CheminFichier!).FirstOrDefault();
+        if (anyMatchPhoto != null)
+        {
+            bgBanniere = anyMatchPhoto;
+        }
+        else
+        {
+            var anyJoueurPhoto = Model.JoueurMedias.Values
+                .SelectMany(l => l.Where(m => !string.IsNullOrEmpty(m.CheminFichier)))
+                .Select(m => m.CheminFichier!).FirstOrDefault();
+            bgBanniere = anyJoueurPhoto ?? $"/images/defaults/football-{Random.Shared.Next(1, 5)}.svg";
+        }
     }
 
     // Image aléatoire pour la bannière prochain match (matchs en priorité, puis joueurs)
@@ -126,72 +135,170 @@
 
 @if (Model.ProchainMatch != null)
 {
-    <style>
-        #pubBanniere { background:linear-gradient(135deg, @Model.CouleurPrimaire 0%, color-mix(in srgb, @Model.CouleurPrimaire 50%, #000) 100%);
-            color:#fff; position:relative; overflow:hidden; min-height:240px;
-            display:flex; align-items:center; justify-content:center; }
-        .pub-bg { position:absolute;inset:0;background-size:cover;background-position:center;
-            opacity:.22; pointer-events:none;
-            animation:pubBgReveal 1.2s ease .2s both; }
-        @@keyframes pubBgReveal { from{opacity:0;transform:scale(1.06)} to{opacity:.22;transform:scale(1)} }
-
-        .pub-glow { position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none; }
-
-        .pub-inner { position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:28px 16px; }
-
-        .pub-badge { display:inline-block;padding:4px 16px;border-radius:4px;font-weight:700;font-size:.65rem;
-            letter-spacing:.14em;text-transform:uppercase;color:#fff;
-            background:@Model.CouleurSecondaire;margin-bottom:14px;
-            animation:pubSlideDown .5s ease .15s both; }
-        @@keyframes pubSlideDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
-
-        .pub-vs-wrap { display:flex;align-items:center;gap:28px;
-            animation:pubScaleIn .65s cubic-bezier(.17,.67,.35,1.3) .35s both; }
-        @@keyframes pubScaleIn { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
-
-        .pub-logo { width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,.6)); }
-        .pub-logo-ph { width:80px;height:80px;border-radius:50%;border:2px dashed rgba(255,255,255,.22);
-            display:flex;align-items:center;justify-content:center; }
-        .pub-vs { font-size:2.2rem;font-weight:900;color:#fff;letter-spacing:.04em;
-            animation:pubVsPulse 1.4s ease-in-out 1s infinite alternate; }
-        @@keyframes pubVsPulse {
-            from { text-shadow:0 0 10px rgba(255,255,255,.25); opacity:.75; }
-            to   { text-shadow:0 0 50px rgba(255,255,255,1);   opacity:1;   } }
-
-        .pub-adversaire { font-size:1.3rem;font-weight:800;color:#fff;text-align:center;margin-top:14px;
-            animation:pubSlideUp .5s ease .75s both; }
-        .pub-date { font-size:.82rem;font-weight:500;color:rgba(255,255,255,.82);text-align:center;margin-top:5px;
-            animation:pubSlideUp .5s ease .9s both; }
-        .pub-details { font-size:.75rem;color:rgba(255,255,255,.6);text-align:center;margin-top:4px;
-            animation:pubSlideUp .5s ease 1.05s both; }
-        @@keyframes pubSlideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    </style>
-
     var pubPm = Model.ProchainMatch;
     var pubAdvLogo = pubPm.AdversaireId.HasValue && Model.AdversaireLogos.TryGetValue(pubPm.AdversaireId.Value, out var pubAlp) ? pubAlp : null;
+    <style>
+        /* ── Conteneur ── */
+        #pubBanniere {
+            background:linear-gradient(135deg,@Model.CouleurPrimaire 0%,color-mix(in srgb,@Model.CouleurPrimaire 38%,#000) 100%);
+            color:#fff;position:relative;overflow:hidden;min-height:280px;
+            display:flex;align-items:center;justify-content:center;
+        }
+        /* ── Fond photo ── */
+        .pub-bg { position:absolute;inset:0;background-size:cover;background-position:center;
+            pointer-events:none;opacity:0;animation:pubBgIn 1.6s ease .2s forwards; }
+        @@keyframes pubBgIn { to { opacity:.26;transform:scale(1); } from { opacity:0;transform:scale(1.1); } }
+
+        /* ── Flash initial ── */
+        .pub-flash { position:absolute;inset:0;background:#fff;pointer-events:none;z-index:20;
+            animation:pubFlash0 .5s ease forwards; }
+        @@keyframes pubFlash0 { 0%{opacity:.9} 100%{opacity:0} }
+
+        /* ── Scanlines CRT ── */
+        .pub-scanlines { position:absolute;inset:0;pointer-events:none;z-index:1;
+            background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.07) 3px,rgba(0,0,0,.07) 4px); }
+
+        /* ── Rayons (tournent indéfiniment) ── */
+        .pub-speedlines { position:absolute;inset:-50%;pointer-events:none;z-index:1;
+            background:repeating-conic-gradient(rgba(255,255,255,.04) 0deg 1.5deg,transparent 1.5deg 9deg);
+            animation:pubSpin 10s linear infinite; }
+        @@keyframes pubSpin { to { transform:rotate(360deg); } }
+
+        /* ── Lueurs ── */
+        .pub-glow { position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:1; }
+
+        /* ── Éclairs de choc (injectés par JS) ── */
+        .pub-clash-flash { position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.85) 0%,transparent 70%);
+            pointer-events:none;z-index:15;animation:pubClashFlash .3s ease forwards; }
+        @@keyframes pubClashFlash { 0%{opacity:1} 100%{opacity:0} }
+        @@keyframes pubShakeEl {
+            0%,100%{transform:translateX(0) translateY(0)}
+            15%{transform:translateX(-9px) translateY(3px)}
+            30%{transform:translateX(9px)  translateY(-3px)}
+            45%{transform:translateX(-6px) translateY(2px)}
+            60%{transform:translateX(6px)  translateY(-2px)}
+            75%{transform:translateX(-3px)}
+            90%{transform:translateX(3px)}
+        }
+        @@keyframes pubSparkFly {
+            0%   { transform:translate(-50%,-50%) rotate(var(--a)) translateY(0)                   scale(1);   opacity:1; }
+            100% { transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1*var(--d)))   scale(0);   opacity:0; }
+        }
+
+        /* ── Contenu ── */
+        .pub-inner { position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;padding:22px 20px;width:100%; }
+
+        /* ── Badge ── */
+        .pub-badge { display:inline-block;padding:5px 18px;border-radius:3px;
+            font-weight:900;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:#fff;
+            
+            
+            animation:pubBadgeDrop .4s cubic-bezier(.34,1.56,.64,1) .1s both; }
+        @@keyframes pubBadgeDrop { from{opacity:0;transform:translateY(-20px) scaleX(.6)} to{opacity:1;transform:none} }
+
+        /* ── Zone logos + VS ── */
+        .pub-vs-wrap { display:flex;align-items:center;justify-content:center;gap:28px;width:100%;max-width:500px; }
+
+        /* ── LOGO GAUCHE — 5s, 2 chocs puis final ── */
+        .pub-logo-left {
+            width:96px;height:96px;object-fit:contain;flex-shrink:0;
+            animation:pubLogoL 5s cubic-bezier(.4,0,.2,1) forwards,
+                       pubLogoGlow 2s ease-in-out 5.1s infinite alternate;
+        }
+        @@keyframes pubLogoL {
+            /*  0.0s  */ 0%  { opacity:0; transform:translateX(-340px) scale(.45) rotate(-18deg); }
+            /*  0.2s  */ 4%  { opacity:1; }
+            /* Choc 1 →  1.2s */ 24% { transform:translateX(60px)  scale(1.3)  rotate(6deg); }
+            /* Recul  →  1.7s */ 34% { transform:translateX(-160px) scale(.85) rotate(-10deg); }
+            /* Choc 2 →  2.6s */ 52% { transform:translateX(52px)  scale(1.24) rotate(4deg); }
+            /* Recul  →  3.2s */ 64% { transform:translateX(-100px) scale(.88) rotate(-6deg); }
+            /* Élan final → 3.7s */ 74% { transform:translateX(44px)  scale(1.2) rotate(2deg); }
+            /* Impact → 4.0s */  80% { transform:translateX(0) scale(1.05); }
+            /* Settle → 4.5s */  90% { transform:translateX(-5px) scale(.98); }
+            /* Repos  → 5.0s */ 100% { transform:translateX(0) scale(1); }
+        }
+
+        /* ── LOGO DROIT — miroir ── */
+        .pub-logo-right {
+            width:96px;height:96px;object-fit:contain;flex-shrink:0;
+            animation:pubLogoR 5s cubic-bezier(.4,0,.2,1) forwards,
+                       pubLogoGlow 2s ease-in-out 5.4s infinite alternate;
+        }
+        @@keyframes pubLogoR {
+            0%  { opacity:0; transform:translateX(340px)  scale(.45) rotate(18deg); }
+            4%  { opacity:1; }
+            24% { transform:translateX(-60px)  scale(1.3)  rotate(-6deg); }
+            34% { transform:translateX(160px)  scale(.85)  rotate(10deg); }
+            52% { transform:translateX(-52px)  scale(1.24) rotate(-4deg); }
+            64% { transform:translateX(100px)  scale(.88)  rotate(6deg); }
+            74% { transform:translateX(-44px)  scale(1.2)  rotate(-2deg); }
+            80% { transform:translateX(0)      scale(1.05); }
+            90% { transform:translateX(5px)    scale(.98); }
+           100% { transform:translateX(0)      scale(1); }
+        }
+
+        @@keyframes pubLogoGlow {
+            from { filter:drop-shadow(0 0 8px  rgba(255,255,255,.3)) drop-shadow(0 4px 10px rgba(0,0,0,.7)); }
+            to   { filter:drop-shadow(0 0 30px rgba(255,255,255,.9)) drop-shadow(0 4px 16px rgba(0,0,0,.8)); }
+        }
+
+        .pub-logo-ph { width:96px;height:96px;border-radius:50%;flex-shrink:0;
+            border:2px dashed rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center; }
+
+        /* ── VS — apparaît au choc final (80%) → 4.0s ── */
+        .pub-vs {
+            font-size:2.8rem;font-weight:900;color:#fff;letter-spacing:.06em;flex-shrink:0;
+            animation:pubVsAppear 5s ease forwards, pubVsPulse 1.4s ease-in-out 5.1s infinite alternate;
+        }
+        @@keyframes pubVsAppear {
+            0%,74% { opacity:0; transform:scale(0); }
+            80%    { opacity:1; transform:scale(2.2); filter:brightness(4); }
+            90%    { transform:scale(.88); filter:brightness(1); }
+            100%   { opacity:1; transform:scale(1); }
+        }
+        @@keyframes pubVsPulse {
+            from { text-shadow:0 0 12px rgba(255,255,255,.3); letter-spacing:.04em; }
+            to   { text-shadow:0 0 60px rgba(255,255,255,1);  letter-spacing:.1em; }
+        }
+
+        /* ── Texte info — apparaît après 4.5s ── */
+        .pub-adversaire { font-size:1.35rem;font-weight:800;color:#fff;text-align:center;margin-top:12px;
+            text-shadow:0 2px 8px rgba(0,0,0,.5);
+            animation:pubInfoIn .5s cubic-bezier(.34,1.56,.64,1) 4.5s both; }
+        .pub-date { font-size:.82rem;font-weight:500;color:rgba(255,255,255,.85);text-align:center;margin-top:5px;
+            animation:pubInfoIn .5s cubic-bezier(.34,1.56,.64,1) 4.65s both; }
+        .pub-details { font-size:.75rem;color:rgba(255,255,255,.6);text-align:center;margin-top:4px;
+            animation:pubInfoIn .5s cubic-bezier(.34,1.56,.64,1) 4.8s both; }
+        @@keyframes pubInfoIn {
+            from { opacity:0; transform:translateY(16px) scale(.92); }
+            to   { opacity:1; transform:none; }
+        }
+    </style>
+
     <div id="pubBanniere">
         @if (!string.IsNullOrEmpty(pubBgImg))
-        {
-            <div class="pub-bg" style="background-image:url('@pubBgImg');"></div>
-        }
-        <div class="pub-glow" style="width:320px;height:320px;background:@Model.CouleurSecondaire;opacity:.16;top:-100px;left:-80px;"></div>
-        <div class="pub-glow" style="width:220px;height:220px;background:#fff;opacity:.05;bottom:-60px;right:-40px;"></div>
+        { <div class="pub-bg" style="background-image:url('@pubBgImg');"></div> }
+        <div class="pub-flash"></div>
+        <div class="pub-scanlines"></div>
+        <div class="pub-speedlines"></div>
+        <div class="pub-glow" style="width:380px;height:380px;background:@Model.CouleurSecondaire;opacity:.18;top:-130px;left:-110px;"></div>
+        <div class="pub-glow" style="width:260px;height:260px;background:#fff;opacity:.05;bottom:-80px;right:-60px;"></div>
 
         <div class="pub-inner">
-            <div class="pub-badge">Prochain match</div>
+            <div class="pub-badge">⚡ Prochain match</div>
 
             <div class="pub-vs-wrap">
                 @if (!string.IsNullOrEmpty(Model.LogoPath))
-                { <img src="@Model.LogoPath" alt="@Model.NomEquipe" class="pub-logo" /> }
+                { <img src="@Model.LogoPath" alt="@Model.NomEquipe" class="pub-logo-left" /> }
                 else
-                { <div class="pub-logo-ph"><i class="bi bi-shield-fill" style="font-size:2rem;color:rgba(255,255,255,.28);"></i></div> }
+                { <div class="pub-logo-ph" style="animation:pubLogoL 5s cubic-bezier(.4,0,.2,1) forwards;"><i class="bi bi-shield-fill" style="font-size:2.4rem;color:rgba(255,255,255,.28);"></i></div> }
 
                 <div class="pub-vs">VS</div>
 
                 @if (!string.IsNullOrEmpty(pubAdvLogo))
-                { <img src="@pubAdvLogo" alt="@pubPm.Adversaire" class="pub-logo" /> }
+                { <img src="@pubAdvLogo" alt="@pubPm.Adversaire" class="pub-logo-right" /> }
                 else
-                { <div class="pub-logo-ph"><i class="bi bi-shield" style="font-size:2rem;color:rgba(255,255,255,.28);"></i></div> }
+                { <div style="width:96px;height:96px;flex-shrink:0;display:flex;align-items:center;justify-content:center;animation:pubLogoR 5s cubic-bezier(.4,0,.2,1) forwards;"><span style="font-size:2.6rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));">🏈</span></div> }
             </div>
 
             <div class="pub-adversaire">@pubPm.Adversaire</div>
@@ -199,7 +306,7 @@
                 @pubPm.DateMatch.ToString("dddd d MMMM yyyy", frCA)
                 @if (!string.IsNullOrEmpty(pubPm.HeureDebutMatch)) { <span>· @pubPm.HeureDebutMatch</span> }
             </div>
-            @if (!string.IsNullOrEmpty(pubPm.Lieu) || !string.IsNullOrEmpty(pubPm.HeureDepartAutobus) || !string.IsNullOrEmpty(pubPm.HeureArriveeVestiaire))
+            @if (!string.IsNullOrEmpty(pubPm.Lieu) || !string.IsNullOrEmpty(pubPm.HeureArriveeVestiaire) || !string.IsNullOrEmpty(pubPm.HeureDepartAutobus))
             {
                 <div class="pub-details">
                     @if (!string.IsNullOrEmpty(pubPm.Lieu)) { <span><i class="bi bi-geo-alt me-1"></i>@pubPm.Lieu</span> }
@@ -212,20 +319,279 @@
 }
 else
 {
-<div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
-    @if (bgBanniere != null)
+@if (Model.DernierMatchAvecResultat != null)
+{
+    var dm = Model.DernierMatchAvecResultat;
+    var musiqueVictoire = Model.Theme?.MusiqueVictoirePath;
+    var musiqueDefaite  = Model.Theme?.MusiqueDefaitePath;
+
+    if (dm.Resultat == "V")
     {
-        <div style="position:absolute;inset:0;background:url('@bgBanniere') center/cover no-repeat;opacity:.3;"></div>
+    @* ── Animation VICTOIRE ─────────────────────────────────────────────── *@
+    <style>
+        #resBanniere {
+            background:linear-gradient(135deg,#0a5c2e 0%,#1a8a44 50%,#0d4a25 100%);
+            color:#fff;position:relative;overflow:hidden;min-height:260px;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .res-bg { position:absolute;inset:0;background-size:cover;background-position:center;
+            pointer-events:none;opacity:0;animation:resBgIn 1.8s ease .3s forwards; }
+        @@keyframes resBgIn { from{opacity:0;transform:scale(1.08)} to{opacity:.22;transform:scale(1)} }
+        .res-scanlines { position:absolute;inset:0;pointer-events:none;
+            background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 4px);z-index:0; }
+        /* Confetti particles */
+        .confetti-wrap { position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden; }
+        .confetti-p { position:absolute;top:-18px;width:10px;height:10px;border-radius:2px;
+            animation:confettiFall linear forwards; }
+        @@keyframes confettiFall {
+            0%   { transform:translateY(0) rotate(0deg);    opacity:1; }
+            100% { transform:translateY(320px) rotate(520deg); opacity:0; }
+        }
+        /* Trophy slam */
+        .res-trophy { font-size:4.5rem;display:block;text-align:center;line-height:1;
+            animation:trophySlamIn .55s cubic-bezier(.22,1.8,.36,1) .4s both;
+            filter:drop-shadow(0 0 18px #ffd700cc); }
+        @@keyframes trophySlamIn {
+            from { opacity:0;transform:translateY(-120px) scale(.4) rotate(-15deg); }
+            80%  { transform:translateY(10px) scale(1.12) rotate(3deg); }
+            to   { opacity:1;transform:translateY(0) scale(1) rotate(0); }
+        }
+        /* Score */
+        .res-score-wrap { display:flex;align-items:center;justify-content:center;gap:16px;margin:10px 0 6px;
+            animation:scorePop .55s cubic-bezier(.22,1.6,.36,1) 1s both; }
+        @@keyframes scorePop {
+            from { opacity:0;transform:scale(.4); }
+            80%  { transform:scale(1.18); }
+            to   { opacity:1;transform:scale(1); }
+        }
+        .res-score-nous { font-size:4.2rem;font-weight:900;line-height:1;color:#ffd700;
+            text-shadow:0 0 24px #ffd700,0 3px 12px rgba(0,0,0,.5); }
+        .res-score-sep   { font-size:2.4rem;opacity:.5;font-weight:300; }
+        .res-score-eux   { font-size:4.2rem;font-weight:900;line-height:1;opacity:.7; }
+        /* VICTOIRE! */
+        .res-label-v { font-size:2.1rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em;
+            color:#ffd700;text-shadow:0 0 30px #ffd700aa,0 2px 8px rgba(0,0,0,.6);text-align:center;
+            animation:victoireSplash .7s cubic-bezier(.22,2,.36,1) 1.6s both; }
+        @@keyframes victoireSplash {
+            from { opacity:0;transform:scale(2.5) rotate(-5deg); }
+            70%  { transform:scale(.92) rotate(1deg); }
+            to   { opacity:1;transform:scale(1) rotate(0); }
+        }
+        /* Glow burst */
+        .res-burst { position:absolute;pointer-events:none;z-index:0;border-radius:50%;
+            background:radial-gradient(circle,#ffd70044 0%,transparent 70%);
+            width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);
+            animation:burstPulse 2s ease-in-out 1.8s infinite alternate; }
+        @@keyframes burstPulse { from{opacity:.5;transform:translate(-50%,-50%) scale(.8)} to{opacity:.9;transform:translate(-50%,-50%) scale(1.2)} }
+        /* Sub info */
+        .res-sub { font-size:.8rem;color:rgba(255,255,255,.7);text-align:center;margin-top:6px;
+            animation:resFadeUp .5s ease 2.5s both; }
+        .res-logo-v { width:52px;height:52px;object-fit:contain;
+            animation:logoGlowIn .7s ease .4s both;filter:drop-shadow(0 0 12px #ffd700cc); }
+        @@keyframes logoGlowIn {
+            from{opacity:0;transform:scale(.5)} 70%{transform:scale(1.15)} to{opacity:1;transform:scale(1)}
+        }
+        @@keyframes resFadeUp {
+            from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none}
+        }
+        .res-inner { position:relative;z-index:2;text-align:center;padding:24px 16px; }
+        .res-adv-v { font-size:1rem;opacity:.8;animation:resFadeUp .5s ease 2.2s both; }
+    </style>
+    <div id="resBanniere">
+        @if (bgBanniere != null) { <div class="res-bg" style="background-image:url('@bgBanniere');"></div> }
+        <div class="res-scanlines"></div>
+        <div class="res-burst"></div>
+        <div class="confetti-wrap" id="confettiWrap"></div>
+        <div class="res-inner">
+            @if (!string.IsNullOrEmpty(Model.LogoPath))
+            { <img src="@Model.LogoPath" alt="" class="res-logo-v mb-2" /> }
+            <span class="res-trophy">🏆</span>
+            <div class="res-score-wrap">
+                <span class="res-score-nous">@dm.ScoreEquipe</span>
+                <span class="res-score-sep">–</span>
+                <span class="res-score-eux">@dm.ScoreAdversaire</span>
+            </div>
+            <div class="res-label-v">⚡ Victoire ! ⚡</div>
+            <div class="res-adv-v">vs @dm.Adversaire</div>
+            <div class="res-sub">@dm.DateMatch.ToString("d MMMM yyyy", frCA)</div>
+        </div>
+    </div>
+    <script>
+    (function(){
+        // Confetti
+        var wrap = document.getElementById('confettiWrap');
+        var colors = ['#ffd700','#fff','#4ade80','#facc15','#86efac','#fbbf24','#a3e635'];
+        for(var i=0;i<55;i++){
+            var p = document.createElement('div');
+            p.className='confetti-p';
+            p.style.left=Math.random()*100+'%';
+            p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+            p.style.width=(7+Math.random()*9)+'px';
+            p.style.height=(7+Math.random()*9)+'px';
+            p.style.borderRadius=Math.random()>.5?'50%':'2px';
+            var dur=1.8+Math.random()*2.8;
+            p.style.animationDuration=dur+'s';
+            p.style.animationDelay=(Math.random()*2)+'s';
+            wrap.appendChild(p);
+        }
+        // Musique
+        var musiqueVicUrl   = '@Html.Raw(musiqueVictoire ?? "")';
+        var musiqueVicDebut = @(Model.Theme?.MusiqueVictoireDebut ?? 0);
+        var musiqueVicDuree = @(Model.Theme?.MusiqueVictoireDuree ?? 10);
+        if(musiqueVicUrl) {
+            var audV=new Audio(musiqueVicUrl);
+            audV.volume=0.82;
+            function jouerVic(){ audV.currentTime=musiqueVicDebut; audV.play().catch(function(){}); setTimeout(function(){ var step=0.04; var fade=setInterval(function(){ audV.volume=Math.max(0,audV.volume-step); if(audV.volume===0){clearInterval(fade);audV.pause();} },120); },Math.max(0,musiqueVicDuree-2)*1000); }
+            audV.play().catch(function(){
+                document.addEventListener('click',function h(){jouerVic();document.removeEventListener('click',h);},{once:true});
+            });
+            if(audV.readyState>=2){ jouerVic(); } else { audV.addEventListener('canplay',jouerVic,{once:true}); }
+        }
+    })();
+    </script>
     }
-    <div class="container py-4" style="position:relative;z-index:1;">
-        @if (Model.DernierMatchAvecResultat != null)
-        {
-            var dm = Model.DernierMatchAvecResultat;
-            var resultCss = dm.Resultat switch { "V" => "#198754", "D" => "#dc3545", _ => "#6c757d" };
-            var resultLabel = dm.Resultat switch { "V" => "Victoire", "D" => "Défaite", _ => "Nul" };
+    else if (dm.Resultat == "D")
+    {
+    @* ── Animation DÉFAITE ──────────────────────────────────────────────── *@
+    <style>
+        #resBanniereD {
+            background:linear-gradient(160deg,#0d1117 0%,#1c2333 55%,#0a0e17 100%);
+            color:#fff;position:relative;overflow:hidden;min-height:260px;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .resd-bg { position:absolute;inset:0;background-size:cover;background-position:center;
+            pointer-events:none;opacity:0;animation:resdBgIn 2s ease .5s forwards; }
+        @@keyframes resdBgIn { from{opacity:0} to{opacity:.14} }
+        /* Shake au départ */
+        @@keyframes shakeD {
+            0%,100%{transform:none}
+            10%{transform:translateX(-8px) rotate(-1deg)}
+            20%{transform:translateX(8px) rotate(1deg)}
+            30%{transform:translateX(-6px)}
+            40%{transform:translateX(6px)}
+            50%{transform:translateX(-3px)}
+            60%{transform:none}
+        }
+        #resBanniereD { animation:shakeD .7s ease .1s both; }
+        /* Grosses gouttes */
+        .rain-wrap { position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden; }
+        .rain-drop {
+            position:absolute;top:-80px;
+            background:radial-gradient(ellipse 40% 60% at 50% 30%, rgba(255,255,255,.85), rgba(200,220,255,.35));
+            border-radius:50% 50% 60% 60% / 40% 40% 60% 60%;
+            animation:rainFall linear infinite;
+            filter:blur(.4px);
+        }
+        @@keyframes rainFall {
+            0%  { transform:translateY(0) rotate(8deg); opacity:0; }
+            8%  { opacity:1; }
+            90% { opacity:.85; }
+            100%{ transform:translateY(900px) rotate(12deg); opacity:0; }
+        }
+        /* Logo qui s'affaisse */
+        .resd-logo { width:52px;height:52px;object-fit:contain;
+            animation:logoDroop 1.2s cubic-bezier(.4,0,.2,1) .3s both;
+            filter:grayscale(.55) brightness(.7); }
+        @@keyframes logoDroop {
+            0%  { opacity:0;transform:scale(.5) translateY(-30px); }
+            50% { opacity:1;transform:scale(1.1) translateY(0); }
+            75% { transform:scale(1) translateY(0) rotate(-4deg); }
+            100%{ transform:scale(1) translateY(0) rotate(0); }
+        }
+        /* Score */
+        .resd-score-wrap { display:flex;align-items:center;justify-content:center;gap:16px;margin:10px 0 6px;
+            animation:resdScoreIn .7s ease 1.1s both; }
+        @@keyframes resdScoreIn {
+            from{opacity:0;transform:translateY(24px)}
+            to{opacity:1;transform:none}
+        }
+        .resd-score-nous { font-size:4.2rem;font-weight:900;line-height:1;color:#94a3c8;
+            text-shadow:0 0 18px rgba(148,163,200,.4); }
+        .resd-score-sep   { font-size:2.4rem;opacity:.4;font-weight:300; }
+        .resd-score-eux   { font-size:4.2rem;font-weight:900;line-height:1;opacity:.6; }
+        /* DÉFAITE */
+        .resd-label { font-size:2rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;
+            color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.45);text-align:center;
+            animation:defaiteSlam .6s cubic-bezier(.22,1.5,.36,1) 1.8s both; }
+        @@keyframes defaiteSlam {
+            from{opacity:0;transform:scale(1.8);filter:blur(6px)}
+            to{opacity:.8;transform:scale(1);filter:none}
+        }
+        /* Vignette sombre */
+        .resd-vignette { position:absolute;inset:0;pointer-events:none;z-index:0;
+            background:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.65) 100%);
+            animation:vignIn 1.5s ease .2s both; }
+        @@keyframes vignIn { from{opacity:0} to{opacity:1} }
+        .resd-inner { position:relative;z-index:2;text-align:center;padding:24px 16px; }
+        .resd-sub { font-size:.8rem;color:rgba(255,255,255,.45);text-align:center;margin-top:6px;
+            animation:resdFadeUp .5s ease 2.6s both; }
+        .resd-adv { font-size:1rem;opacity:.6;animation:resdFadeUp .5s ease 2.3s both; }
+        @@keyframes resdFadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+        /* Pulse bleu-gris lent */
+        .resd-pulse { position:absolute;inset:0;pointer-events:none;z-index:0;
+            background:radial-gradient(ellipse at center,rgba(50,80,140,.2) 0%,transparent 70%);
+            animation:resdPulse 3s ease-in-out 2s infinite alternate; }
+        @@keyframes resdPulse { from{opacity:.2} to{opacity:.7} }
+    </style>
+    <div id="resBanniereD">
+        @if (bgBanniere != null) { <div class="resd-bg" style="background-image:url('@bgBanniere');"></div> }
+        <div class="resd-vignette"></div>
+        <div class="resd-pulse"></div>
+        <div class="rain-wrap" id="rainWrap"></div>
+        <div class="resd-inner">
+            @if (!string.IsNullOrEmpty(Model.LogoPath))
+            { <img src="@Model.LogoPath" alt="" class="resd-logo mb-2" /> }
+            <div class="resd-score-wrap">
+                <span class="resd-score-nous">@dm.ScoreEquipe</span>
+                <span class="resd-score-sep">–</span>
+                <span class="resd-score-eux">@dm.ScoreAdversaire</span>
+            </div>
+            <div class="resd-label">Défaite</div>
+            <div class="resd-adv">vs @dm.Adversaire</div>
+            <div class="resd-sub">@dm.DateMatch.ToString("d MMMM yyyy", frCA)</div>
+        </div>
+    </div>
+    <script>
+    (function(){
+        // Pluie
+        var wrap = document.getElementById('rainWrap');
+        for(var i=0;i<38;i++){
+            var d=document.createElement('div');
+            d.className='rain-drop';
+            d.style.left=Math.random()*100+'%';
+            d.style.width=(12+Math.random()*16)+'px';
+            d.style.height=(30+Math.random()*50)+'px';
+            var dur=.55+Math.random()*.6;
+            d.style.animationDuration=dur+'s';
+            d.style.animationDelay=(Math.random()*2)+'s';
+            wrap.appendChild(d);
+        }
+        // Musique
+        var musiqueDefUrl   = '@Html.Raw(musiqueDefaite ?? "")';
+        var musiqueDefDebut = @(Model.Theme?.MusiqueDefaiteDebut ?? 0);
+        var musiqueDefDuree = @(Model.Theme?.MusiqueDefaiteDuree ?? 10);
+        if(musiqueDefUrl) {
+            var audD=new Audio(musiqueDefUrl);
+            audD.volume=0.72;
+            function jouerDef(){ audD.currentTime=musiqueDefDebut; audD.play().catch(function(){}); setTimeout(function(){ var step=0.035; var fade=setInterval(function(){ audD.volume=Math.max(0,audD.volume-step); if(audD.volume===0){clearInterval(fade);audD.pause();} },120); },Math.max(0,musiqueDefDuree-2)*1000); }
+            audD.play().catch(function(){
+                document.addEventListener('click',function h(){jouerDef();document.removeEventListener('click',h);},{once:true});
+            });
+            if(audD.readyState>=2){ jouerDef(); } else { audD.addEventListener('canplay',jouerDef,{once:true}); }
+        }
+    })();
+    </script>
+    }
+    else
+    {
+    @* ── Nul ── simple banner *@
+    <div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
+        @if (bgBanniere != null)
+        { <div style="position:absolute;inset:0;background:url('@bgBanniere') center/cover no-repeat;opacity:.3;"></div> }
+        <div class="container py-4" style="position:relative;z-index:1;">
             <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
                 <span class="rounded px-3 py-1 fw-bold text-uppercase small"
-                      style="background-color:@resultCss;letter-spacing:.05em;">@resultLabel</span>
+                      style="background-color:#6c757d;letter-spacing:.05em;">Nul</span>
                 <span class="opacity-75 small">Dernier match · @dm.DateMatch.ToString("d MMMM yyyy", frCA)</span>
             </div>
             <div class="d-flex align-items-baseline gap-3">
@@ -234,14 +600,22 @@ else
                 <span class="fw-bold" style="font-size:3.5rem;line-height:1;">@dm.ScoreAdversaire</span>
                 <span class="fs-4 ms-2">@dm.Adversaire</span>
             </div>
-        }
-        else
-        {
+        </div>
+    </div>
+    }
+}
+else
+{
+    @* ── Aucun match ── *@
+    <div style="background-color:@Model.CouleurPrimaire; color:#fff; position:relative; overflow:hidden; min-height:200px;">
+        @if (bgBanniere != null)
+        { <div style="position:absolute;inset:0;background:url('@bgBanniere') center/cover no-repeat;opacity:.3;"></div> }
+        <div class="container py-4" style="position:relative;z-index:1;">
             <div class="fs-3 fw-bold">@Model.Equipe.Nom</div>
             <div class="opacity-75">@Model.SportDisplay — @Model.NiveauDisplay — @Model.Equipe.AnneeScolaire</div>
-        }
+        </div>
     </div>
-</div>
+}
 }
 
 @* ── Stats ────────────────────────────────────────────────────────────────── *@
@@ -950,7 +1324,7 @@ else
     }
     /* Zone photo */
     .mut-image-container {
-        position: relative; height: 300px; overflow: hidden;
+        position: relative; height: 280px; overflow: hidden;
     }
     .mut-image-container img {
         width: 100%; object-fit: cover;
@@ -1019,11 +1393,11 @@ else
         border-radius: 4px; padding: 2px 6px;
     }
     .mut-number {
-        font-size: 2.4rem; font-weight: 900; margin-top: 6px;
+        font-size: 2.4rem; margin-top: 6px;
         color: var(--couleur-secondaire);
         font-family: Impact, Arial Black, sans-serif;
         line-height: 1;
-        height: 14px;
+        height: 30px;
     }
     /* Stats bas */
     .mut-stats {
@@ -1292,6 +1666,102 @@ else
 
 @section Scripts {
 <script>
+    // ── Musique bannière (prochain match) ────────────────────────────────────
+    (function () {
+        if (!document.getElementById('pubBanniere')) return;
+        var url   = '@Html.Raw(Model.Theme?.MusiqueProchainMatchPath ?? "")';
+        if (!url) url = "/music/Les Aigles de l\u2019Amiti\u00e9.mp3";
+        var DEBUT = @(Model.Theme?.MusiqueProchainMatchDebut ?? 0);
+        var DUREE = @(Model.Theme?.MusiqueProchainMatchDuree ?? 10);
+        var FADE  = 2;
+
+        var audio = new Audio(url);
+        audio.loop   = false;
+        audio.volume = 0.72;
+
+        function demarrerFade() {
+            var steps    = 40;
+            var interval = (FADE * 1000) / steps;
+            var decrement = audio.volume / steps;
+            var fadeTimer = setInterval(function () {
+                if (audio.volume > decrement) {
+                    audio.volume = Math.max(0, audio.volume - decrement);
+                } else {
+                    audio.volume = 0;
+                    audio.pause();
+                    clearInterval(fadeTimer);
+                }
+            }, interval);
+        }
+
+        function jouer() {
+            audio.currentTime = DEBUT;
+            audio.play().then(function () {
+                setTimeout(demarrerFade, Math.max(0, DUREE - FADE) * 1000);
+            }).catch(function(){});
+        }
+
+        setTimeout(jouer, 100);
+        var done = false;
+        function tentative() { if (done) return; done = true; jouer(); }
+        document.addEventListener('click',      tentative, { once: true });
+        document.addEventListener('touchstart', tentative, { once: true });
+    })();
+
+    // ── Effets de choc bannière ───────────────────────────────────────────────
+    (function () {
+        var banner = document.getElementById('pubBanniere');
+        if (!banner) return;
+
+        // Moments de choc calés sur les keyframes (ms)
+        var chocs = [
+            { t: 1200, big: false },   // choc 1
+            { t: 2600, big: false },   // choc 2
+            { t: 4000, big: true  }    // choc final + VS
+        ];
+
+        function spark(big) {
+            var n = big ? 14 : 7;
+            for (var i = 0; i < n; i++) {
+                var el = document.createElement('div');
+                var angle = Math.random() * 360;
+                var dist  = big ? (55 + Math.random() * 90) : (25 + Math.random() * 55);
+                var size  = big ? (3 + Math.random() * 6)   : (2 + Math.random() * 4);
+                var col   = Math.random() > .4 ? '#fff' : '@Html.Raw(Model.CouleurSecondaire)';
+                el.style.cssText =
+                    'position:absolute;top:50%;left:50%;width:' + size + 'px;height:' + size + 'px;' +
+                    'border-radius:50%;background:' + col + ';pointer-events:none;z-index:16;' +
+                    '--a:' + angle + 'deg;--d:' + dist + 'px;' +
+                    'animation:pubSparkFly ' + (.38 + Math.random()*.25) + 's ease-out forwards;';
+                banner.appendChild(el);
+                setTimeout(function(e){ if(e.parentNode) e.parentNode.removeChild(e); }, 700, el);
+            }
+        }
+
+        function flash() {
+            var el = document.createElement('div');
+            el.className = 'pub-clash-flash';
+            banner.appendChild(el);
+            setTimeout(function(e){ if(e.parentNode) e.parentNode.removeChild(e); }, 350, el);
+        }
+
+        function shake(inner) {
+            inner.style.animation = 'none';
+            inner.offsetHeight; // reflow
+            inner.style.animation = 'pubShakeEl .35s ease both';
+            setTimeout(function(){ inner.style.animation = ''; }, 400);
+        }
+
+        var inner = banner.querySelector('.pub-inner');
+        chocs.forEach(function(c) {
+            setTimeout(function() {
+                flash();
+                spark(c.big);
+                if (inner) shake(inner);
+            }, c.t);
+        });
+    })();
+
     // ── Données JSON ──────────────────────────────────────────────────────────
     var galeriesData     = JSON.parse(document.getElementById('galeries-json').textContent);
     var matchTitres      = JSON.parse(document.getElementById('titres-json').textContent);

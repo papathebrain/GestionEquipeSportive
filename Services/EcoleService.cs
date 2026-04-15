@@ -163,6 +163,22 @@ public class EcoleService : IEcoleService
         if (logoFile != null && logoFile.Length > 0)
             theme.LogoPath = SaveFile(logoFile, Path.Combine(webRootPath, "uploads", "logos"));
 
+        var musiqueDir = Path.Combine(webRootPath, "uploads", "musique");
+        if (vm.MusiqueProchainMatchFile != null && vm.MusiqueProchainMatchFile.Length > 0)
+            theme.MusiqueProchainMatchPath = SaveFile(vm.MusiqueProchainMatchFile, musiqueDir);
+        theme.MusiqueProchainMatchDebut = vm.MusiqueProchainMatchDebut;
+        theme.MusiqueProchainMatchDuree = vm.MusiqueProchainMatchDuree;
+
+        if (vm.MusiqueVictoireFile != null && vm.MusiqueVictoireFile.Length > 0)
+            theme.MusiqueVictoirePath = SaveFile(vm.MusiqueVictoireFile, musiqueDir);
+        theme.MusiqueVictoireDebut = vm.MusiqueVictoireDebut;
+        theme.MusiqueVictoireDuree = vm.MusiqueVictoireDuree;
+
+        if (vm.MusiqueDefaiteFile != null && vm.MusiqueDefaiteFile.Length > 0)
+            theme.MusiqueDefaitePath = SaveFile(vm.MusiqueDefaiteFile, musiqueDir);
+        theme.MusiqueDefaiteDebut = vm.MusiqueDefaiteDebut;
+        theme.MusiqueDefaiteDuree = vm.MusiqueDefaiteDuree;
+
         return _repo.AddTheme(theme);
     }
 
@@ -185,16 +201,42 @@ public class EcoleService : IEcoleService
             theme.LogoPath = SaveFile(logoFile, Path.Combine(webRootPath, "uploads", "logos"));
         }
 
+        var musiqueDir = Path.Combine(webRootPath, "uploads", "musique");
+        if (vm.MusiqueProchainMatchFile != null && vm.MusiqueProchainMatchFile.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(theme.MusiqueProchainMatchPath))
+            { var op = Path.Combine(webRootPath, theme.MusiqueProchainMatchPath.TrimStart('/')); if (File.Exists(op)) File.Delete(op); }
+            theme.MusiqueProchainMatchPath = SaveFile(vm.MusiqueProchainMatchFile, musiqueDir);
+        }
+        if (vm.MusiqueVictoireFile != null && vm.MusiqueVictoireFile.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(theme.MusiqueVictoirePath))
+            { var op = Path.Combine(webRootPath, theme.MusiqueVictoirePath.TrimStart('/')); if (File.Exists(op)) File.Delete(op); }
+            theme.MusiqueVictoirePath = SaveFile(vm.MusiqueVictoireFile, musiqueDir);
+        }
+        if (vm.MusiqueDefaiteFile != null && vm.MusiqueDefaiteFile.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(theme.MusiqueDefaitePath))
+            { var op = Path.Combine(webRootPath, theme.MusiqueDefaitePath.TrimStart('/')); if (File.Exists(op)) File.Delete(op); }
+            theme.MusiqueDefaitePath = SaveFile(vm.MusiqueDefaiteFile, musiqueDir);
+        }
+        theme.MusiqueProchainMatchDebut = vm.MusiqueProchainMatchDebut;
+        theme.MusiqueProchainMatchDuree = vm.MusiqueProchainMatchDuree;
+        theme.MusiqueVictoireDebut      = vm.MusiqueVictoireDebut;
+        theme.MusiqueVictoireDuree      = vm.MusiqueVictoireDuree;
+        theme.MusiqueDefaiteDebut       = vm.MusiqueDefaiteDebut;
+        theme.MusiqueDefaiteDuree       = vm.MusiqueDefaiteDuree;
+
         return _repo.UpdateTheme(theme);
     }
 
     public bool DeleteTheme(int id, string webRootPath)
     {
         var theme = _repo.GetThemeById(id);
-        if (theme != null && !string.IsNullOrEmpty(theme.LogoPath))
+        if (theme != null)
         {
-            var path = Path.Combine(webRootPath, theme.LogoPath.TrimStart('/'));
-            if (File.Exists(path)) File.Delete(path);
+            foreach (var p in new[] { theme.LogoPath, theme.MusiqueProchainMatchPath, theme.MusiqueVictoirePath, theme.MusiqueDefaitePath })
+                if (!string.IsNullOrEmpty(p)) { var fp = Path.Combine(webRootPath, p.TrimStart('/')); if (File.Exists(fp)) File.Delete(fp); }
         }
         return _repo.DeleteTheme(id);
     }
@@ -206,7 +248,16 @@ public class EcoleService : IEcoleService
         NomEquipe = theme.NomEquipe,
         CouleurPrimaire = theme.CouleurPrimaire,
         CouleurSecondaire = theme.CouleurSecondaire,
-        LogoPathActuel = theme.LogoPath
+        LogoPathActuel = theme.LogoPath,
+        MusiqueProchainMatchPathActuel = theme.MusiqueProchainMatchPath,
+        MusiqueProchainMatchDebut = theme.MusiqueProchainMatchDebut,
+        MusiqueProchainMatchDuree = theme.MusiqueProchainMatchDuree,
+        MusiqueVictoirePathActuel = theme.MusiqueVictoirePath,
+        MusiqueVictoireDebut = theme.MusiqueVictoireDebut,
+        MusiqueVictoireDuree = theme.MusiqueVictoireDuree,
+        MusiqueDefaitePathActuel = theme.MusiqueDefaitePath,
+        MusiqueDefaiteDebut = theme.MusiqueDefaiteDebut,
+        MusiqueDefaiteDuree = theme.MusiqueDefaiteDuree
     };
 
     // ── Années scolaires ────────────────────────────────────────────────────

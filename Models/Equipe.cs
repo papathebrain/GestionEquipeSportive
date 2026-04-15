@@ -29,6 +29,8 @@ public class Equipe
     public TypeSport TypeSport { get; set; }
     public NiveauEquipe Niveau { get; set; }
     public string Nom { get; set; } = string.Empty;
+    public string NomSlug => Ecole.ToSlug(Nom);
+    public Guid CleUnique { get; set; }
     public bool AfficherPublic { get; set; } = false;
     public int? ThemeId { get; set; }
 

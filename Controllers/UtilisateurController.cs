@@ -70,11 +70,9 @@ public class UtilisateurController : Controller
         if (_userService.NomUtilisateurExiste(model.NomUtilisateur))
             ModelState.AddModelError(nameof(model.NomUtilisateur), "Ce nom d'utilisateur est déjà utilisé.");
 
-        // AdminEcole ne peut pas créer un Admin global ou AdminEcole
+        // AdminEcole ne peut pas créer un Admin global
         if (!EstAdminGlobal() && model.Role == Roles.Admin)
             ModelState.AddModelError(nameof(model.Role), "Vous ne pouvez pas créer un administrateur global.");
-        if (!EstAdminGlobal() && model.Role == Roles.AdminEcole)
-            ModelState.AddModelError(nameof(model.Role), "Vous ne pouvez pas créer un administrateur d'école.");
 
         if (!ModelState.IsValid)
         {
@@ -121,8 +119,8 @@ public class UtilisateurController : Controller
         var user = _userService.GetById(id);
         if (user == null) return NotFound();
 
-        // AdminEcole ne peut pas modifier un Admin global ou AdminEcole
-        if (!EstAdminGlobal() && user.Role is Roles.Admin or Roles.AdminEcole)
+        // AdminEcole ne peut pas modifier un Admin global
+        if (!EstAdminGlobal() && user.Role == Roles.Admin)
             return Forbid();
 
         // AdminEcole ne peut modifier que les utilisateurs de ses écoles
@@ -150,13 +148,13 @@ public class UtilisateurController : Controller
         var user = _userService.GetById(model.Id);
         if (user == null) return NotFound();
 
-        if (!EstAdminGlobal() && user.Role is Roles.Admin or Roles.AdminEcole)
+        if (!EstAdminGlobal() && user.Role == Roles.Admin)
             return Forbid();
         if (!EstAdminGlobal() && !UtilisateurDansMesEcoles(user))
             return Forbid();
 
-        // AdminEcole ne peut pas promouvoir à Admin/AdminEcole
-        if (!EstAdminGlobal() && model.Role is Roles.Admin or Roles.AdminEcole)
+        // AdminEcole ne peut pas promouvoir à Admin global
+        if (!EstAdminGlobal() && model.Role == Roles.Admin)
             ModelState.AddModelError(nameof(model.Role), "Vous ne pouvez pas attribuer ce rôle.");
 
         if (_userService.NomUtilisateurExiste(model.NomUtilisateur, model.Id))
@@ -226,7 +224,7 @@ public class UtilisateurController : Controller
         var user = _userService.GetById(id);
         if (user == null) return NotFound();
 
-        if (!EstAdminGlobal() && user.Role is Roles.Admin or Roles.AdminEcole)
+        if (!EstAdminGlobal() && user.Role == Roles.Admin)
             return Forbid();
         if (!EstAdminGlobal() && !UtilisateurDansMesEcoles(user))
             return Forbid();
@@ -272,11 +270,11 @@ public class UtilisateurController : Controller
     {
         var roles = new List<(string, string)>
         {
-            (Roles.Utilisateur, "Utilisateur")
+            (Roles.Utilisateur, "Utilisateur"),
+            (Roles.AdminEcole, "Administrateur d'école")
         };
         if (EstAdminGlobal())
         {
-            roles.Add((Roles.AdminEcole, "Administrateur d'école"));
             roles.Add((Roles.Admin, "Administrateur global"));
         }
         return roles;

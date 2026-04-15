@@ -33,20 +33,20 @@ public class PublicController : Controller
         _env = env;
     }
 
-    // GET /p/{ecoleSlug}/{annee}/{sport}/{niveau}
-    [Route("p/{ecoleSlug}/{annee}/{sport}/{niveau}")]
-    public IActionResult Equipe(string ecoleSlug, string annee, string sport, string niveau)
+    // GET /p/{ecoleSlug}/{annee}/{sport}/{nomEquipe}
+    [Route("p/{ecoleSlug}/{annee}/{sport}/{nomEquipe}")]
+    public IActionResult Equipe(string ecoleSlug, string annee, string sport, string nomEquipe)
     {
-        var vm = BuildViewModel(ecoleSlug, annee, sport, niveau, out var erreur);
+        var vm = BuildViewModel(ecoleSlug, annee, sport, nomEquipe, out var erreur);
         if (erreur != null) return erreur;
         return View(vm);
     }
 
-    // GET /p/{ecoleSlug}/{annee}/{sport}/{niveau}/joueurs2
-    [Route("p/{ecoleSlug}/{annee}/{sport}/{niveau}/joueurs2")]
-    public IActionResult Joueur2(string ecoleSlug, string annee, string sport, string niveau)
+    // GET /p/{ecoleSlug}/{annee}/{sport}/{nomEquipe}/joueurs2
+    [Route("p/{ecoleSlug}/{annee}/{sport}/{nomEquipe}/joueurs2")]
+    public IActionResult Joueur2(string ecoleSlug, string annee, string sport, string nomEquipe)
     {
-        var vm = BuildViewModel(ecoleSlug, annee, sport, niveau, out var erreur);
+        var vm = BuildViewModel(ecoleSlug, annee, sport, nomEquipe, out var erreur);
         if (erreur != null) return erreur;
         return View(vm);
     }
@@ -54,7 +54,7 @@ public class PublicController : Controller
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private PublicEquipeViewModel? BuildViewModel(
-        string ecoleSlug, string annee, string sport, string niveau,
+        string ecoleSlug, string annee, string sport, string nomEquipe,
         out IActionResult? erreur)
     {
         erreur = null;
@@ -66,7 +66,7 @@ public class PublicController : Controller
 
         if (ecole == null) { erreur = NotFound("École introuvable."); return null; }
 
-        // Parser le sport
+        // Parser le sport (pour filtrage optionnel, on garde la tolérance)
         if (!Enum.TryParse<TypeSport>(sport, ignoreCase: true, out var typeSport))
         {
             typeSport = sport.ToLowerInvariant() switch
@@ -81,28 +81,12 @@ public class PublicController : Controller
             if ((int)typeSport == -1) { erreur = NotFound("Sport introuvable."); return null; }
         }
 
-        // Parser le niveau
-        if (!Enum.TryParse<NiveauEquipe>(niveau, ignoreCase: true, out var niveauEquipe))
-        {
-            niveauEquipe = niveau.ToLowerInvariant() switch
-            {
-                "juvenil" or "juvenile" or "juvénile" => NiveauEquipe.Juvenil,
-                "peewee" or "pee-wee" => NiveauEquipe.PeeWee,
-                "benjamin" => NiveauEquipe.Benjamin,
-                "cadet" => NiveauEquipe.Cadet,
-                "atome" => NiveauEquipe.Atome,
-                "bantam" => NiveauEquipe.Bantam,
-                _ => (NiveauEquipe)(-1)
-            };
-            if ((int)niveauEquipe == -1) { erreur = NotFound("Niveau introuvable."); return null; }
-        }
-
-        // Trouver l'équipe
+        // Trouver l'équipe par annee + sport + slug du nom
         var equipes = _equipeService.GetEquipesByEcole(ecole.Id);
         var equipe = equipes.FirstOrDefault(e =>
             e.TypeSport == typeSport &&
-            e.Niveau == niveauEquipe &&
-            string.Equals(e.AnneeScolaire, annee, StringComparison.OrdinalIgnoreCase));
+            string.Equals(e.AnneeScolaire, annee, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.NomSlug, nomEquipe, StringComparison.OrdinalIgnoreCase));
 
         if (equipe == null) { erreur = NotFound("Équipe introuvable."); return null; }
         if (!equipe.AfficherPublic) { erreur = NotFound("Cette page n'est pas disponible publiquement."); return null; }
@@ -214,11 +198,11 @@ public class PublicController : Controller
                 TypeSport.Hockey => "Hockey",
                 _ => typeSport.ToString()
             },
-            NiveauDisplay = niveauEquipe switch
+            NiveauDisplay = equipe.Niveau switch
             {
                 NiveauEquipe.Juvenil => "Juvénile",
                 NiveauEquipe.PeeWee => "Pee-Wee",
-                _ => niveauEquipe.ToString()
+                _ => equipe.Niveau.ToString()
             }
         };
 
@@ -226,7 +210,7 @@ public class PublicController : Controller
             .Where(e => e.Id != equipe.Id && e.AfficherPublic)
             .Select(e => (
                 Equipe: e,
-                Url: $"/p/{Ecole.ToSlug(ecole.Nom)}/{e.AnneeScolaire}/{e.TypeSport.ToString().ToLower()}/{e.Niveau.ToString().ToLower()}"
+                Url: $"/p/{Ecole.ToSlug(ecole.Nom)}/{e.AnneeScolaire}/{e.TypeSport.ToString().ToLower()}/{e.NomSlug}"
             )).ToList();
 
         return vm;

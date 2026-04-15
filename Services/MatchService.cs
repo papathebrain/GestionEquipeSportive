@@ -108,14 +108,12 @@ public class MatchService : IMatchService
         var match = _repo.GetMatchById(matchId);
         var equipe = match != null ? _repo.GetEquipeById(match.EquipeId) : null;
 
-        // Structure : uploads/matchs/{sport}/{annee}/{niveau}/{yyyy-MM-dd}/{photos|videos}/
-        var sportSlug = equipe != null ? equipe.TypeSport.ToString().ToLower() : "autre";
-        var anneeSlug = equipe?.AnneeScolaire.Replace("/", "-") ?? "inconnu";
-        var niveauSlug = equipe != null ? equipe.Niveau.ToString().ToLower() : "inconnu";
-        var dateSlug = match?.DateMatch.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
-        var typeSlug = type == TypeMedia.Video ? "videos" : "photos";
+        // Structure : uploads/Ecole/{EcoleId}/AnneeScolaire/{equipeId}/medias/
+        var ecoleId = equipe?.EcoleId.ToString() ?? "0";
+        var anneeSlug = (equipe?.AnneeScolaire ?? "inconnu").Replace("/", "-").Replace("\\", "-");
+        var equipeIdSlug = equipe?.Id.ToString() ?? "0";
 
-        var dossierRelatif = Path.Combine("uploads", "matchs", sportSlug, anneeSlug, niveauSlug, dateSlug, typeSlug);
+        var dossierRelatif = Path.Combine("uploads", "Ecole", ecoleId, anneeSlug, equipeIdSlug, "medias");
         var dossierComplet = Path.Combine(webRootPath, dossierRelatif);
         Directory.CreateDirectory(dossierComplet);
 

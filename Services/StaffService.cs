@@ -19,24 +19,13 @@ public class StaffService : IStaffService
 
     public void CopierVersEquipe(IEnumerable<int> staffIds, int nouvelleEquipeId)
     {
-        var destStaff = _repo.GetStaffByEquipe(nouvelleEquipeId);
         foreach (var id in staffIds)
         {
             var source = _repo.GetStaffById(id);
             if (source == null) continue;
-            // Migration : assigner CleUnique si absent
-            if (!source.CleUnique.HasValue)
-            {
-                source.CleUnique = Guid.NewGuid();
-                _repo.UpdateStaff(source);
-            }
-            // Ne pas dupliquer si même CleUnique déjà présent dans l'équipe destination
-            if (destStaff.Any(s => s.CleUnique.HasValue && s.CleUnique == source.CleUnique))
-                continue;
             _repo.AddStaff(new Staff
             {
                 EquipeId = nouvelleEquipeId,
-                CleUnique = source.CleUnique, // même GUID → même employé dans l'école
                 Nom = source.Nom,
                 Prenom = source.Prenom,
                 Titre = source.Titre,
@@ -52,7 +41,6 @@ public class StaffService : IStaffService
         var staff = new Staff
         {
             EquipeId = vm.EquipeId,
-            CleUnique = Guid.NewGuid(),
             Nom = vm.Nom.Trim(),
             Prenom = vm.Prenom.Trim(),
             Titre = vm.Titre.Trim(),
@@ -69,7 +57,6 @@ public class StaffService : IStaffService
         var staff = _repo.GetStaffById(vm.Id) ?? new Staff();
         staff.Id = vm.Id;
         staff.EquipeId = vm.EquipeId;
-        staff.CleUnique ??= Guid.NewGuid(); // migration : assigne un GUID aux anciens enregistrements
         staff.Nom = vm.Nom.Trim();
         staff.Prenom = vm.Prenom.Trim();
         staff.Titre = vm.Titre.Trim();

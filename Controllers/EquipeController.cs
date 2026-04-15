@@ -138,6 +138,10 @@ public class EquipeController : Controller
         if (!_access.PeutModifier(User, vm.EcoleId))
             return Forbid();
 
+        var nomEffectif = !string.IsNullOrWhiteSpace(vm.Nom) ? vm.Nom.Trim() : null;
+        if (nomEffectif != null && _equipeService.NomDejaUtilise(vm.EcoleId, nomEffectif, vm.AnneeScolaire))
+            ModelState.AddModelError("Nom", "Une équipe avec ce nom existe déjà pour cette année scolaire.");
+
         if (!ModelState.IsValid)
         {
             var ecole = _ecoleService.GetEcoleById(vm.EcoleId);
@@ -176,6 +180,10 @@ public class EquipeController : Controller
 
         if (!_access.PeutModifierEquipe(User, vm.Id, vm.EcoleId))
             return Forbid();
+
+        var nomEff = !string.IsNullOrWhiteSpace(vm.Nom) ? vm.Nom.Trim() : null;
+        if (nomEff != null && _equipeService.NomDejaUtilise(vm.EcoleId, nomEff, vm.AnneeScolaire, vm.Id))
+            ModelState.AddModelError("Nom", "Une équipe avec ce nom existe déjà pour cette année scolaire.");
 
         if (!ModelState.IsValid)
         {

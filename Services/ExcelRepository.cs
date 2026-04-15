@@ -304,6 +304,7 @@ public class ExcelRepository : IExcelRepository
                 if (ws.Cell(row, 1).Value.IsBlank) continue;
 
                 var themeIdStr = ws.Cell(row, 8).GetString();
+                var cleStr     = ws.Cell(row, 9).GetString();
                 equipes.Add(new Equipe
                 {
                     Id = (int)ws.Cell(row, 1).GetDouble(),
@@ -313,7 +314,8 @@ public class ExcelRepository : IExcelRepository
                     Niveau = Enum.Parse<NiveauEquipe>(ws.Cell(row, 5).GetString()),
                     Nom = ws.Cell(row, 6).GetString(),
                     AfficherPublic = ws.Cell(row, 7).GetString().Equals("true", StringComparison.OrdinalIgnoreCase),
-                    ThemeId = int.TryParse(themeIdStr, out var tid) ? tid : null
+                    ThemeId = int.TryParse(themeIdStr, out var tid) ? tid : null,
+                    CleUnique = Guid.TryParse(cleStr, out var g) ? g : Guid.Empty
                 });
             }
             return equipes;
@@ -393,6 +395,7 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 6).Value = equipe.Nom;
         ws.Cell(row, 7).Value = equipe.AfficherPublic.ToString().ToLower();
         ws.Cell(row, 8).Value = equipe.ThemeId.HasValue ? equipe.ThemeId.Value.ToString() : string.Empty;
+        ws.Cell(row, 9).Value = equipe.CleUnique == Guid.Empty ? Guid.NewGuid().ToString() : equipe.CleUnique.ToString();
     }
 
     // ==================== THÈMES ====================
@@ -416,7 +419,16 @@ public class ExcelRepository : IExcelRepository
                     NomEquipe = ws.Cell(row, 3).GetString(),
                     CouleurPrimaire = ws.Cell(row, 4).GetString() is string cp && cp.Length > 0 ? cp : "#1a3a5c",
                     CouleurSecondaire = ws.Cell(row, 5).GetString() is string cs && cs.Length > 0 ? cs : "#e8a020",
-                    LogoPath = ws.Cell(row, 6).GetString() is string lp && lp.Length > 0 ? lp : null
+                    LogoPath = ws.Cell(row, 6).GetString() is string lp && lp.Length > 0 ? lp : null,
+                    MusiqueProchainMatchPath = ws.Cell(row, 7).GetString() is string m1 && m1.Length > 0 ? m1 : null,
+                    MusiqueVictoirePath = ws.Cell(row, 8).GetString() is string m2 && m2.Length > 0 ? m2 : null,
+                    MusiqueDefaitePath = ws.Cell(row, 9).GetString() is string m3 && m3.Length > 0 ? m3 : null,
+                    MusiqueProchainMatchDebut = int.TryParse(ws.Cell(row,10).GetString(), out var d1) ? d1 : null,
+                    MusiqueProchainMatchDuree = int.TryParse(ws.Cell(row,11).GetString(), out var r1) ? r1 : null,
+                    MusiqueVictoireDebut      = int.TryParse(ws.Cell(row,12).GetString(), out var d2) ? d2 : null,
+                    MusiqueVictoireDuree      = int.TryParse(ws.Cell(row,13).GetString(), out var r2) ? r2 : null,
+                    MusiqueDefaiteDebut       = int.TryParse(ws.Cell(row,14).GetString(), out var d3) ? d3 : null,
+                    MusiqueDefaiteDuree       = int.TryParse(ws.Cell(row,15).GetString(), out var r3) ? r3 : null
                 });
             }
             return themes;
@@ -492,6 +504,15 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 4).Value = theme.CouleurPrimaire;
         ws.Cell(row, 5).Value = theme.CouleurSecondaire;
         ws.Cell(row, 6).Value = theme.LogoPath ?? string.Empty;
+        ws.Cell(row, 7).Value = theme.MusiqueProchainMatchPath ?? string.Empty;
+        ws.Cell(row, 8).Value = theme.MusiqueVictoirePath ?? string.Empty;
+        ws.Cell(row, 9).Value = theme.MusiqueDefaitePath ?? string.Empty;
+        ws.Cell(row,10).Value = theme.MusiqueProchainMatchDebut?.ToString() ?? string.Empty;
+        ws.Cell(row,11).Value = theme.MusiqueProchainMatchDuree?.ToString() ?? string.Empty;
+        ws.Cell(row,12).Value = theme.MusiqueVictoireDebut?.ToString() ?? string.Empty;
+        ws.Cell(row,13).Value = theme.MusiqueVictoireDuree?.ToString() ?? string.Empty;
+        ws.Cell(row,14).Value = theme.MusiqueDefaiteDebut?.ToString() ?? string.Empty;
+        ws.Cell(row,15).Value = theme.MusiqueDefaiteDuree?.ToString() ?? string.Empty;
     }
 
     // ==================== ÉQUIPES ADVERSES ====================
@@ -1039,7 +1060,6 @@ public class ExcelRepository : IExcelRepository
             ws.Cell(1, 7).Value = "Description";
             ws.Cell(1, 8).Value = "PhotoPath";
             ws.Cell(1, 9).Value = "NoFiche";
-            ws.Cell(1, 10).Value = "CleUnique";
             wb.SaveAs(StaffFile);
         }
     }
@@ -1065,8 +1085,7 @@ public class ExcelRepository : IExcelRepository
                     Titre = ws.Cell(row, 5).GetString(),
                     Description = ws.Cell(row, 7).GetString() is string d && d.Length > 0 ? d : null,
                     PhotoPath = ws.Cell(row, 8).GetString() is string p && p.Length > 0 ? p : null,
-                    NoFiche = ws.Cell(row, 9).GetString() is string nf && nf.Length > 0 ? nf : null,
-                    CleUnique = Guid.TryParse(ws.Cell(row, 10).GetString(), out var sg) ? sg : (Guid?)null
+                    NoFiche = ws.Cell(row, 9).GetString() is string nf && nf.Length > 0 ? nf : null
                 });
             }
             return list;
@@ -1148,7 +1167,6 @@ public class ExcelRepository : IExcelRepository
         ws.Cell(row, 7).Value = staff.Description ?? string.Empty;
         ws.Cell(row, 8).Value = staff.PhotoPath ?? string.Empty;
         ws.Cell(row, 9).Value = staff.NoFiche ?? string.Empty;
-        ws.Cell(row, 10).Value = staff.CleUnique?.ToString() ?? string.Empty;
     }
 
     // ==================== MATCHS ====================

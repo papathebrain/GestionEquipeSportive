@@ -7,7 +7,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+            @await Html.PartialAsync("_BreadcrumbEcoles")
             <li class="breadcrumb-item"><a asp-action="Index" asp-route-ecoleId="@Model.EcoleId">@Model.NomEcole</a></li>
             <li class="breadcrumb-item active">Nouvelle équipe</li>
         </ol>
@@ -47,10 +47,21 @@
 
                     <div class="mb-3">
                         <label asp-for="AnneeScolaire" class="form-label fw-semibold"></label>
-                        <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select">
+                        <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select" id="anneeSelect">
                             <option value="">-- Sélectionner une année --</option>
                         </select>
                         <span asp-validation-for="AnneeScolaire" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Nom" class="form-label fw-semibold"></label>
+                        <div class="input-group">
+                            <input asp-for="Nom" id="nomEquipeInput" class="form-control" placeholder="Généré automatiquement" />
+                            <button type="button" class="btn btn-outline-secondary" id="btnResetNom" title="Regénérer le nom automatiquement">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Laissez vide pour générer automatiquement à partir du sport, niveau et année.</div>
                     </div>
 
                     <div class="form-check mt-3">
@@ -75,12 +86,40 @@
 
 @section Scripts {
     <script>
-        document.getElementById('sportSelect').addEventListener('change', function () {
-            const sport = this.value;
-            const niveauSelect = document.getElementById('niveauSelect');
-            niveauSelect.innerHTML = '<option value="">-- Sélectionner un niveau --</option>';
+        const nomInput   = document.getElementById('nomEquipeInput');
+        const sportSel   = document.getElementById('sportSelect');
+        const niveauSel  = document.getElementById('niveauSelect');
+        const anneeSel   = document.getElementById('anneeSelect');
+        let nomModifié   = nomInput.value.trim() !== '';
 
-            if (!sport) return;
+        const sportLabels  = { FootballAmericain:'Football', FlagFootball:'Flag Football', Soccer:'Soccer', Volleyball:'Volleyball', Hockey:'Hockey' };
+        const niveauLabels = { Benjamin:'Benjamin', Cadet:'Cadet', Juvenil:'Juvénile', Atome:'Atome', PeeWee:'Pee-Wee', Bantam:'Bantam' };
+
+        function genererNomAuto() {
+            const s = sportSel.value  ? (sportLabels[sportSel.value]  || sportSel.value)  : '';
+            const n = niveauSel.value ? (niveauLabels[niveauSel.value] || niveauSel.value) : '';
+            const a = anneeSel.value  || '';
+            const parts = [s, n, a].filter(x => x);
+            return parts.join(' — ');
+        }
+
+        function mettreAJourNom() {
+            if (!nomModifié) nomInput.value = genererNomAuto();
+        }
+
+        nomInput.addEventListener('input', function () {
+            nomModifié = this.value.trim() !== '';
+        });
+
+        document.getElementById('btnResetNom').addEventListener('click', function () {
+            nomModifié = false;
+            nomInput.value = genererNomAuto();
+        });
+
+        sportSel.addEventListener('change', function () {
+            const sport = this.value;
+            niveauSel.innerHTML = '<option value="">-- Sélectionner un niveau --</option>';
+            if (!sport) { mettreAJourNom(); return; }
 
             fetch('/Equipe/GetNiveaux?sport=' + encodeURIComponent(sport))
                 .then(r => r.json())
@@ -89,9 +128,13 @@
                         const opt = document.createElement('option');
                         opt.value = n.value;
                         opt.textContent = n.text;
-                        niveauSelect.appendChild(opt);
+                        niveauSel.appendChild(opt);
                     });
+                    mettreAJourNom();
                 });
         });
+
+        niveauSel.addEventListener('change', mettreAJourNom);
+        anneeSel.addEventListener('change', mettreAJourNom);
     </script>
 }

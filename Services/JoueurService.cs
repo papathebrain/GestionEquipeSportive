@@ -179,16 +179,20 @@ public class JoueurService : IJoueurService
 
     public JoueurMedia AddJoueurMedia(int joueurId, IFormFile file, string webRootPath)
     {
-        var dir = Path.Combine(webRootPath, "uploads", "joueurs");
+        var joueur = _repo.GetJoueurById(joueurId);
+        var ecoleId = joueur?.EcoleId ?? 0;
+        var dossierRelatif = Path.Combine("uploads", "Ecole", ecoleId.ToString(), "Joueurs", joueurId.ToString(), "medias");
+        var dir = Path.Combine(webRootPath, dossierRelatif);
         Directory.CreateDirectory(dir);
         var ext = Path.GetExtension(file.FileName);
         var nom = $"{Guid.NewGuid()}{ext}";
         using var stream = new FileStream(Path.Combine(dir, nom), FileMode.Create);
         file.CopyTo(stream);
+        var chemin = "/" + dossierRelatif.Replace(Path.DirectorySeparatorChar, '/') + "/" + nom;
         return _repo.AddJoueurMedia(new JoueurMedia
         {
             JoueurId = joueurId,
-            CheminFichier = $"/uploads/joueurs/{nom}",
+            CheminFichier = chemin,
             DateAjout = DateTime.UtcNow
         });
     }

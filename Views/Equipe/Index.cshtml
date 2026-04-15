@@ -33,7 +33,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
-                <li class="breadcrumb-item"><a asp-controller="Ecole" asp-action="Index">Écoles</a></li>
+                @await Html.PartialAsync("_BreadcrumbEcoles")
                 <li class="breadcrumb-item active">@ecole?.Nom</li>
             </ol>
         </nav>

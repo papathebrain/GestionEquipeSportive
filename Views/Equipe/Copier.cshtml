@@ -52,10 +52,20 @@
                     </div>
                     <div class="mb-3">
                         <label asp-for="AnneeScolaire" class="form-label fw-semibold"></label>
-                        <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select">
+                        <select asp-for="AnneeScolaire" asp-items="Model.AnneesList" class="form-select" id="anneeSelect">
                             <option value="">-- Sélectionner --</option>
                         </select>
                         <span asp-validation-for="AnneeScolaire" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Nom" class="form-label fw-semibold"></label>
+                        <div class="input-group">
+                            <input asp-for="Nom" id="nomEquipeInput" class="form-control" placeholder="Généré automatiquement" />
+                            <button type="button" class="btn btn-outline-secondary" id="btnResetNom" title="Regénérer le nom automatiquement">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Laissez vide pour générer automatiquement à partir du sport, niveau et année.</div>
                     </div>
                     <div class="form-check">
                         <input asp-for="AfficherPublic" class="form-check-input" />
@@ -194,12 +204,36 @@
 
 @section Scripts {
 <script>
+    // Nom auto
+    const nomInput  = document.getElementById('nomEquipeInput');
+    const sportSel  = document.getElementById('sportSelect');
+    const niveauSel = document.getElementById('niveauSelect');
+    const anneeSel  = document.getElementById('anneeSelect');
+    let nomModifié  = nomInput.value.trim() !== '';
+
+    const sportLabels  = { FootballAmericain:'Football', FlagFootball:'Flag Football', Soccer:'Soccer', Volleyball:'Volleyball', Hockey:'Hockey' };
+    const niveauLabels = { Benjamin:'Benjamin', Cadet:'Cadet', Juvenil:'Juvénile', Atome:'Atome', PeeWee:'Pee-Wee', Bantam:'Bantam' };
+
+    function genererNomAuto() {
+        const s = sportSel.value  ? (sportLabels[sportSel.value]  || sportSel.value)  : '';
+        const n = niveauSel.value ? (niveauLabels[niveauSel.value] || niveauSel.value) : '';
+        const a = anneeSel.value  || '';
+        return [s, n, a].filter(x => x).join(' — ');
+    }
+
+    nomInput.addEventListener('input', function() { nomModifié = this.value.trim() !== ''; });
+    document.getElementById('btnResetNom').addEventListener('click', function() {
+        nomModifié = false;
+        nomInput.value = genererNomAuto();
+    });
+    niveauSel.addEventListener('change', function() { if (!nomModifié) nomInput.value = genererNomAuto(); });
+    anneeSel.addEventListener('change',  function() { if (!nomModifié) nomInput.value = genererNomAuto(); });
+
     // Sport → niveaux dynamique
-    document.getElementById('sportSelect')?.addEventListener('change', function () {
+    sportSel.addEventListener('change', function () {
         const sport = this.value;
-        const niveauSelect = document.getElementById('niveauSelect');
-        niveauSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
-        if (!sport) return;
+        niveauSel.innerHTML = '<option value="">-- Sélectionner --</option>';
+        if (!sport) { if (!nomModifié) nomInput.value = genererNomAuto(); return; }
         fetch('/Equipe/GetNiveaux?sport=' + encodeURIComponent(sport))
             .then(r => r.json())
             .then(niveaux => {
@@ -207,8 +241,9 @@
                     const opt = document.createElement('option');
                     opt.value = n.value;
                     opt.textContent = n.text;
-                    niveauSelect.appendChild(opt);
+                    niveauSel.appendChild(opt);
                 });
+                if (!nomModifié) nomInput.value = genererNomAuto();
             });
     });
 

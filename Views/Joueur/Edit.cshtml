@@ -125,6 +125,11 @@
 
     @* ── Onglet Assignations (équipes) ── *@
     <div class="tab-pane fade" id="tab-assignations">
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterEquipe">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter dans équipe
+            </button>
+        </div>
         @if (!assignations.Any())
         {
             <p class="text-muted text-center py-4 mb-0">
@@ -268,8 +273,65 @@
 
 </div>
 
+@* ── Modal Ajouter dans équipe ── *@
+@if (ecole != null)
+{
+    var anneesEcole = _ecoleServiceBc.GetAnneesScolairesByEcole(ecole.Id)
+        .OrderByDescending(a => a.AnneeScolaire).ToList();
+
+    <div class="modal fade" id="modalAjouterEquipe" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-controller="Joueur" asp-action="AjouterAuxEquipes" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="joueurId" value="@Model.Id" />
+                    <input type="hidden" name="equipeIds" id="equipeIdsHidden" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Ajouter dans une équipe</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Année scolaire</label>
+                            <select id="anneeEquipeSelect" class="form-select" onchange="chargerEquipesAnnee(this.value)">
+                                <option value="">— Sélectionner —</option>
+                                @foreach (var anneeItem in anneesEcole)
+                                {
+                                    <option value="@anneeItem.AnneeScolaire">@anneeItem.AnneeScolaire</option>
+                                }
+                            </select>
+                        </div>
+                        <div id="equipeListeWrap" style="display:none;">
+                            <label class="form-label fw-semibold">Équipes disponibles</label>
+                            <div id="equipeListeCheckboxes" class="border rounded p-2" style="max-height:250px;overflow-y:auto;"></div>
+                        </div>
+                        <div id="equipeListeVide" class="text-muted small" style="display:none;">
+                            Aucune équipe pour cette année scolaire.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary" onclick="return prepareEquipeIds()">
+                            <i class="bi bi-check-circle me-1"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
 <script>
+    // ── Activer l'onglet selon le paramètre ?tab= dans l'URL ─────────────────
+    (function () {
+        var urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (urlTab) {
+            var tabEl = document.querySelector('#joueurEditTabs a[href="#tab-' + urlTab + '"]');
+            if (tabEl) new bootstrap.Tab(tabEl).show();
+        }
+    })();
+
     var sw = document.getElementById('joueurActifSwitch');
     var warn = document.getElementById('actifWarning');
     if (sw && warn) {
@@ -277,5 +339,59 @@
             warn.style.display = !this.checked ? '' : 'none';
         });
     }
+
+    // ── Ajouter dans équipe ──────────────────────────────────────────────────
+    var _ecoleId = @(ecole?.Id ?? 0);
+
+    function chargerEquipesAnnee(annee) {
+        var wrap = document.getElementById('equipeListeWrap');
+        var vide = document.getElementById('equipeListeVide');
+        var box = document.getElementById('equipeListeCheckboxes');
+        wrap.style.display = 'none';
+        vide.style.display = 'none';
+        box.innerHTML = '';
+        if (!annee) return;
+        fetch('/Joueur/GetEquipesByAnnee?ecoleId=' + _ecoleId + '&annee=' + encodeURIComponent(annee))
+            .then(r => r.json())
+            .then(equipes => {
+                if (!equipes || equipes.length === 0) {
+                    vide.style.display = '';
+                    return;
+                }
+                equipes.forEach(function(e) {
+                    var div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = '<input class="form-check-input equipe-check" type="checkbox" value="' + e.id + '" id="eq' + e.id + '">'
+                        + '<label class="form-check-label" for="eq' + e.id + '">' + e.nom + ' <span class="text-muted small">(' + e.sport + ')</span></label>';
+                    box.appendChild(div);
+                });
+                wrap.style.display = '';
+            });
+    }
+
+    function prepareEquipeIds() {
+        var checked = Array.from(document.querySelectorAll('.equipe-check:checked')).map(cb => cb.value);
+        if (checked.length === 0) {
+            alert('Veuillez sélectionner au moins une équipe.');
+            return false;
+        }
+        document.getElementById('equipeIdsHidden').value = checked.join(',');
+        return true;
+    }
+
+    // Charger auto l'année courante à l'ouverture du modal
+    document.getElementById('modalAjouterEquipe')?.addEventListener('shown.bs.modal', function() {
+        var sel = document.getElementById('anneeEquipeSelect');
+        if (sel && sel.value) chargerEquipesAnnee(sel.value);
+        else if (sel && sel.options.length > 1) {
+            // Sélectionner la première année disponible
+            var now = new Date();
+            var y = now.getFullYear(), m = now.getMonth() + 1;
+            var anneeCourante = m >= 9 ? (y + '-' + (y + 1)) : ((y - 1) + '-' + y);
+            var found = Array.from(sel.options).find(o => o.value === anneeCourante);
+            sel.value = found ? anneeCourante : sel.options[1].value;
+            chargerEquipesAnnee(sel.value);
+        }
+    });
 </script>
 }

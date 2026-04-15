@@ -7,7 +7,7 @@
     "Role": "Admin",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:11:20.0333259Z",
-    "DerniereConnexion": "2026-04-13T23:46:31.498638Z",
+    "DerniereConnexion": "2026-04-15T02:42:00.9175249Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [],
     "EquipesIds": []
@@ -20,54 +20,10 @@
     "Role": "AdminEcole",
     "EstActif": true,
     "DateCreation": "2026-03-29T00:12:56.1494811Z",
-    "DerniereConnexion": "2026-04-14T01:36:20.423287Z",
+    "DerniereConnexion": "2026-04-15T00:22:36.319433Z",
     "ChangerMotDePasse": false,
     "EcolesIds": [
       1
-    ],
-    "EquipesIds": []
-  },
-  {
-    "Id": "98493067-5348-445b-bf7f-d74d99846912",
-    "NomUtilisateur": "AmitieEcole",
-    "NomComplet": "Utilisateur \u00E9cole amiti\u00E9",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAEF2g01sr8jZpZbpDyg6QVfBlnw3i3HpFD85u6ea6nHS1j1yBZFdJyYkTVN2Is4U87w==",
-    "Role": "Utilisateur",
-    "EstActif": true,
-    "DateCreation": "2026-03-29T04:06:43.2015776Z",
-    "DerniereConnexion": null,
-    "ChangerMotDePasse": true,
-    "EcolesIds": [],
-    "EquipesIds": []
-  },
-  {
-    "Id": "da911ea1-bba2-48b3-a2f0-f09297f61e6d",
-    "NomUtilisateur": "Ginette",
-    "NomComplet": "Ginette",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAELv8ItX0X2BUWSOZnq7\u002Bs4wd1FOFk3e6AGOqAsqze8ce\u002BSuTVxXDLvx9PLMqYK6/Uw==",
-    "Role": "Utilisateur",
-    "EstActif": true,
-    "DateCreation": "2026-04-01T00:07:04.4265399Z",
-    "DerniereConnexion": "2026-04-01T00:08:30.7708463Z",
-    "ChangerMotDePasse": true,
-    "EcolesIds": [],
-    "EquipesIds": [
-      12
-    ]
-  },
-  {
-    "Id": "e029c765-33ed-466b-8bdc-6ed6ad22c437",
-    "NomUtilisateur": "Admin2Ecole",
-    "NomComplet": "2 ecole",
-    "MotDePasseHash": "AQAAAAIAAYagAAAAEKakFWCT456ozwSMkCSMDqIZEZ8u0hTJGoBQM2\u002BhDLn6UKsgUAFIeCwDLcqYDM1NSw==",
-    "Role": "AdminEcole",
-    "EstActif": true,
-    "DateCreation": "2026-04-13T23:44:35.9463628Z",
-    "DerniereConnexion": "2026-04-13T23:51:34.732924Z",
-    "ChangerMotDePasse": false,
-    "EcolesIds": [
-      1,
-      2
     ],
     "EquipesIds": []
   }

@@ -1,0 +1,11 @@
+@{
+    var toutes = _ecoleServiceBc.GetAllEcoles();
+    var visibles = _ecoleAccessBc.GetEcolesVisibles(User, toutes.Select(e => e.Id));
+    var nbEcoles = visibles.Count();
+}
+@if (nbEcoles > 1)
+{
+    <li class="breadcrumb-item">
+        <a asp-controller="Ecole" asp-action="Index">Écoles</a>
+    </li>
+}

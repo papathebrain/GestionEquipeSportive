@@ -11,6 +11,9 @@ public class EquipeViewModel
     [Required]
     public int EcoleId { get; set; }
 
+    [Display(Name = "Nom de l'équipe")]
+    public string? Nom { get; set; }
+
     [Required(ErrorMessage = "L'année scolaire est obligatoire")]
     [Display(Name = "Année scolaire")]
     public string AnneeScolaire { get; set; } = string.Empty;
@@ -37,4 +40,7 @@ public class EquipeViewModel
 
     // Nom de l'école (affichage)
     public string? NomEcole { get; set; }
+
+    // Identifiant unique (lecture seule)
+    public Guid? CleUnique { get; set; }
 }

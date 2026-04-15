@@ -188,35 +188,33 @@ else
         @* ── Onglet Galerie ── *@
         <div class="tab-pane fade @(activeTab == "galerie" ? "show active" : "")" id="tab-galerie">
 
-            @* Upload *@
+            @* Upload parallèle *@
             <div class="border-bottom pb-3 mb-3">
-                <form asp-controller="Match" asp-action="AjouterMedia" method="post" enctype="multipart/form-data"
-                      class="row g-3 align-items-end">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="matchId" value="@Model.Id" />
+                <div class="row g-3 align-items-end mb-2">
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Type</label>
-                        <select name="typeMedia" class="form-select form-select-sm">
+                        <select id="upTypeMedia" class="form-select form-select-sm">
                             <option value="Photo">Photo</option>
                             <option value="Video">Vidéo</option>
                         </select>
                     </div>
                     <div class="col-md-5">
                         <label class="form-label fw-semibold">Fichier(s)</label>
-                        <input type="file" name="fichiers" class="form-control form-control-sm"
+                        <input type="file" id="upFichiers" class="form-control form-control-sm"
                                accept="image/*,video/*" multiple />
-                        <div class="form-text">Une ou plusieurs images / vidéos</div>
+                        <div class="form-text">Chaque fichier est envoyé en parallèle</div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Description (optionnel)</label>
-                        <input type="text" name="description" class="form-control form-control-sm" />
+                        <input type="text" id="upDescription" class="form-control form-control-sm" />
                     </div>
                     <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary btn-sm w-100" title="Téléverser">
+                        <button id="upBtn" class="btn btn-primary btn-sm w-100" title="Téléverser">
                             <i class="bi bi-upload"></i>
                         </button>
                     </div>
-                </form>
+                </div>
+                <div id="upListe"></div>
             </div>
 
             @* Médias *@
@@ -328,5 +326,115 @@ if (presenceInput) {
         document.getElementById('presenceAucun').style.display = totalVisible === 0 ? '' : 'none';
     });
 }
+
+// ── Upload parallèle ─────────────────────────────────────────────────────────
+(function () {
+    var btn   = document.getElementById('upBtn');
+    var input = document.getElementById('upFichiers');
+    var liste = document.getElementById('upListe');
+    if (!btn) return;
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var TOKEN   = tokenEl ? tokenEl.value : '';
+    var MATCH_ID = '@Model.Id';
+    var URL_UP   = '@Url.Action("AjouterMediaUnique", "Match")';
+
+    btn.addEventListener('click', function () {
+        var fichiers = Array.from(input.files);
+        if (!fichiers.length) return;
+        var typeMedia   = document.getElementById('upTypeMedia').value;
+        var description = document.getElementById('upDescription').value;
+
+        liste.innerHTML = '';
+        btn.disabled = true;
+
+        var lignes = fichiers.map(function (f) {
+            var div = document.createElement('div');
+            div.className = 'mb-1';
+            div.innerHTML =
+                '<div class="d-flex align-items-center gap-2">' +
+                    '<span class="small text-truncate" style="max-width:260px;min-width:80px">' + escHtml(f.name) + '</span>' +
+                    '<div class="progress flex-grow-1" style="height:10px;min-width:120px">' +
+                        '<div class="progress-bar" style="width:0%"></div>' +
+                    '</div>' +
+                    '<span class="badge bg-secondary ms-1 statut" style="min-width:80px">En attente</span>' +
+                '</div>';
+            liste.appendChild(div);
+            return { fichier: f, bar: div.querySelector('.progress-bar'), badge: div.querySelector('.statut') };
+        });
+
+        Promise.all(lignes.map(function (l) {
+            return uploadFichier(l.fichier, typeMedia, description, MATCH_ID, URL_UP, TOKEN, l.bar, l.badge);
+        })).then(function (resultats) {
+            btn.disabled = false;
+            input.value = '';
+            if (resultats.every(function (r) { return r; }))
+                window.location.href = window.location.pathname + '?tab=galerie';
+        });
+    });
+
+    function uploadFichier(fichier, typeMedia, description, matchId, url, token, bar, badge) {
+        return new Promise(function (resolve) {
+            var fd = new FormData();
+            fd.append('matchId', matchId);
+            fd.append('typeMedia', typeMedia);
+            fd.append('description', description);
+            fd.append('fichier', fichier);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url);
+            xhr.setRequestHeader('RequestVerificationToken', token);
+
+            xhr.upload.addEventListener('progress', function (e) {
+                if (e.lengthComputable) {
+                    var pct = Math.round(e.loaded / e.total * 100);
+                    bar.style.width = pct + '%';
+                    bar.textContent = pct + '%';
+                }
+            });
+
+            xhr.addEventListener('load', function () {
+                try {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.ok) {
+                        bar.style.width = '100%';
+                        bar.classList.remove('bg-primary','progress-bar-striped','progress-bar-animated');
+                        bar.classList.add('bg-success');
+                        badge.textContent = 'OK';
+                        badge.className = 'badge bg-success ms-1 statut';
+                        resolve(true);
+                    } else {
+                        bar.classList.remove('bg-primary','progress-bar-striped','progress-bar-animated');
+                        bar.classList.add('bg-danger');
+                        badge.textContent = res.erreur || 'Erreur';
+                        badge.className = 'badge bg-danger ms-1 statut';
+                        resolve(false);
+                    }
+                } catch (ex) {
+                    bar.classList.add('bg-danger');
+                    badge.textContent = 'Erreur';
+                    badge.className = 'badge bg-danger ms-1 statut';
+                    resolve(false);
+                }
+            });
+
+            xhr.addEventListener('error', function () {
+                bar.classList.add('bg-danger');
+                badge.textContent = 'Erreur réseau';
+                badge.className = 'badge bg-danger ms-1 statut';
+                resolve(false);
+            });
+
+            badge.textContent = 'En cours…';
+            badge.className = 'badge bg-primary ms-1 statut';
+            bar.classList.add('bg-primary','progress-bar-striped','progress-bar-animated');
+            xhr.send(fd);
+        });
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+})();
 </script>
 }

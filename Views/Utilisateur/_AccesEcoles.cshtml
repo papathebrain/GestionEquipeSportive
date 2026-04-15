@@ -9,6 +9,13 @@
         .Distinct()
         .OrderByDescending(a => a)
         .ToList();
+
+    // Année scolaire courante (1 juillet → 30 juin)
+    var today = DateTime.Today;
+    var anneeCourante = today.Month >= 7
+        ? $"{today.Year}-{today.Year + 1}"
+        : $"{today.Year - 1}-{today.Year}";
+    var anneeDefaut = toutesAnnees.Contains(anneeCourante) ? anneeCourante : toutesAnnees.FirstOrDefault() ?? "";
 }
 
 @if (!Model.Any())
@@ -32,7 +39,14 @@ else
                 <option value="">— Toutes les années —</option>
                 @foreach (var annee in toutesAnnees)
                 {
-                    <option value="@annee">@annee</option>
+                    if (annee == anneeDefaut)
+                    {
+                        <option value="@annee" selected>@annee</option>
+                    }
+                    else
+                    {
+                        <option value="@annee">@annee</option>
+                    }
                 }
             </select>
         </div>
@@ -128,7 +142,9 @@ else
         cb.addEventListener('change', function () {
             var div = document.getElementById(this.dataset.equipesId);
             if (!div) return;
-            div.style.display = this.checked ? 'none' : '';
+            var modeAdminEcole = document.getElementById('ecolesSection') &&
+                                 document.getElementById('ecolesSection').classList.contains('mode-admin-ecole');
+            div.style.display = (this.checked || modeAdminEcole) ? 'none' : '';
             if (this.checked) {
                 div.querySelectorAll('.equipe-check').forEach(function (eq) { eq.checked = false; });
             }
@@ -138,12 +154,14 @@ else
     // Filtre par année
     var filtreSelect = document.getElementById('filtreAnnee');
     if (filtreSelect) {
-        filtreSelect.addEventListener('change', function () {
-            var annee = this.value;
+        function appliquerFiltreAnnee() {
+            var annee = filtreSelect.value;
             document.querySelectorAll('.annee-groupe').forEach(function (g) {
                 g.style.display = (!annee || g.dataset.annee === annee) ? '' : 'none';
             });
-        });
+        }
+        filtreSelect.addEventListener('change', appliquerFiltreAnnee);
+        appliquerFiltreAnnee(); // appliquer dès le chargement
     }
 })();
 </script>

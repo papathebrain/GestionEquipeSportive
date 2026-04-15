@@ -28,4 +28,25 @@ public class ThemeEcoleViewModel
 
     [Display(Name = "Logo")]
     public IFormFile? LogoFile { get; set; }
+
+    [Display(Name = "Musique match à venir (actuelle)")]
+    public string? MusiqueProchainMatchPathActuel { get; set; }
+    [Display(Name = "Musique match à venir")]
+    public IFormFile? MusiqueProchainMatchFile { get; set; }
+    public int? MusiqueProchainMatchDebut { get; set; }
+    public int? MusiqueProchainMatchDuree { get; set; }
+
+    [Display(Name = "Musique victoire (actuelle)")]
+    public string? MusiqueVictoirePathActuel { get; set; }
+    [Display(Name = "Musique victoire")]
+    public IFormFile? MusiqueVictoireFile { get; set; }
+    public int? MusiqueVictoireDebut { get; set; }
+    public int? MusiqueVictoireDuree { get; set; }
+
+    [Display(Name = "Musique défaite (actuelle)")]
+    public string? MusiqueDefaitePathActuel { get; set; }
+    [Display(Name = "Musique défaite")]
+    public IFormFile? MusiqueDefaiteFile { get; set; }
+    public int? MusiqueDefaiteDebut { get; set; }
+    public int? MusiqueDefaiteDuree { get; set; }
 }

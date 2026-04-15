@@ -72,36 +72,52 @@
                             <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    data-bs-toggle="modal" data-bs-target="#modalSupprimer-@user.Id">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-supprimer"
+                                    data-user-id="@user.Id"
+                                    data-user-nom="@user.NomUtilisateur">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
                     </tr>
-
-                    <!-- Modal suppression -->
-                    <div class="modal fade" id="modalSupprimer-@user.Id" tabindex="-1">
-                        <div class="modal-dialog modal-sm">
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h6 class="modal-title">Supprimer l'utilisateur</h6>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    Supprimer <strong>@user.NomUtilisateur</strong> ?
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
-                                    <form asp-action="Supprimer" method="post">
-                                        <input type="hidden" name="id" value="@user.Id" />
-                                        <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 }
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Modal suppression unique (hors du tableau) -->
+<div class="modal fade" id="modalSupprimer" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title"><i class="bi bi-trash me-1"></i>Supprimer l'utilisateur</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Supprimer <strong id="modalNomUtilisateur"></strong> ?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <form asp-action="Supprimer" method="post" id="formSupprimer">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="modalUserId" />
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.btn-supprimer').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.getElementById('modalUserId').value = this.dataset.userId;
+        document.getElementById('modalNomUtilisateur').textContent = this.dataset.userNom;
+        new bootstrap.Modal(document.getElementById('modalSupprimer')).show();
+    });
+});
+</script>
+}

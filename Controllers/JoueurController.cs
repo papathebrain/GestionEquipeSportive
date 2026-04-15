@@ -413,6 +413,47 @@ public class JoueurController : Controller
         return RedirectToAction(nameof(Edit), new { id = joueurId });
     }
 
+    // ── Ajouter joueur à plusieurs équipes (depuis Joueur/Edit) ──────────────
+    [HttpGet]
+    public IActionResult GetEquipesByAnnee(int ecoleId, string annee)
+    {
+        if (!_access.PeutModifier(User, ecoleId)) return Forbid();
+        var equipes = _equipeService.GetEquipesByEcole(ecoleId)
+            .Where(e => e.AnneeScolaire == annee)
+            .OrderBy(e => e.TypeSport.ToString()).ThenBy(e => e.Nom)
+            .Select(e => new { e.Id, e.Nom, sport = e.TypeSport.ToString() });
+        return Json(equipes);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult AjouterAuxEquipes(int joueurId, string equipeIds)
+    {
+        var joueur = _joueurService.GetJoueurById(joueurId);
+        if (joueur == null) return NotFound();
+        if (!_access.PeutModifier(User, joueur.EcoleId)) return Forbid();
+
+        var ids = (equipeIds ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out var i) ? i : 0)
+            .Where(i => i > 0).ToList();
+
+        int count = 0;
+        foreach (var equipeId in ids)
+        {
+            var equipe = _equipeService.GetEquipeById(equipeId);
+            if (equipe == null || equipe.EcoleId != joueur.EcoleId) continue;
+            var dejaPresent = _joueurService.GetJoueurEquipesByEquipe(equipeId).Any(je => je.JoueurId == joueurId);
+            if (dejaPresent) continue;
+            _joueurService.AssignerAEquipe(new JoueurEquipeViewModel { JoueurId = joueurId, EquipeId = equipeId, Actif = true }, null, _env.WebRootPath);
+            count++;
+        }
+
+        TempData["Success"] = count == 0 ? "Aucune nouvelle équipe ajoutée." :
+            count == 1 ? "Joueur ajouté à 1 équipe." : $"Joueur ajouté à {count} équipes.";
+        return RedirectToAction(nameof(Edit), new { id = joueurId, tab = "assignations" });
+    }
+
     // ── Gabarit Excel ─────────────────────────────────────────────────────────
     [HttpGet]
     public IActionResult GabaritExcelJoueurs()
